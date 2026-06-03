@@ -42,6 +42,7 @@ import TemuanItemForm from '../../../../../../views/onevour/components/temuan-it
 import QRScanner from '@/views/onevour/components/qr-scanner'
 import DetectLocation from '@/views/onevour/components/detect-location'
 import { postKebersihanScanLog } from '../../kebersihan-scan-log/slice'
+import DialogLoading from '@/views/onevour/components/dialog-loading'
 
 const statusOption = {
   values: [
@@ -677,6 +678,7 @@ const FormValidationBasic = () => {
 
   return (
     <DatePickerWrapper>
+      <DialogLoading open={store.loading} loadingProgress={store.loadingProgress} />
       <Card>
         {showForm && <CardHeader title='Form Kebersihan Inspeksi' />}
         <CardContent>

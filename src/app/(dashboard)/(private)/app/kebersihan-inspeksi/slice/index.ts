@@ -28,6 +28,8 @@ export interface InitialState {
   export: any
   location_qrcode: any
   location_latlong: any[]
+  loading: boolean
+  loadingProgress: number
 }
 
 /* --------------------------
@@ -46,7 +48,9 @@ const initialState: InitialState = {
   import: null,
   export: null,
   location_qrcode: null,
-  location_latlong: []
+  location_latlong: [],
+  loading: false,
+  loadingProgress: 0
 }
 
 /* --------------------------
@@ -98,7 +102,13 @@ export const postKebersihanInspeksi = createAsyncThunk<any, any>(
   'kebersihan-inspeksi/create',
   async (params, thunkAPI) => {
     try {
-      const response = await api.post(`/app/kebersihan-inspeksi`, params)
+      const response = await api.post(`/app/kebersihan-inspeksi`, params, {
+        onUploadProgress: progressEvent => {
+          const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1))
+
+          thunkAPI.dispatch(setLoadingProgress(percent))
+        }
+      })
 
       return response.data
     } catch (e: any) {
@@ -124,7 +134,13 @@ export const postKebersihanInspeksiUpdate = createAsyncThunk<any, { id: string; 
   'kebersihan-inspeksi/update',
   async ({ id, params }, thunkAPI) => {
     try {
-      const response = await api.put(`/app/kebersihan-inspeksi/${id}`, params)
+      const response = await api.put(`/app/kebersihan-inspeksi/${id}`, params, {
+        onUploadProgress: progressEvent => {
+          const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1))
+
+          thunkAPI.dispatch(setLoadingProgress(percent))
+        }
+      })
 
       return response.data
     } catch (e: any) {
@@ -200,7 +216,10 @@ export const slice = createSlice({
   name: 'jadwal_inspeksi_kebersihan',
   initialState,
   reducers: {
-    resetRedux: () => initialState
+    resetRedux: () => initialState,
+    setLoadingProgress: (state, action) => {
+      state.loadingProgress = action.payload
+    }
   },
   extraReducers: builder => {
     builder.addCase(fetchKebersihanInspeksiAll.fulfilled, (state, action) => {
@@ -222,16 +241,40 @@ export const slice = createSlice({
       state.delete = action.payload.message
     })
 
+    builder.addCase(postKebersihanInspeksi.pending, state => {
+      state.loading = true
+      state.loadingProgress = 0
+    })
+
     builder.addCase(postKebersihanInspeksi.fulfilled, (state, action) => {
+      state.loading = false
+      state.loadingProgress = 100
       state.crud = action.payload
+    })
+
+    builder.addCase(postKebersihanInspeksi.rejected, state => {
+      state.loading = false
+      state.loadingProgress = 0
     })
 
     builder.addCase(postBatchKebersihanInspeksi.fulfilled, (state, action) => {
       state.crud = action.payload
     })
 
+    builder.addCase(postKebersihanInspeksiUpdate.pending, state => {
+      state.loading = true
+      state.loadingProgress = 0
+    })
+
     builder.addCase(postKebersihanInspeksiUpdate.fulfilled, (state, action) => {
+      state.loading = false
+      state.loadingProgress = 100
       state.crud = action.payload
+    })
+
+    builder.addCase(postKebersihanInspeksiUpdate.rejected, state => {
+      state.loading = false
+      state.loadingProgress = 0
     })
 
     builder.addCase(postImport.fulfilled, (state, action) => {
@@ -253,4 +296,5 @@ export const slice = createSlice({
 })
 
 export const { resetRedux } = slice.actions
+export const { setLoadingProgress } = slice.actions
 export default slice.reducer
