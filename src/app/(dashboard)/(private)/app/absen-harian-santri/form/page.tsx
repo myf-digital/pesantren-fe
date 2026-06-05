@@ -69,6 +69,7 @@ const PresensiFormPage = () => {
   const tanggal = searchParams.get('tanggal') || format(new Date(), 'yyyy-MM-dd')
   const idLokasiKamar = searchParams.get('id_lokasi_kamar') || ''
   const idShiftPresensi = searchParams.get('id_shift_presensi') || ''
+  const qrCodeParam = searchParams.get('qrcode') || ''
 
   // Label readable untuk header komponen UI
   const namaShiftParam = searchParams.get('nama_shift') || 'Shift Asrama'
@@ -218,6 +219,12 @@ const PresensiFormPage = () => {
 
     await submitQrData(qrcode)
   }
+
+  useEffect(() => {
+    if (qrCodeParam) {
+      handleScanQrCode(qrCodeParam)
+    }
+  }, [qrCodeParam])
 
   return (
     <Grid container spacing={6}>
