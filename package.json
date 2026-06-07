@@ -4,9 +4,9 @@
   "license": "ISC",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "dotenv -e .env next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "dotenv -e .env -- next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",

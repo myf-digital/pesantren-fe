@@ -11,7 +11,7 @@ import Grid from '@mui/material/Grid2'
 import Card from '@mui/material/Card'
 
 import CardHeader from '@mui/material/CardHeader'
-import { Avatar, Box, TextField, Toolbar, Dialog, DialogContent, DialogTitle, DialogActions, Divider } from '@mui/material'
+import { Avatar, Box, TextField, Toolbar, Dialog, DialogContent, DialogTitle, DialogActions, Divider, useMediaQuery, useTheme } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
@@ -43,6 +43,8 @@ const statusObj: Record<string, { color: any; value: string }> = {
 
 function RowAction({row, onView}: {row: any, onView: (row: any) => void}) {
   const dispatch = useAppDispatch()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   const canEdit = useCan('edit')
 
@@ -87,8 +89,8 @@ function RowAction({row, onView}: {row: any, onView: (row: any) => void}) {
     )
   }
 
-  return (
-    <TableCell size='small'>
+  const content = (
+    <>
       <IconButton
         aria-controls='long-menu'
         size='small'
@@ -134,6 +136,16 @@ function RowAction({row, onView}: {row: any, onView: (row: any) => void}) {
           )
         ]}
       </Menu>
+    </>
+  )
+    
+  if (isMobile) {
+    return <Box sx={{ display: 'inline-block' }}>{content}</Box>
+  }
+
+  return (
+    <TableCell size='small' sx={{ borderBottom: 0 }}>
+      {content}
     </TableCell>
   )
 }
@@ -372,17 +384,18 @@ const TableSantri = () => {
         values: values?.map((row: any) => {
           return {
             ...row,
-            fullname: (
+             fullname: (
               <Box
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 3,
-                  minWidth: 0
+                  minWidth: 0,
+                  width: '100%'
                 }}
               >
                 <Avatar src={row.foto} sx={{ width: 38, height: 38 }} />
-                <Box>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
                   <Typography
                     variant='body2'
                     sx={{
@@ -390,12 +403,13 @@ const TableSantri = () => {
                       color: 'text.primary',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      wordBreak: 'break-all',
+                      whiteSpace: 'nowrap',
                     }}
+                    title={row.fullname}
                   >
                     {row.fullname}
                   </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start', mt: 0.5 }}>
                     <Typography
                       variant='caption'
                       sx={{
@@ -404,7 +418,11 @@ const TableSantri = () => {
                         borderRadius: 1,
                         bgcolor: 'grey.100',
                         color: 'text.secondary',
-                        fontWeight: 500
+                        fontWeight: 500,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '100%'
                       }}
                     >
                       NIK: {row.nik || '-'}
@@ -418,7 +436,11 @@ const TableSantri = () => {
                         borderRadius: 1,
                         bgcolor: 'primary.lighter',
                         color: 'primary.main',
-                        fontWeight: 500
+                        fontWeight: 500,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '100%'
                       }}
                     >
                       NIS: {row.nis || '-'}
@@ -428,9 +450,13 @@ const TableSantri = () => {
               </Box>
             ),
             nama_wali: (
-              <Box>
-                <Typography variant='body2'>{row.wali?.nama_wali || '-'}</Typography>
-                <Typography variant='caption' color='text.disabled'>{row.wali?.no_hp || '-'}</Typography>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant='body2' sx={{ wordBreak: 'break-all' }}>
+                  {row.wali?.nama_wali || '-'}
+                </Typography>
+                <Typography variant='caption' color='text.disabled'>
+                  {row.wali?.no_hp || '-'}
+                </Typography>
               </Box>
             ),
             nama_cabang: (

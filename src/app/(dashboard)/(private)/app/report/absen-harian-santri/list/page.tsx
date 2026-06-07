@@ -19,7 +19,10 @@ import {
   InputLabel,
   Select,
   Autocomplete,
-  CircularProgress
+  CircularProgress,
+  useTheme,
+  useMediaQuery,
+  Box
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -55,9 +58,11 @@ interface KamarOption {
 const RowAction = ({ row }: { row: any }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [openConfirm, setOpenConfirm] = useState(false)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
-  return (
-    <TableCell size='small' sx={{ borderBottom: 0 }}>
+  const content = (
+    <>
       <IconButton size='small' onClick={e => setAnchorEl(e.currentTarget)}>
         <i className='tabler-dots-vertical' />
       </IconButton>
@@ -66,6 +71,16 @@ const RowAction = ({ row }: { row: any }) => {
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View
         </MenuItem>
       </Menu>
+    </>
+  )
+    
+  if (isMobile) {
+    return <Box sx={{ display: 'inline-block' }}>{content}</Box>
+  }
+
+  return (
+    <TableCell size='small' sx={{ borderBottom: 0 }}>
+      {content}
     </TableCell>
   )
 }

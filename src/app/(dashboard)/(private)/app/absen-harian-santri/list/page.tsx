@@ -25,7 +25,9 @@ import {
   DialogContent,
   DialogActions,
   Autocomplete,
-  CircularProgress
+  CircularProgress,
+  useTheme,
+  useMediaQuery
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -47,6 +49,8 @@ import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
 import { useCan } from '@/hooks/useCan'
 import { format } from 'date-fns'
+import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
+import CustomTextField from '@/@core/components/mui/TextField'
 
 interface ShiftOption {
   id_shift: string
@@ -62,9 +66,11 @@ interface KamarOption {
 const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: string) => void }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [openConfirm, setOpenConfirm] = useState(false)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
-  return (
-    <TableCell size='small' sx={{ borderBottom: 0 }}>
+  const content = (
+    <>
       <IconButton size='small' onClick={e => setAnchorEl(e.currentTarget)}>
         <i className='tabler-dots-vertical' />
       </IconButton>
@@ -90,6 +96,16 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
         }}
         handleClose={() => setOpenConfirm(false)}
       />
+    </>
+  )
+
+  if (isMobile) {
+    return <Box sx={{ display: 'inline-block' }}>{content}</Box>
+  }
+
+  return (
+    <TableCell size='small' sx={{ borderBottom: 0 }}>
+      {content}
     </TableCell>
   )
 }
@@ -111,7 +127,8 @@ const AbsenHarianSantriList = () => {
   const [loadingKamar, setLoadingKamar] = useState(false)
 
   // State Filter Utama UI
-  const [tanggal, setTanggal] = useState(format(new Date(), 'yyyy-MM-dd'))
+  // const [tanggal, setTanggal] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [tanggal, setTanggal] = useState<Date | null>(null)
   const [selectedShift, setSelectedShift] = useState<ShiftOption | null>({ id_shift: '', nama_shift: 'Semua' })
   const [selectedKamar, setSelectedKamar] = useState<KamarOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
   const [status, setStatus] = useState('Semua')
@@ -208,7 +225,7 @@ const AbsenHarianSantriList = () => {
   // Handler Kirim Filter Utama via Tombol Cari / Enter
   const handleSearchSubmit = () => {
     const filters = {
-      tanggal,
+      tanggal: formatTanggal(tanggal),
       idShift: selectedShift?.id_shift || '',
       idLokasi: selectedKamar?.id_lokasi || '',
       status,
@@ -222,7 +239,8 @@ const AbsenHarianSantriList = () => {
 
   // Handler Reset Filter
   const handleResetFilter = () => {
-    setTanggal(format(new Date(), 'yyyy-MM-dd'))
+    // setTanggal(format(new Date(), 'yyyy-MM-dd'))
+    setTanggal(null)
     setSelectedShift(listShift.find(s => s.id_shift === '') || null)
     setSelectedKamar(listKamar.find(k => k.id_lokasi === '') || null)
     setStatus('Semua')
@@ -272,7 +290,7 @@ const AbsenHarianSantriList = () => {
     const idKmr = selectedKamar?.id_lokasi
     const idSft = selectedShift?.id_shift
     router.push(
-      `/app/absen-harian-santri/form?mode=scan_qr&tanggal=${tanggal}&id_lokasi_kamar=${idKmr}&id_shift_presensi=${idSft}&nama_shift=${selectedShift?.nama_shift}&nama_lokasi=${selectedKamar?.nama_lokasi}`
+      `/app/absen-harian-santri/form?mode=scan_qr&tanggal=${tanggal ? format(tanggal, 'yyyy-MM-dd') : ''}&id_lokasi_kamar=${idKmr}&id_shift_presensi=${idSft}&nama_shift=${selectedShift?.nama_shift}&nama_lokasi=${selectedKamar?.nama_lokasi}`
     )
   }
 
@@ -295,7 +313,7 @@ const AbsenHarianSantriList = () => {
     const idKmr = selectedKamar?.id_lokasi
     const activeShift = store.currentShift?.id_shift || selectedShift?.id_shift
     router.push(
-      `/app/absen-harian-santri/form?mode=kolektif&tanggal=${tanggal}&id_lokasi_kamar=${idKmr}&id_shift_presensi=${activeShift}&nama_shift=${selectedShift?.nama_shift}&nama_lokasi=${selectedKamar?.nama_lokasi}`
+      `/app/absen-harian-santri/form?mode=kolektif&tanggal=${tanggal ? format(tanggal, 'yyyy-MM-dd') : ''}&id_lokasi_kamar=${idKmr}&id_shift_presensi=${activeShift}&nama_shift=${selectedShift?.nama_shift}&nama_lokasi=${selectedKamar?.nama_lokasi}`
     )
   }
 
@@ -331,6 +349,10 @@ const AbsenHarianSantriList = () => {
 
   const renderOption = (row: any) => {
     return <RowAction row={row} onDeleteSuccess={id => dispatch(deleteAbsenSantri(id))} />
+  }
+
+  const formatTanggal = (tanggal: Date | null, formatStr: string = 'yyyy-MM-dd') => {
+    return tanggal ? format(new Date(tanggal), formatStr) : '';
   }
 
   const buildTable = () => {
@@ -384,7 +406,7 @@ const AbsenHarianSantriList = () => {
           {/* PANEL FILTER DENGAN SELECTABLE SEARCH AUTOCOMPLETE */}
           <Grid container spacing={4} sx={{ mb: 4 }}>
             <Grid size={{ xs: 12, sm: 2.4 }}>
-              <TextField
+              {/* <TextField
                 fullWidth
                 label='Tanggal'
                 type='date'
@@ -392,6 +414,13 @@ const AbsenHarianSantriList = () => {
                 value={tanggal}
                 onChange={e => setTanggal(e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
+              /> */}
+
+              <AppReactDatepicker
+                selected={tanggal}
+                onChange={(date: Date | null) => setTanggal(date)}
+                placeholderText='MM/DD/YYYY'
+                customInput={<CustomTextField fullWidth size='small' label='Tanggal' />}
               />
             </Grid>
 
@@ -568,7 +597,7 @@ const AbsenHarianSantriList = () => {
 
       {/* POPUP MODAL KONFIRMASI OTOMATIS */}
       <Dialog open={openModalKonfirmasi} onClose={() => setOpenModalKonfirmasi(false)} maxWidth='xs' fullWidth>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}>
+        <DialogTitle component='div' sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}>
           <Typography variant='h6' sx={{ fontWeight: 700 }}>
             Konfirmasi Presensi Hari Ini
           </Typography>
@@ -588,7 +617,7 @@ const AbsenHarianSantriList = () => {
             </Typography>
             <Typography variant='body2'>:</Typography>
             <Typography variant='body2' sx={{ fontWeight: 500 }}>
-              {tanggal} (otomatis)
+              {formatTanggal(tanggal, 'dd/MM/yyyy')} (otomatis)
             </Typography>
 
             <Typography variant='body2' color='text.secondary'>
