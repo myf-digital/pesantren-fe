@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 
 // MUI Imports
 import { deepmerge } from '@mui/utils'
@@ -29,6 +29,8 @@ import { useSettings } from '@core/hooks/useSettings'
 
 // Core Theme Imports
 import defaultCoreTheme from '@core/theme'
+import { useSession } from 'next-auth/react'
+import { loginOneSignal, requestNotificationPermission } from '@/libs/onesignal'
 
 type Props = ChildrenType & {
   direction: Direction
@@ -42,6 +44,7 @@ const CustomThemeProvider = (props: Props) => {
   // Hooks
   const { settings } = useSettings()
   const isDark = useMedia('(prefers-color-scheme: dark)', systemMode === 'dark')
+  const { data: session } = useSession()
 
   // Vars
   const isServer = typeof window === 'undefined'
@@ -91,6 +94,15 @@ const CustomThemeProvider = (props: Props) => {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.primaryColor, settings.skin, currentMode])
+
+  useEffect(() => {
+    if (session) {
+      const { userdata } = session
+      loginOneSignal(userdata?.username ?? '').then(e => {
+        requestNotificationPermission()
+      })
+    }
+  }, [session])
 
   return (
     <AppRouterCacheProvider

@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
 
 // Next Imports
@@ -26,6 +26,7 @@ import { signOut, useSession } from 'next-auth/react'
 
 // Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
+import { logoutOneSignal } from '@/libs/onesignal'
 
 // Styled component for badge content
 const BadgeContentSpan = styled('span')({
@@ -67,6 +68,7 @@ const UserDropdown = () => {
 
   const handleUserLogout = async () => {
     try {
+      await logoutOneSignal()
       // Sign out from the app
       await signOut({ callbackUrl: process.env.NEXT_PUBLIC_APP_URL })
       updateSettings({ layout: 'vertical' })
