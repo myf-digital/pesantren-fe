@@ -19,7 +19,9 @@ import {
   MenuItem,
   Box,
   Chip,
-  Avatar
+  Avatar,
+  useTheme,
+  useMediaQuery
 } from '@mui/material'
 
 import { toast } from 'react-toastify'
@@ -34,12 +36,14 @@ import DialogDelete from '@views/onevour/components/dialog-delete'
 const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: string) => void }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [openConfirm, setOpenConfirm] = useState(false)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   const canEdit = true //useCan('edit')
   const canDelete = true // useCan('delete')
 
-  return (
-    <TableCell size='small' sx={{ borderBottom: 0 }}>
+  const content = (
+    <>
       <IconButton size='small' onClick={(e) => setAnchorEl(e.currentTarget)}>
         <i className='tabler-dots-vertical' />
       </IconButton>
@@ -69,6 +73,16 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
         }}
         handleClose={() => setOpenConfirm(false)}
       />
+    </>
+  )
+    
+  if (isMobile) {
+    return <Box sx={{ display: 'inline-block' }}>{content}</Box>
+  }
+
+  return (
+    <TableCell size='small' sx={{ borderBottom: 0 }}>
+      {content}
     </TableCell>
   )
 }

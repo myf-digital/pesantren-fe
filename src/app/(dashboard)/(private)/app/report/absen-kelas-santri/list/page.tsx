@@ -2,7 +2,6 @@
 
 import React, { forwardRef, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 import {
   Card,
@@ -30,28 +29,25 @@ import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import {
-  fetchAbsenSantriPage,
-  deleteAbsenSantri,
-  postAbsenExport,
-  fetchMatchingShiftAsrama,
-  resetRedux
-} from '../../../absen-harian-santri/slice'
+  fetchAbsenKelasSantriPage,
+  postAbsenKelasExport,
+  fetchMatchingJamPelajaran
+} from '../../../absen-kelas-santri/slice'
 
 import { fetchLocationPage } from '../../../location/slice'
 
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
-import DialogDelete from '@views/onevour/components/dialog-delete'
 import { useCan } from '@/hooks/useCan'
 import { format, startOfWeek } from 'date-fns'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
-interface ShiftOption {
-  id_shift: string
-  nama_shift: string
+interface JamPelajaranOption {
+  id_jampel: string
+  nama_jampel: string
 }
 
-interface KamarOption {
+interface LokasiOption {
   id_lokasi: string
   nama_lokasi: string
 }
@@ -59,7 +55,6 @@ interface KamarOption {
 // Komponen Aksi Baris Tabel
 const RowAction = ({ row }: { row: any }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [openConfirm, setOpenConfirm] = useState(false)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
@@ -71,7 +66,7 @@ const RowAction = ({ row }: { row: any }) => {
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem
           component={Link}
-          href={`/app/report/absen-harian-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_lokasi_kamar=${row.id_lokasi_kamar}&id_shift_presensi=${row.id_shift_presensi}&nama_shift=${row.shiftPresensi?.nama_shift || ''}&nama_lokasi=${row.lokasiKamar?.nama_lokasi || ''}`}
+          href={`/app/report/absen-kelas-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_lokasi=${row.id_lokasi}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_lokasi=${row.lokasi || ''}`}
         >
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View
         </MenuItem>
@@ -95,87 +90,87 @@ const PickersComponent = forwardRef(({ ...props }: any, ref) => {
 })
 
 const AbsenHarianSantriList = () => {
-  const router = useRouter()
   const dispatch = useAppDispatch()
-  const store = useAppSelector(state => state.absen_harian_santri)
+  const store = useAppSelector(state => state.absen_kelas_santri)
 
   // Permission Hooks
   const canExport = useCan('export')
 
   // Opsi Data Dropdown Master
-  const [listShift, setListShift] = useState<ShiftOption[]>([])
-  const [listKamar, setListKamar] = useState<KamarOption[]>([])
-  const [loadingShift, setLoadingShift] = useState(false)
-  const [loadingKamar, setLoadingKamar] = useState(false)
+  const [listJamPel, setListJamPel] = useState<JamPelajaranOption[]>([])
+  const [listLokasi, setListLokasi] = useState<LokasiOption[]>([])
+  const [loadingJamPel, setLoadingJamPel] = useState(false)
+  const [loadingLokasi, setLoadingLokasi] = useState(false)
 
   // State Filter Utama UI
   const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfWeek(new Date(), { weekStartsOn: 1 }))
   const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(new Date())
-  const [selectedShift, setSelectedShift] = useState<ShiftOption | null>({ id_shift: '', nama_shift: 'Semua' })
-  const [selectedKamar, setSelectedKamar] = useState<KamarOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
+  const [selectedJamPel, setSelectedJamPel] = useState<JamPelajaranOption | null>({
+    id_jampel: '',
+    nama_jampel: 'Semua'
+  })
+  const [selectedLokasi, setSelectedLokasi] = useState<LokasiOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
   const [status, setStatus] = useState('Semua')
   const [searchTyped, setSearchTyped] = useState('')
 
   // State Snapshot Filter Sah (Mencegah Auto Fetch)
-  const [currentFilters, setCurrentFilters] = useState<any>({
-    tanggal: new Date(),
-    idShift: '',
-    idLokasi: '',
-    status: 'Semua',
-    searchTyped: ''
-  })
-  const [isFilterApplied, setIsFilterApplied] = useState(true)
+  const [currentFilters, setCurrentFilters] = useState<any>(null)
+  const [isFilterApplied, setIsFilterApplied] = useState(false)
+  const [isInitialLoaded, setIsInitialLoaded] = useState(false)
 
   // State Pagination & Loading Utama
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
 
-  // Ambil Master Data Shift via fetchMatchingShiftAsrama
+  // Ambil Master Data Shift via fetchMatchingJamPelajaran
   useEffect(() => {
-    const getShiftMaster = async () => {
+    const getJamPelMaster = async () => {
       try {
-        setLoadingShift(true)
+        setLoadingJamPel(true)
         const waktuSekarang = format(new Date(), 'HH:mm')
-        const res = await dispatch(fetchMatchingShiftAsrama({ waktu_absen: waktuSekarang })).unwrap()
+        const res = await dispatch(fetchMatchingJamPelajaran({ waktu_absen: waktuSekarang })).unwrap()
 
         if (res?.status && res?.data) {
-          setListShift([{ id_shift: '', nama_shift: 'Semua' }, ...res.data])
+          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...res.data])
+          if (res?.message.includes('jam pelajaran yang cocok')) {
+            setSelectedJamPel(res?.data[0] || null)
+          }
         } else if (Array.isArray(res)) {
-          setListShift([{ id_shift: '', nama_shift: 'Semua' }, ...res])
+          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...res])
         }
       } catch {
-        setListShift([{ id_shift: '', nama_shift: 'Semua' }])
+        setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }])
       } finally {
-        setLoadingShift(false)
+        setLoadingJamPel(false)
       }
     }
-    getShiftMaster()
+    getJamPelMaster()
   }, [dispatch])
 
-  // Ambil Master Data Lokasi Kamar via fetchLocationPage
+  // Ambil Master Data Lokasi Lokasi via fetchLocationPage
   useEffect(() => {
-    const getKamarMaster = async () => {
+    const getLokasiMaster = async () => {
       try {
-        setLoadingKamar(true)
-        const res = await dispatch(fetchLocationPage({ page: 1, perPage: 50, keyword: 'kamar' })).unwrap()
+        setLoadingLokasi(true)
+        const res = await dispatch(fetchLocationPage({ page: 1, perPage: 50, keyword: 'kelas' })).unwrap()
 
         const valuesData = res?.data?.values || res?.values || []
-        setListKamar([{ id_lokasi: '', nama_lokasi: 'Semua' }, ...valuesData])
+        setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }, ...valuesData])
       } catch {
-        setListKamar([{ id_lokasi: '', nama_lokasi: 'Semua' }])
+        setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }])
       } finally {
-        setLoadingKamar(false)
+        setLoadingLokasi(false)
       }
     }
-    getKamarMaster()
+    getLokasiMaster()
   }, [dispatch])
 
   // Fungsi Fetch Data Utama Log Tabel
   const executeFetchData = useCallback(
     (currentPage: number, currentPerPage: number, filters: any) => {
       dispatch(
-        fetchAbsenSantriPage({
+        fetchAbsenKelasSantriPage({
           page: currentPage,
           perPage: currentPerPage,
           tanggal_awal: filters.tanggal_awal
@@ -192,8 +187,8 @@ const AbsenHarianSantriList = () => {
             : tanggalAkhir
               ? format(tanggalAkhir, 'yyyy-MM-dd')
               : '',
-          id_shift_presensi: filters.idShift || undefined,
-          id_lokasi_kamar: filters.idLokasi || undefined,
+          id_jam_pelajaran: filters.id_jam_pelajaran || undefined,
+          id_lokasi: filters.id_lokasi || undefined,
           status: filters.status !== 'Semua' ? filters.status : undefined,
           q: filters.searchTyped || undefined
         })
@@ -201,6 +196,38 @@ const AbsenHarianSantriList = () => {
     },
     [dispatch, tanggalAwal, tanggalAkhir]
   )
+
+  // Auto-run load data ketika master data selesai dimuat pertama kali
+  useEffect(() => {
+    if (!loadingJamPel && !loadingLokasi && listJamPel.length > 0 && listLokasi.length > 0 && !isInitialLoaded) {
+      setIsInitialLoaded(true)
+      const filters = {
+        tanggal_awal: tanggalAwal || '',
+        tanggal_akhir: tanggalAkhir || '',
+        id_jam_pelajaran: selectedJamPel?.id_jampel || '',
+        id_lokasi: selectedLokasi?.id_lokasi || '',
+        status,
+        searchTyped
+      }
+      setIsFilterApplied(true)
+      setCurrentFilters(filters)
+      executeFetchData(1, perPage, filters)
+    }
+  }, [
+    loadingJamPel,
+    loadingLokasi,
+    listJamPel,
+    listLokasi,
+    isInitialLoaded,
+    selectedJamPel,
+    selectedLokasi,
+    tanggalAwal,
+    tanggalAkhir,
+    status,
+    searchTyped,
+    perPage,
+    executeFetchData
+  ])
 
   // Efek pagination halaman
   useEffect(() => {
@@ -214,8 +241,8 @@ const AbsenHarianSantriList = () => {
     const filters = {
       tanggal_awal: tanggalAwal || '',
       tanggal_akhir: tanggalAkhir || '',
-      idShift: selectedShift?.id_shift || '',
-      idLokasi: selectedKamar?.id_lokasi || '',
+      id_jam_pelajaran: selectedJamPel?.id_jampel || '',
+      id_lokasi: selectedLokasi?.id_lokasi || '',
       status,
       searchTyped
     }
@@ -232,16 +259,16 @@ const AbsenHarianSantriList = () => {
     const filters = {
       tanggal_awal: format(defaultTanggalAwal, 'yyyy-MM-dd'),
       tanggal_akhir: format(defaultTanggalAkhir, 'yyyy-MM-dd'),
-      idShift: '',
-      idLokasi: '',
+      id_jam_pelajaran: '',
+      id_lokasi: '',
       status: 'Semua',
       searchTyped: ''
     }
 
     setTanggalAwal(defaultTanggalAwal)
     setTanggalAkhir(defaultTanggalAkhir)
-    setSelectedShift(listShift.find(s => s.id_shift === '') || null)
-    setSelectedKamar(listKamar.find(k => k.id_lokasi === '') || null)
+    setSelectedJamPel(listJamPel.find(s => s.id_jampel === '') || null)
+    setSelectedLokasi(listLokasi.find(k => k.id_lokasi === '') || null)
     setStatus('Semua')
     setSearchTyped('')
 
@@ -265,11 +292,11 @@ const AbsenHarianSantriList = () => {
     try {
       setLoadingExport(true)
       const res = await dispatch(
-        postAbsenExport({
+        postAbsenKelasExport({
           tanggal_awal: currentFilters.tanggal_awal,
           tanggal_akhir: currentFilters.tanggal_akhir,
-          id_shift_presensi: currentFilters.idShift || undefined,
-          id_lokasi_kamar: currentFilters.idLokasi || undefined,
+          id_jam_pelajaran: currentFilters.id_jam_pelajaran || undefined,
+          id_lokasi: currentFilters.id_lokasi || undefined,
           status: currentFilters.status !== 'Semua' ? currentFilters.status : undefined,
           q: currentFilters.searchTyped || undefined
         })
@@ -311,8 +338,8 @@ const AbsenHarianSantriList = () => {
       ],
       values: tableValues.map((row: any) => ({
         ...row,
-        lokasi: row.lokasiKamar?.nama_lokasi || '-',
-        presensi: row.shiftPresensi?.nama_shift || '-',
+        lokasi: row.lokasi?.nama_lokasi || '-',
+        presensi: row.jamPelajaran?.nama_jampel || '-',
         petugas: row.petugas?.nama_lengkap || row.resource?.full_name || '-',
         tanggal: row.tanggal ? format(new Date(row.tanggal), 'dd/MM/yyyy') : '-',
         status_display: (
@@ -426,21 +453,21 @@ const AbsenHarianSantriList = () => {
             <Grid size={{ xs: 12, sm: 2.4 }}>
               <Autocomplete
                 size='small'
-                options={listShift}
-                loading={loadingShift}
-                value={selectedShift}
-                onChange={(_, newValue) => setSelectedShift(newValue)}
-                getOptionLabel={option => option.nama_shift || ''}
-                isOptionEqualToValue={(option, value) => option.id_shift === value?.id_shift}
+                options={listJamPel}
+                loading={loadingJamPel}
+                value={selectedJamPel}
+                onChange={(_, newValue) => setSelectedJamPel(newValue)}
+                getOptionLabel={option => option.nama_jampel || ''}
+                isOptionEqualToValue={(option, value) => option.id_jampel === value?.id_jampel}
                 renderInput={params => (
                   <TextField
                     {...params}
-                    label='Shift'
+                    label='Jam Pelajaran'
                     InputProps={{
                       ...params.InputProps,
                       endAdornment: (
                         <>
-                          {loadingShift ? <CircularProgress color='inherit' size={20} /> : null}
+                          {loadingJamPel ? <CircularProgress color='inherit' size={20} /> : null}
                           {params.InputProps.endAdornment}
                         </>
                       )
@@ -450,25 +477,25 @@ const AbsenHarianSantriList = () => {
               />
             </Grid>
 
-            {/* SELECTABLE SEARCH: LOKASI KAMAR */}
+            {/* SELECTABLE SEARCH: LOKASI */}
             <Grid size={{ xs: 12, sm: 2.4 }}>
               <Autocomplete
                 size='small'
-                options={listKamar}
-                loading={loadingKamar}
-                value={selectedKamar}
-                onChange={(_, newValue) => setSelectedKamar(newValue)}
+                options={listLokasi}
+                loading={loadingLokasi}
+                value={selectedLokasi}
+                onChange={(_, newValue) => setSelectedLokasi(newValue)}
                 getOptionLabel={option => option.nama_lokasi || ''}
                 isOptionEqualToValue={(option, value) => option.id_lokasi === value?.id_lokasi}
                 renderInput={params => (
                   <TextField
                     {...params}
-                    label='Lokasi / Kamar'
+                    label='Lokasi'
                     InputProps={{
                       ...params.InputProps,
                       endAdornment: (
                         <>
-                          {loadingKamar ? <CircularProgress color='inherit' size={20} /> : null}
+                          {loadingLokasi ? <CircularProgress color='inherit' size={20} /> : null}
                           {params.InputProps.endAdornment}
                         </>
                       )

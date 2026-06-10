@@ -19,7 +19,9 @@ import {
   TableHead,
   TableRow,
   Box,
-  Autocomplete
+  Autocomplete,
+  useMediaQuery,
+  useTheme
 } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
 import Button from '@mui/material/Button'
@@ -103,6 +105,8 @@ function RowAction(data: any) {
   const [anchorEl, setAnchorEl] = useState(null)
   const [openConfirm, setOpenConfirm] = useState(false)
   const dispatch = useAppDispatch()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   const canEdit = useCan('edit')
   const canDelete = useCan('delete')
@@ -126,8 +130,8 @@ function RowAction(data: any) {
     optionsOnClose()
   }
 
-  return (
-    <TableCell size='small'>
+  const content = (
+    <>
       <IconButton aria-controls='long-menu' size='small' aria-haspopup='true' onClick={setOpen}>
         <i className='tabler-dots-vertical' />
       </IconButton>
@@ -189,6 +193,16 @@ function RowAction(data: any) {
           disableEscapeKeyDown={true}
         />
       </Menu>
+    </>
+  )
+    
+  if (isMobile) {
+    return <Box sx={{ display: 'inline-block' }}>{content}</Box>
+  }
+
+  return (
+    <TableCell size='small' sx={{ borderBottom: 0 }}>
+      {content}
     </TableCell>
   )
 }

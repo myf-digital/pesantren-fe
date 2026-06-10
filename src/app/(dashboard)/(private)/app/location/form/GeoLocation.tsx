@@ -14,7 +14,11 @@ import {
   Chip,
   Divider,
   IconButton,
-  CircularProgress
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material'
 
 // Import CSS & Library
@@ -343,15 +347,22 @@ const GeoLocation = ({ data, onClose }: any) => {
 
           <TextField fullWidth label="Nama Area *" size="small" value={form.nama_area} onChange={(e) => setForm({ ...form, nama_area: e.target.value })} />
 
-          <Box>
-            <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1 }}>Tipe Area *</Typography>
-            <select className="form-select form-select-sm" value={form.tipe_area} onChange={(e) => { setForm({ ...form, tipe_area: e.target.value as any }); setGeoData(null) }}>
-              <option value="">Tipe Area</option>
-              <option value="Point">Point</option>
-              <option value="Circle">Circle</option>
-              <option value="Polygon">Polygon</option>
-            </select>
-          </Box>
+          <FormControl fullWidth size="small">
+            <InputLabel>Tipe Area *</InputLabel>
+            <Select
+              label="Tipe Area *"
+              value={form.tipe_area}
+              onChange={(e) => {
+                setForm({ ...form, tipe_area: e.target.value as any });
+                setGeoData(null);
+              }}
+            >
+              <MenuItem value="">Tipe Area</MenuItem>
+              <MenuItem value="Point">Point</MenuItem>
+              <MenuItem value="Circle">Circle</MenuItem>
+              <MenuItem value="Polygon">Polygon</MenuItem>
+            </Select>
+          </FormControl>
 
           <TextField fullWidth label="Toleransi Meter" type="number" size="small" value={form.toleransi} onChange={(e) => setForm({ ...form, toleransi: Number(e.target.value) })} />
           <FormControlLabel control={<Switch checked={form.is_aktif === 1} onChange={(e) => setForm({ ...form, is_aktif: e.target.checked ? 1 : 0 })} />} label="Area Aktif" />

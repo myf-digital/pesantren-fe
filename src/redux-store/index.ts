@@ -42,6 +42,7 @@ import kebersihan_inspeksi from '@/app/(dashboard)/(private)/app/kebersihan-insp
 import santri from '@/app/(dashboard)/(private)/app/santri/slice/index'
 import kebersihan_temuan from '@/app/(dashboard)/(private)/app/kebersihan-temuan/slice/index'
 import absen_harian_santri from '@/app/(dashboard)/(private)/app/absen-harian-santri/slice/index'
+import absen_kelas_santri from '@/app/(dashboard)/(private)/app/absen-kelas-santri/slice/index'
 import user from '@/app/(dashboard)/(private)/app/user/slice/index'
 import kebersihan_scan_log from '@/app/(dashboard)/(private)/app/kebersihan-scan-log/slice/index'
 import penempatan_kamar_santri from '@/app/(dashboard)/(private)/app/penempatan-kamar-santri/slice/index'
@@ -87,6 +88,7 @@ export const store = configureStore({
     santri,
     kebersihan_temuan,
     absen_harian_santri,
+    absen_kelas_santri,
     user,
     kebersihan_scan_log,
     penempatan_kamar_santri

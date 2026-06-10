@@ -326,7 +326,7 @@ const PresensiFormPage = () => {
                     maxWidth='xs'
                     fullWidth
                   >
-                    <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}>
+                    <DialogTitle component='div' sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}>
                       <Typography variant='h6' sx={{ fontWeight: 700 }}>
                         Scan QR Code Kartu Santri
                       </Typography>

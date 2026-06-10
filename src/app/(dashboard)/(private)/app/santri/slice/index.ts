@@ -12,6 +12,7 @@ export interface FetchParams {
   q?: string
   parent?: string
   status?: string
+  id_cabang?: string
 }
 
 export interface InitialState {
@@ -39,59 +40,46 @@ const initialState: InitialState = {
   datas: [],
   crud: null,
   delete: null,
-  export: null,
+  export: null
 }
 
 /* --------------------------
    3. Async Thunks (typed)
 --------------------------- */
 
-export const fetchSantriAll = createAsyncThunk<any, FetchParams>(
-  'santri/fetchAll',
-  async (params, thunkAPI) => {
+export const fetchSantriAll = createAsyncThunk<any, FetchParams>('santri/fetchAll', async (params, thunkAPI) => {
+  try {
+    const response = await api.get(`/app/santri/all-data`, { params })
 
-    try {
-      const response = await api.get(`/app/santri/all-data`, { params })
-
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
-export const fetchSantriPage = createAsyncThunk<any, FetchParams>(
-  'santri/fetchPage',
-  async (params, thunkAPI) => {
+export const fetchSantriPage = createAsyncThunk<any, FetchParams>('santri/fetchPage', async (params, thunkAPI) => {
+  try {
+    const response = await api.get(`/app/santri`, { params })
 
-    try {
-      const response = await api.get(`/app/santri`, { params })
-
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
-export const fetchSantriById = createAsyncThunk<any, string>(
-  'santri/fetchById',
-  async (id, thunkAPI) => {
+export const fetchSantriById = createAsyncThunk<any, string>('santri/fetchById', async (id, thunkAPI) => {
+  try {
+    const response = await api.get(`/app/santri/${id}`)
 
-    try {
-      const response = await api.get(`/app/santri/${id}`)
-
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
 export const postSantriUpdate = createAsyncThunk<any, { id: string; params: any }>(
   'santri/update',
   async ({ id, params }, thunkAPI) => {
-
     try {
       const response = await api.put(`/app/santri/${id}`, params)
 
@@ -102,19 +90,15 @@ export const postSantriUpdate = createAsyncThunk<any, { id: string; params: any 
   }
 )
 
-export const postExport = createAsyncThunk<any, any>(
-  'santri/export',
-  async (params, thunkAPI) => {
+export const postExport = createAsyncThunk<any, any>('santri/export', async (params, thunkAPI) => {
+  try {
+    const response = await api.post(`/app/santri/export`, params)
 
-    try {
-      const response = await api.post(`/app/santri/export`, params)
-
-      return response.data;
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
 /* --------------------------
    4. Slice + Reducers
@@ -124,7 +108,7 @@ export const slice = createSlice({
   name: 'santri',
   initialState,
   reducers: {
-    resetRedux: () => initialState,
+    resetRedux: () => initialState
   },
   extraReducers: builder => {
     builder.addCase(fetchSantriAll.fulfilled, (state, action) => {
@@ -149,7 +133,7 @@ export const slice = createSlice({
     builder.addCase(postExport.fulfilled, (state, action) => {
       state.export = action.payload
     })
-  },
+  }
 })
 
 export const { resetRedux } = slice.actions

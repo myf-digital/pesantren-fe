@@ -46,6 +46,10 @@ interface KamarOption {
   nama_lokasi: string
 }
 
+const NavigationSpacer = ({ showLabel, selected, value, onChange, ...rest }: any) => {
+  return <Box {...rest} />
+}
+
 export default function MobileBottomNav() {
   const pathname = usePathname()
   const router = useRouter()
@@ -267,7 +271,7 @@ export default function MobileBottomNav() {
           />
 
           {/* Spacer Tengah Menjaga Keseimbangan Layout */}
-          <Box sx={{ flex: 1, minWidth: 50, display: 'flex', justifyContent: 'center' }} />
+          <NavigationSpacer sx={{ flex: 1, minWidth: 50, display: 'flex', justifyContent: 'center' }} />
 
           <BottomNavigationAction
             label='Kebersihan'
@@ -280,61 +284,11 @@ export default function MobileBottomNav() {
 
           {/* Menu Dots Tiga memicu Popup */}
           <BottomNavigationAction
-            label='Lainnya'
-            icon={<i className='tabler-dots-vertical' />}
-            onClick={handleOpenMenu}
+            label='Profile'
+            icon={<i className='tabler-user' />}
+            onClick={handleClick}
           />
         </BottomNavigation>
-
-        {/* POPUP MENU CONTEXTUAL */}
-        <Menu
-          anchorEl={anchorEl}
-          open={openMenu}
-          onClose={handleCloseMenu}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right'
-          }}
-          transformOrigin={{
-            vertical: 'bottom',
-            horizontal: 'right'
-          }}
-          slotProps={{
-            paper: {
-              sx: {
-                minWidth: 160,
-                boxShadow: theme.shadows[3],
-                marginBottom: '10px'
-              }
-            }
-          }}
-        >
-          {/* Menu Kebersihan */}
-          <MenuItem
-            component={Link}
-            href='/app/santri/list'
-            onClick={() => {
-              handleCloseMenu()
-              handleCloseSidebar()
-            }}
-            sx={{ gap: 1.5 }}
-          >
-            <i className='tabler-users text-xl' />
-            <Typography variant='body2'>Santri</Typography>
-          </MenuItem>
-
-          {/* Menu Profile */}
-          <MenuItem
-            onClick={() => {
-              handleCloseMenu()
-              handleClick()
-            }}
-            sx={{ gap: 1.5 }}
-          >
-            <i className='tabler-user text-xl' />
-            <Typography variant='body2'>Profile</Typography>
-          </MenuItem>
-        </Menu>
       </Box>
 
       {/* DIALOG POPUP SCANNER */}

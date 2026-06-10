@@ -20,7 +20,9 @@ import {
   Box,
   Chip,
   Avatar,
-  Tooltip
+  Tooltip,
+  useTheme,
+  useMediaQuery
 } from '@mui/material'
 
 import { toast } from 'react-toastify'
@@ -36,12 +38,14 @@ import { useCan } from '@/hooks/useCan'
 const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: string) => void }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [openConfirm, setOpenConfirm] = useState(false)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   const canEdit = true //useCan('edit')
   const canDelete = true // useCan('delete')
 
-  return (
-    <TableCell size='small' sx={{ borderBottom: 0 }}>
+  const content = (
+    <>
       <IconButton size='small' onClick={e => setAnchorEl(e.currentTarget)}>
         <i className='tabler-dots-vertical' />
       </IconButton>
@@ -71,6 +75,16 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
         }}
         handleClose={() => setOpenConfirm(false)}
       />
+    </>
+  )
+    
+  if (isMobile) {
+    return <Box sx={{ display: 'inline-block' }}>{content}</Box>
+  }
+
+  return (
+    <TableCell size='small' sx={{ borderBottom: 0 }}>
+      {content}
     </TableCell>
   )
 }
@@ -161,27 +175,31 @@ const PegawaiList = () => {
       values: (dataPage?.values || []).map((row: any) => ({
         ...row,
         nama_display: (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+              minWidth: 0,
+              width: '100%'
+            }}
+          >
             <Avatar src={row.foto} sx={{ width: 38, height: 38 }} />
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 0.3
-              }}
-            >
+            <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography
                 variant='body2'
                 sx={{
-                  fontWeight: 700,
+                  fontWeight: 600,
                   color: 'text.primary',
-                  lineHeight: 1.2
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}
+                title={row.nama_lengkap}
               >
                 {row.nama_lengkap}
               </Typography>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start', mt: 0.5 }}>
                 <Typography
                   variant='caption'
                   sx={{
@@ -190,7 +208,11 @@ const PegawaiList = () => {
                     borderRadius: 1,
                     bgcolor: 'grey.100',
                     color: 'text.secondary',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '100%'
                   }}
                 >
                   NIK: {row.nik || '-'}
@@ -204,18 +226,24 @@ const PegawaiList = () => {
                     borderRadius: 1,
                     bgcolor: 'primary.lighter',
                     color: 'primary.main',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '100%'
                   }}
                 >
                   NIP: {row.nip || '-'}
                 </Typography>
               </Box>
             </Box>
-          </Box>
+          </Box>  
         ),
         kontak_display: (
-          <Box>
-            <Typography variant='body2'>{row.email || '-'}</Typography>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant='body2' sx={{ wordBreak: 'break-all' }}>
+              {row.email || '-'}
+            </Typography>
             <Typography variant='caption' color='text.disabled'>
               {row.no_hp || '-'}
             </Typography>

@@ -420,20 +420,20 @@ const FormValidationBasic = () => {
         readOnly: Boolean(view)
       }),
       field({
-        type: 'textarea',
-        key: 'keterangan',
-        label: 'Keterangan',
-        placeholder: 'Input Keterangan',
-        required: false,
-        readOnly: Boolean(view)
-      }),
-      field({
         type: 'select',
         key: 'status',
         label: 'Status',
         placeholder: 'Pilih Status',
         required: true,
         options: statusOption,
+        readOnly: Boolean(view)
+      }),
+      field({
+        type: 'textarea',
+        key: 'keterangan',
+        label: 'Keterangan',
+        placeholder: 'Input Keterangan',
+        required: false,
         readOnly: Boolean(view)
       }),
       fieldBuildSubmit({ onCancel: onCancel, loading: loading, disabled: Boolean(view) })

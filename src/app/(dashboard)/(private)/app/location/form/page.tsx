@@ -75,8 +75,8 @@ const LocationForm = () => {
     id_cabang: null,
     kapasitas: 0,
     lantai: 0,
-    latitude: null,
-    longitude: null,
+    latitude: '',
+    longitude: '',
     keterangan: ''
   })
 
@@ -123,7 +123,9 @@ const LocationForm = () => {
             ...d,
             jenis_lokasi: d.jenis_lokasi ? { label: d.jenis_lokasi, value: d.jenis_lokasi } : null,
             id_cabang: d.id_cabang ? cabangOptions.find((o: any) => o.value === d.id_cabang) : null,
-            parent_id: d.parent ? { label: d.parent.nama_lokasi, value: d.parent_id } : null
+            parent_id: d.parent ? { label: d.parent.nama_lokasi, value: d.parent_id } : null,
+            latitude: d.latitude ?? '',
+            longitude: d.longitude ?? ''
           }
           setState(formatted)
           reset(formatted)
