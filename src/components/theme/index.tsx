@@ -98,6 +98,7 @@ const CustomThemeProvider = (props: Props) => {
   useEffect(() => {
     if (session) {
       const { userdata } = session
+
       loginOneSignal(userdata?.username ?? '').then(e => {
         requestNotificationPermission()
       })

@@ -46,6 +46,7 @@ import absen_kelas_santri from '@/app/(dashboard)/(private)/app/absen-kelas-sant
 import user from '@/app/(dashboard)/(private)/app/user/slice/index'
 import kebersihan_scan_log from '@/app/(dashboard)/(private)/app/kebersihan-scan-log/slice/index'
 import penempatan_kamar_santri from '@/app/(dashboard)/(private)/app/penempatan-kamar-santri/slice/index'
+import notification from '@/app/(dashboard)/(private)/pages/notification/slice/index'
 
 export const store = configureStore({
   reducer: {
@@ -91,7 +92,8 @@ export const store = configureStore({
     absen_kelas_santri,
     user,
     kebersihan_scan_log,
-    penempatan_kamar_santri
+    penempatan_kamar_santri,
+    notification
   },
   middleware: getDefaultMiddleware => getDefaultMiddleware({ serializableCheck: false })
 })
