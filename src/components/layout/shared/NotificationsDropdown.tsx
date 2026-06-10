@@ -5,6 +5,8 @@ import { useRef, useState, useEffect } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 
 // MUI Imports
+import { useRouter } from 'next/navigation'
+
 import IconButton from '@mui/material/IconButton'
 import Badge from '@mui/material/Badge'
 import Popper from '@mui/material/Popper'
@@ -13,7 +15,6 @@ import Paper from '@mui/material/Paper'
 import ClickAwayListener from '@mui/material/ClickAwayListener'
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
-import Tooltip from '@mui/material/Tooltip'
 import Divider from '@mui/material/Divider'
 import Avatar from '@mui/material/Avatar'
 import useMediaQuery from '@mui/material/useMediaQuery'
@@ -25,6 +26,8 @@ import classnames from 'classnames'
 import PerfectScrollbar from 'react-perfect-scrollbar'
 
 // Type Imports
+import { formatDate } from 'date-fns'
+
 import type { ThemeColor } from '@core/types'
 import type { CustomAvatarProps } from '@core/components/mui/Avatar'
 
@@ -40,11 +43,19 @@ import { useSettings } from '@core/hooks/useSettings'
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
 
+import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
+import {
+  deleteNotification,
+  fetchNotificationPage,
+  postNotificationUpdate
+} from '@/app/(dashboard)/(private)/pages/notification/slice'
+
 export type NotificationsType = {
   title: string
   subtitle: string
   time: string
   read: boolean
+  full_name: string
 } & (
   | {
       avatarImage?: string
@@ -82,9 +93,12 @@ const ScrollWrapper = ({ children, hidden }: { children: ReactNode; hidden: bool
 }
 
 const getAvatar = (
-  params: Pick<NotificationsType, 'avatarImage' | 'avatarIcon' | 'title' | 'avatarText' | 'avatarColor' | 'avatarSkin'>
+  params: Pick<
+    NotificationsType,
+    'avatarImage' | 'avatarIcon' | 'title' | 'avatarText' | 'avatarColor' | 'avatarSkin' | 'full_name'
+  >
 ) => {
-  const { avatarImage, avatarIcon, avatarText, title, avatarColor, avatarSkin } = params
+  const { avatarImage, avatarIcon, avatarText, title, avatarColor, avatarSkin, full_name } = params
 
   if (avatarImage) {
     return <Avatar src={avatarImage} />
@@ -97,20 +111,21 @@ const getAvatar = (
   } else {
     return (
       <CustomAvatar color={avatarColor} skin={avatarSkin || 'light-static'}>
-        {avatarText || getInitials(title)}
+        {getInitials(full_name || '')}
       </CustomAvatar>
     )
   }
 }
 
 const NotificationDropdown = ({ notifications }: { notifications: NotificationsType[] }) => {
+  const router = useRouter()
+
+  const dispatch = useAppDispatch()
+  const store = useAppSelector(state => state.notification)
+
   // States
   const [open, setOpen] = useState(false)
-  const [notificationsState, setNotificationsState] = useState(notifications)
-
-  // Vars
-  const notificationCount = notificationsState.filter(notification => !notification.read).length
-  const readAll = notificationsState.every(notification => notification.read)
+  const [notificationsState, setNotificationsState] = useState([])
 
   // Refs
   const anchorRef = useRef<HTMLButtonElement>(null)
@@ -130,31 +145,27 @@ const NotificationDropdown = ({ notifications }: { notifications: NotificationsT
   }
 
   // Read notification when notification is clicked
-  const handleReadNotification = (event: MouseEvent<HTMLElement>, value: boolean, index: number) => {
+  const handleReadNotification = (event: MouseEvent<HTMLElement>, data: any, index: number) => {
     event.stopPropagation()
-    const newNotifications = [...notificationsState]
 
-    newNotifications[index].read = value
-    setNotificationsState(newNotifications)
+    dispatch(
+      postNotificationUpdate({
+        id: data.id_notification,
+        params: {
+          ...data,
+          status: 1
+        }
+      })
+    ).then(res => {
+      window.location.href = data.url
+    })
   }
 
   // Remove notification when close icon is clicked
-  const handleRemoveNotification = (event: MouseEvent<HTMLElement>, index: number) => {
+  const handleRemoveNotification = (event: MouseEvent<HTMLElement>, data: any, index: number) => {
     event.stopPropagation()
-    const newNotifications = [...notificationsState]
 
-    newNotifications.splice(index, 1)
-    setNotificationsState(newNotifications)
-  }
-
-  // Read or unread all notifications when read all icon is clicked
-  const readAllNotifications = () => {
-    const newNotifications = [...notificationsState]
-
-    newNotifications.forEach(notification => {
-      notification.read = !readAll
-    })
-    setNotificationsState(newNotifications)
+    dispatch(deleteNotification(data.id_notification))
   }
 
   useEffect(() => {
@@ -170,6 +181,10 @@ const NotificationDropdown = ({ notifications }: { notifications: NotificationsT
     window.addEventListener('resize', adjustPopoverHeight)
   }, [])
 
+  useEffect(() => {
+    dispatch(fetchNotificationPage({ page: 1, perPage: 10 }))
+  }, [store.crud, store.delete])
+
   return (
     <>
       <IconButton ref={anchorRef} onClick={handleToggle} className='text-textPrimary'>
@@ -178,7 +193,7 @@ const NotificationDropdown = ({ notifications }: { notifications: NotificationsT
           className='cursor-pointer'
           variant='dot'
           overlap='circular'
-          invisible={notificationCount === 0}
+          invisible={store.dataPage.total_new === 0}
           sx={{
             '& .MuiBadge-dot': { top: 6, right: 5, boxShadow: 'var(--mui-palette-background-paper) 0px 0px 0px 2px' }
           }}
@@ -217,79 +232,57 @@ const NotificationDropdown = ({ notifications }: { notifications: NotificationsT
                     <Typography variant='h6' className='flex-auto'>
                       Notifications
                     </Typography>
-                    {notificationCount > 0 && (
-                      <Chip size='small' variant='tonal' color='primary' label={`${notificationCount} New`} />
+
+                    {store.dataPage.total_new > 0 && (
+                      <Chip size='small' variant='tonal' color='primary' label={`${store.dataPage.total_new} New`} />
                     )}
-                    <Tooltip
-                      title={readAll ? 'Mark all as unread' : 'Mark all as read'}
-                      placement={placement === 'bottom-end' ? 'left' : 'right'}
-                      slotProps={{
-                        popper: {
-                          sx: {
-                            '& .MuiTooltip-tooltip': {
-                              transformOrigin:
-                                placement === 'bottom-end' ? 'right center !important' : 'right center !important'
-                            }
-                          }
-                        }
-                      }}
-                    >
-                      {notificationsState.length > 0 ? (
-                        <IconButton size='small' onClick={() => readAllNotifications()} className='text-textPrimary'>
-                          <i className={readAll ? 'tabler-mail' : 'tabler-mail-opened'} />
-                        </IconButton>
-                      ) : (
-                        <></>
-                      )}
-                    </Tooltip>
                   </div>
                   <Divider />
                   <ScrollWrapper hidden={hidden}>
-                    {notificationsState.map((notification, index) => {
+                    {store.dataPage.values.map((notification, index) => {
                       const {
                         title,
-                        subtitle,
-                        time,
-                        read,
-                        avatarImage,
-                        avatarIcon,
-                        avatarText,
-                        avatarColor,
-                        avatarSkin
+                        message,
+                        created_at,
+                        status,
+                        sender: { full_name }
                       } = notification
 
                       return (
                         <div
                           key={index}
                           className={classnames('flex plb-3 pli-4 gap-3 cursor-pointer hover:bg-actionHover group', {
-                            'border-be': index !== notificationsState.length - 1
+                            'border-be': index !== store.dataPage.values.length - 1
                           })}
-                          onClick={e => handleReadNotification(e, true, index)}
+                          onClick={e => handleReadNotification(e, notification, index)}
                         >
-                          {getAvatar({ avatarImage, avatarIcon, title, avatarText, avatarColor, avatarSkin })}
+                          {getAvatar({
+                            full_name,
+                            title
+                          })}
                           <div className='flex flex-col flex-auto'>
                             <Typography variant='body2' className='font-medium mbe-1' color='text.primary'>
                               {title}
                             </Typography>
                             <Typography variant='caption' color='text.secondary' className='mbe-2'>
-                              {subtitle}
+                              {message}
                             </Typography>
                             <Typography variant='caption' color='text.disabled'>
-                              {time}
+                              {formatDate(created_at, 'dd/MM/yyyy HH:mm')}
                             </Typography>
                           </div>
                           <div className='flex flex-col items-end gap-2'>
                             <Badge
                               variant='dot'
-                              color={read ? 'secondary' : 'primary'}
-                              onClick={e => handleReadNotification(e, !read, index)}
+                              color={status == 1 ? 'secondary' : 'primary'}
+                              onClick={e => handleReadNotification(e, status != 1, index)}
                               className={classnames('mbs-1 mie-1', {
-                                'invisible group-hover:visible': read
+                                'invisible group-hover:visible': status == 1
                               })}
                             />
                             <i
                               className='tabler-x text-xl invisible group-hover:visible'
-                              onClick={e => handleRemoveNotification(e, index)}
+                              onClick={e => handleRemoveNotification(e, notification, index)}
                             />
                           </div>
                         </div>
@@ -298,7 +291,15 @@ const NotificationDropdown = ({ notifications }: { notifications: NotificationsT
                   </ScrollWrapper>
                   <Divider />
                   <div className='p-4'>
-                    <Button fullWidth variant='contained' size='small'>
+                    <Button
+                      fullWidth
+                      variant='contained'
+                      size='small'
+                      onClick={e => {
+                        handleClose()
+                        router.push('/pages/notification/list')
+                      }}
+                    >
                       View All Notifications
                     </Button>
                   </div>
