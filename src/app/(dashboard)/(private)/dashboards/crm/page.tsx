@@ -1,34 +1,8 @@
-// // MUI Imports
-// import Grid from '@mui/material/Grid2'
-
-// // Component Imports
-// import TableInspeksi from '@/app/(dashboard)/(private)/app/kebersihan-inspeksi/list/page'
-// import TableTemuan from '@/app/(dashboard)/(private)/app/kebersihan-temuan/list/page'
-
-// const DashboardCRM = async () => {
-//   // Vars
-//   return (
-//     <Grid container spacing={6}>
-//       <Grid size={{ xs: 12, sm: 12, md: 12, lg: 12 }}>
-//         <TableInspeksi />
-//       </Grid>
-//       <Grid size={{ xs: 12, sm: 12, md: 12, lg: 12 }}>
-//         <TableTemuan />
-//       </Grid>
-//     </Grid>
-//   )
-// }
-
-// export default DashboardCRM
-
 // MUI Imports
 import Grid from '@mui/material/Grid2'
 
 // Component Imports
-import DistributedBarChartOrder from '@views/dashboards/crm/DistributedBarChartOrder'
-import LineAreaYearlySalesChart from '@views/dashboards/crm/LineAreaYearlySalesChart'
 import CardStatVertical from '@/components/card-statistics/Vertical'
-import BarChartRevenueGrowth from '@views/dashboards/crm/BarChartRevenueGrowth'
 import TableTemuan from '@/app/(dashboard)/(private)/app/report/kebersihan-temuan/list/page'
 import AbsenHarian from '@/app/(dashboard)/(private)/app/report/absen-harian-santri/list/page'
 

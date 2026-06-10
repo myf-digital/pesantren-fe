@@ -37,7 +37,7 @@ import { toast } from 'react-toastify'
 import { format } from 'date-fns'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { fetchSantriKamarReady, postAbsenScanQR } from '../../../absen-harian-santri/slice'
+import { fetchSantriCabangReady, postAbsenKelasSantri, postAbsenKelasScanQR } from '../slice'
 import QRScanner from '@/views/onevour/components/qr-scanner'
 
 // Interface untuk baris data di Form Kolektif
@@ -67,14 +67,15 @@ const PresensiFormPage = () => {
   // 1. Ambil data query param dari URL navigasi halaman sebelumnya
   const mode = searchParams.get('mode') // 'scan_qr' atau 'kolektif'
   const tanggal = searchParams.get('tanggal') || format(new Date(), 'yyyy-MM-dd')
-  const idLokasiKamar = searchParams.get('id_lokasi_kamar') || ''
-  const idShiftPresensi = searchParams.get('id_shift_presensi') || ''
+  const idLokasi = searchParams.get('id_lokasi') || ''
+  const idJamPelajaran = searchParams.get('id_jam_pelajaran') || ''
+  const qrCodeParam = searchParams.get('qrcode') || ''
 
   // Label readable untuk header komponen UI
-  const namaShiftParam = searchParams.get('nama_shift') || 'Shift Asrama'
+  const namaJamPelParam = searchParams.get('nama_jampel') || '-'
   const namaLokasiParam = searchParams.get('nama_lokasi') || '-'
 
-  const store = useAppSelector(state => state.absen_harian_santri)
+  const store = useAppSelector(state => state.absen_kelas_santri)
 
   // State internal untuk Skenario 1: Form Kolektif / Massal
   const [listSantriAbsen, setListSantriAbsen] = useState<AbsenItemInput[]>([])
@@ -90,15 +91,15 @@ const PresensiFormPage = () => {
 
   // Fetch data antrean santri siap absen jika memilih mode kolektif
   useEffect(() => {
-    if (mode === 'kolektif' && idLokasiKamar) {
-      dispatch(fetchSantriKamarReady({ id_lokasi_kamar: idLokasiKamar }))
+    if (mode === 'kolektif' && idLokasi) {
+      dispatch(fetchSantriCabangReady({ id_lokasi: idLokasi }))
     }
-  }, [dispatch, mode, idLokasiKamar])
+  }, [dispatch, mode, idLokasi])
 
   // Menyalin data dari Redux Store ke Local State agar form input bisa diubah secara interaktif
   useEffect(() => {
-    if (mode === 'kolektif' && store.santriKamar) {
-      const formatted = store.santriKamar.map((s: any) => ({
+    if (mode === 'kolektif' && store.santriCabang) {
+      const formatted = store.santriCabang.map((s: any) => ({
         id_santri: s.id_santri,
         fullname: s.fullname,
         nis: s.nis,
@@ -108,7 +109,7 @@ const PresensiFormPage = () => {
 
       setListSantriAbsen(formatted as AbsenItemInput[])
     }
-  }, [store.santriKamar, mode])
+  }, [store.santriCabang, mode])
 
   // Handler ubah status kehadiran via Select Dropdown per baris santri
   const handleStatusChange = (idSantri: string, value: 'Hadir' | 'Izin' | 'Sakit' | 'Alfa') => {
@@ -138,8 +139,8 @@ const PresensiFormPage = () => {
       const payload = {
         tanggal: tanggal,
         waktu_absen: format(new Date(), 'HH:mm'),
-        id_lokasi_kamar: idLokasiKamar,
-        id_shift_presensi: idShiftPresensi,
+        id_lokasi: idLokasi,
+        id_jam_pelajaran: idJamPelajaran,
         data_absen: listSantriAbsen.map(s => ({
           id_santri: s.id_santri,
           status_kehadiran: s.status_kehadiran,
@@ -147,13 +148,12 @@ const PresensiFormPage = () => {
         }))
       }
 
-      // Integrasi Redux Thunk API Anda:
-      // await dispatch(postAbsenKolektif(payload)).unwrap()
+      await dispatch(postAbsenKelasSantri(payload)).unwrap()
 
       toast.success('Data presensi massal kamar berhasil disimpan!')
-      router.push('/app/report/absen-harian-santri/list')
-    } catch {
-      toast.error('Gagal menyimpan data presensi kolektif')
+      router.push('/app/absen-kelas-santri/list')
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal menyimpan data presensi kolektif')
     } finally {
       setLoadingSubmit(false)
     }
@@ -166,17 +166,15 @@ const PresensiFormPage = () => {
     if (!nis.trim()) return
 
     try {
-      // Struktur payload wajib sesuai kontrak terbaru backend [POST] /scan-qr
       const payload = {
         nis: nis.trim(),
         tanggal_custom: tanggal,
         waktu_custom: format(new Date(), 'HH:mm:ss'),
-        id_lokasi_kamar: idLokasiKamar,
-        id_shift_presensi: idShiftPresensi
+        id_lokasi: idLokasi,
+        id_jam_pelajaran: idJamPelajaran
       }
 
-      // Integrasi Redux Thunk API Anda:
-      const res = await dispatch(postAbsenScanQR(payload)).unwrap()
+      const res = await dispatch(postAbsenKelasScanQR(payload)).unwrap()
 
       const serverData = res.data
 
@@ -219,19 +217,25 @@ const PresensiFormPage = () => {
     await submitQrData(qrcode)
   }
 
+  useEffect(() => {
+    if (qrCodeParam) {
+      handleScanQrCode(qrCodeParam)
+    }
+  }, [qrCodeParam])
+
   return (
     <Grid container spacing={6}>
       <Grid size={12}>
         {/* HEADER TOP BAR */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
           <Typography variant='h5' sx={{ fontWeight: 600 }}>
-            {mode === 'scan_qr' ? 'Presensi Elektrik Via Scan QR Kartu' : 'Form Input Kehadiran Massal Kamar'}
+            {mode === 'scan_qr' ? 'Presensi Elektrik Via Scan QR Kartu' : 'Form Input Kehadiran Massal'}
           </Typography>
           <Button
             variant='outlined'
             color='secondary'
             component={Link}
-            href='/app/report/absen-harian-santri/list'
+            href='/app/absen-kelas-santri/list'
             startIcon={<i className='tabler-arrow-left' />}
           >
             Kembali
@@ -247,12 +251,12 @@ const PresensiFormPage = () => {
                   Nama Shift Presensi
                 </Typography>
                 <Typography variant='h6' color='primary.main' sx={{ fontWeight: 700 }}>
-                  {store.currentShift?.nama_shift || namaShiftParam}
+                  {store.jamPel?.nama_jampel || namaJamPelParam}
                 </Typography>
               </Grid>
               <Grid size={{ xs: 12, sm: 3 }}>
                 <Typography variant='body2' color='text.secondary'>
-                  Lokasi / Kamar Terpilih
+                  Lokasi Terpilih
                 </Typography>
                 <Typography variant='h6' sx={{ fontWeight: 700 }}>
                   {namaLokasiParam}
@@ -396,7 +400,7 @@ const PresensiFormPage = () => {
         {mode === 'kolektif' && (
           <Card>
             <CardHeader
-              title={`Daftar Anak Kamar (${listSantriAbsen.length} Santri)`}
+              title={`Daftar Anak (${listSantriAbsen.length} Santri)`}
               action={
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                   <Button size='small' variant='tonal' color='success' onClick={() => handleSetAllStatus('Hadir')}>
@@ -430,7 +434,7 @@ const PresensiFormPage = () => {
                       NIS
                     </TableCell>
                     <TableCell width={150} sx={{ fontWeight: 600 }}>
-                      Kamar
+                      Lokasi
                     </TableCell>
                     <TableCell width={170} sx={{ fontWeight: 600 }}>
                       Status Kehadiran
@@ -464,32 +468,25 @@ const PresensiFormPage = () => {
                         {/* 3. Kolom NIS */}
                         <TableCell sx={{ fontWeight: 500 }}>{santri.nis}</TableCell>
 
-                        {/* 4. Kolom Kamar */}
+                        {/* 4. Kolom Lokasi */}
                         <TableCell sx={{ color: 'text.secondary' }}>{namaLokasiParam}</TableCell>
 
                         {/* 5. Kolom Status Kehadiran Dropdown */}
                         <TableCell>
-                          <FormControl fullWidth>
+                          <FormControl fullWidth size='small'>
                             <Select
-                              size='small'
                               value={santri.status_kehadiran}
-                              onChange={e =>
-                                handleStatusChange(
-                                  santri.id_santri,
-                                  e.target.value as 'Hadir' | 'Izin' | 'Sakit' | 'Alfa'
-                                )
-                              }
-                              disabled
+                              onChange={e => handleStatusChange(santri.id_santri, e.target.value as any)}
                               sx={{
-                                minWidth: 120,
-                                backgroundColor:
+                                fontWeight: 600,
+                                color:
                                   santri.status_kehadiran === 'Hadir'
-                                    ? '#e8f5e9'
+                                    ? 'success.main'
                                     : santri.status_kehadiran === 'Izin'
-                                      ? '#fff3e0'
+                                      ? 'info.main'
                                       : santri.status_kehadiran === 'Sakit'
-                                        ? '#e3f2fd'
-                                        : '#ffebee'
+                                        ? 'warning.main'
+                                        : 'error.main'
                               }}
                             >
                               <MenuItem value='Hadir'>Hadir</MenuItem>
@@ -508,7 +505,6 @@ const PresensiFormPage = () => {
                             placeholder='Contoh: Sakit demam, Izin jenguk...'
                             value={santri.keterangan}
                             onChange={e => handleKeteranganChange(santri.id_santri, e.target.value)}
-                            disabled
                           />
                         </TableCell>
                       </TableRow>
@@ -524,10 +520,25 @@ const PresensiFormPage = () => {
                 variant='outlined'
                 color='secondary'
                 component={Link}
-                href='/app/report/absen-harian-santri/list'
-                startIcon={<i className='tabler-arrow-left' />}
+                href='/app/absen-kelas-santri/list'
+                disabled={loadingSubmit}
               >
-                Kembali
+                Batal
+              </Button>
+              <Button
+                variant='contained'
+                color='primary'
+                onClick={handleSubmitKolektif}
+                disabled={loadingSubmit || listSantriAbsen.length === 0}
+                startIcon={
+                  loadingSubmit ? (
+                    <CircularProgress size={20} color='inherit' />
+                  ) : (
+                    <i className='tabler-device-floppy' />
+                  )
+                }
+              >
+                Simpan Presensi Massal
               </Button>
             </Box>
           </Card>

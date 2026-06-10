@@ -34,12 +34,12 @@ import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import {
-  fetchAbsenSantriPage,
-  deleteAbsenSantri,
-  postAbsenExport,
-  fetchSantriKamarReady,
-  fetchMatchingShiftAsrama,
-  resetRedux
+  fetchAbsenKelasSantriPage,
+  deleteAbsenKelasSantri,
+  postAbsenKelasExport,
+  resetRedux,
+  fetchMatchingJamPelajaran,
+  fetchSantriCabangReady
 } from '../slice'
 
 import { fetchLocationPage } from '../../location/slice'
@@ -51,12 +51,12 @@ import { useCan } from '@/hooks/useCan'
 import { format } from 'date-fns'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
-interface ShiftOption {
-  id_shift: string
-  nama_shift: string
+interface JamPelOption {
+  id_jampel: string
+  nama_jampel: string
 }
 
-interface KamarOption {
+interface LokasiOption {
   id_lokasi: string
   nama_lokasi: string
 }
@@ -76,13 +76,13 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem
           component={Link}
-          href={`/app/absen-harian-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_lokasi_kamar=${row.id_lokasi_kamar}&id_shift_presensi=${row.id_shift_presensi}&nama_shift=${row.shiftPresensi?.nama_shift || ''}&nama_lokasi=${row.lokasiKamar?.nama_lokasi || ''}`}
+          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_lokasi=${row.id_lokasi}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_lokasi=${row.lokasi?.nama_lokasi || ''}`}
         >
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View
         </MenuItem>
         <MenuItem
           component={Link}
-          href={`/app/absen-harian-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_lokasi_kamar=${row.id_lokasi_kamar}&id_shift_presensi=${row.id_shift_presensi}&nama_shift=${row.shiftPresensi?.nama_shift || ''}&nama_lokasi=${row.lokasiKamar?.nama_lokasi || ''}`}
+          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_lokasi=${row.id_lokasi}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_lokasi=${row.lokasi?.nama_lokasi || ''}`}
         >
           <i className='tabler-edit' style={{ marginRight: 8 }} /> Edit
         </MenuItem>
@@ -92,7 +92,7 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       </Menu>
 
       <DialogDelete
-        id={row.santri?.fullname || 'Data Absen'}
+        id={row.santri?.fullname || 'Data AbsenKelas'}
         open={openConfirm}
         onClose={() => setOpenConfirm(false)}
         handleOk={() => {
@@ -119,10 +119,10 @@ const PickersComponent = forwardRef(({ ...props }: any, ref) => {
   return <TextField inputRef={ref} fullWidth size='small' {...props} label='Tanggal' />
 })
 
-const AbsenHarianSantriList = () => {
+const AbsenKelasHarianSantriList = () => {
   const router = useRouter()
   const dispatch = useAppDispatch()
-  const store = useAppSelector(state => state.absen_harian_santri)
+  const store = useAppSelector(state => state.absen_kelas_santri)
 
   // Permission Hooks
   const canCreate = useCan('create')
@@ -130,21 +130,22 @@ const AbsenHarianSantriList = () => {
   const canExport = useCan('export')
 
   // Opsi Data Dropdown Master
-  const [listShift, setListShift] = useState<ShiftOption[]>([])
-  const [listKamar, setListKamar] = useState<KamarOption[]>([])
-  const [loadingShift, setLoadingShift] = useState(false)
-  const [loadingKamar, setLoadingKamar] = useState(false)
+  const [listJampel, setListJamPel] = useState<JamPelOption[]>([])
+  const [listLokasi, setListLokasi] = useState<LokasiOption[]>([])
+  const [loadingJampel, setLoadingJampel] = useState(false)
+  const [loadingLokasi, setLoadingLokasi] = useState(false)
 
   // State Filter Utama UI
   const [tanggal, setTanggal] = useState<Date | null>(new Date())
-  const [selectedShift, setSelectedShift] = useState<ShiftOption | null>({ id_shift: '', nama_shift: 'Semua' })
-  const [selectedKamar, setSelectedKamar] = useState<KamarOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
+  const [selectedJampel, setSelectedJampel] = useState<JamPelOption | null>({ id_jampel: '', nama_jampel: 'Semua' })
+  const [selectedLokasi, setSelectedLokasi] = useState<LokasiOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
   const [status, setStatus] = useState('Semua')
   const [searchTyped, setSearchTyped] = useState('')
 
   // State Snapshot Filter Sah (Mencegah Auto Fetch)
   const [currentFilters, setCurrentFilters] = useState<any>(null)
   const [isFilterApplied, setIsFilterApplied] = useState(false)
+  const [isInitialLoaded, setIsInitialLoaded] = useState(false)
 
   // State Pagination & Loading Utama
   const [page, setPage] = useState(1)
@@ -159,19 +160,22 @@ const AbsenHarianSantriList = () => {
   useEffect(() => {
     const getShiftMaster = async () => {
       try {
-        setLoadingShift(true)
+        setLoadingJampel(true)
         const waktuSekarang = format(new Date(), 'HH:mm')
-        const res = await dispatch(fetchMatchingShiftAsrama({ waktu_absen: waktuSekarang })).unwrap()
+        const res = await dispatch(fetchMatchingJamPelajaran({ waktu_absen: waktuSekarang })).unwrap()
 
         if (res?.status && res?.data) {
-          setListShift([{ id_shift: '', nama_shift: 'Semua' }, ...res.data])
+          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...res.data])
+          if (res?.message.includes('jam pelajaran yang cocok')) {
+            setSelectedJampel(res?.data[0] || null)
+          }
         } else if (Array.isArray(res)) {
-          setListShift([{ id_shift: '', nama_shift: 'Semua' }, ...res])
+          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...res])
         }
       } catch {
-        setListShift([{ id_shift: '', nama_shift: 'Semua' }])
+        setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }])
       } finally {
-        setLoadingShift(false)
+        setLoadingJampel(false)
       }
     }
     getShiftMaster()
@@ -179,20 +183,20 @@ const AbsenHarianSantriList = () => {
 
   // Ambil Master Data Lokasi Kamar via fetchLocationPage
   useEffect(() => {
-    const getKamarMaster = async () => {
+    const getLokasiMaster = async () => {
       try {
-        setLoadingKamar(true)
-        const res = await dispatch(fetchLocationPage({ page: 1, perPage: 50, keyword: 'kamar' })).unwrap()
+        setLoadingLokasi(true)
+        const res = await dispatch(fetchLocationPage({ page: 1, perPage: 50, keyword: 'kelas' })).unwrap()
 
         const valuesData = res?.data?.values || res?.values || []
-        setListKamar([{ id_lokasi: '', nama_lokasi: 'Semua' }, ...valuesData])
+        setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }, ...valuesData])
       } catch {
-        setListKamar([{ id_lokasi: '', nama_lokasi: 'Semua' }])
+        setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }])
       } finally {
-        setLoadingKamar(false)
+        setLoadingLokasi(false)
       }
     }
-    getKamarMaster()
+    getLokasiMaster()
   }, [dispatch])
 
   // Fungsi Fetch Data Utama Log Tabel
@@ -200,12 +204,12 @@ const AbsenHarianSantriList = () => {
     (currentPage: number, currentPerPage: number, filters: any) => {
       if (!filters) return
       dispatch(
-        fetchAbsenSantriPage({
+        fetchAbsenKelasSantriPage({
           page: currentPage,
           perPage: currentPerPage,
           tanggal: filters.tanggal,
-          id_shift_presensi: filters.idShift || undefined,
-          id_lokasi_kamar: filters.idLokasi || undefined,
+          id_jam_pelajaran: filters.id_jam_pelajaran || undefined,
+          id_lokasi: filters.id_lokasi || undefined,
           status: filters.status !== 'Semua' ? filters.status : undefined,
           q: filters.searchTyped || undefined
         })
@@ -213,6 +217,35 @@ const AbsenHarianSantriList = () => {
     },
     [dispatch]
   )
+
+  useEffect(() => {
+    if (!loadingJampel && !loadingLokasi && listJampel.length > 0 && listLokasi.length > 0 && !isInitialLoaded) {
+      setIsInitialLoaded(true)
+      const filters = {
+        tanggal: formatTanggal(tanggal),
+        id_jam_pelajaran: selectedJampel?.id_jampel || '',
+        id_lokasi: selectedLokasi?.id_lokasi || '',
+        status,
+        searchTyped
+      }
+      setIsFilterApplied(true)
+      setCurrentFilters(filters)
+      executeFetchData(1, perPage, filters)
+    }
+  }, [
+    loadingJampel,
+    loadingLokasi,
+    listJampel,
+    listLokasi,
+    isInitialLoaded,
+    selectedJampel,
+    selectedLokasi,
+    tanggal,
+    status,
+    searchTyped,
+    perPage,
+    executeFetchData
+  ])
 
   // Efek pagination halaman
   useEffect(() => {
@@ -234,8 +267,8 @@ const AbsenHarianSantriList = () => {
   const handleSearchSubmit = () => {
     const filters = {
       tanggal: formatTanggal(tanggal),
-      idShift: selectedShift?.id_shift || '',
-      idLokasi: selectedKamar?.id_lokasi || '',
+      id_jam_pelajaran: selectedJampel?.id_jampel || '',
+      id_lokasi: selectedLokasi?.id_lokasi || '',
       status,
       searchTyped
     }
@@ -248,8 +281,8 @@ const AbsenHarianSantriList = () => {
   // Handler Reset Filter
   const handleResetFilter = () => {
     setTanggal(new Date())
-    setSelectedShift(listShift.find(s => s.id_shift === '') || null)
-    setSelectedKamar(listKamar.find(k => k.id_lokasi === '') || null)
+    setSelectedJampel(listJampel.find(s => s.id_jampel === '') || null)
+    setSelectedLokasi(listLokasi.find(k => k.id_lokasi === '') || null)
     setStatus('Semua')
     setSearchTyped('')
     setPage(1)
@@ -271,12 +304,12 @@ const AbsenHarianSantriList = () => {
       toast.warning('Silakan lengkapi data terlebih dahulu: Tanggal belum diisi')
       return false
     }
-    if (!selectedShift || !selectedShift.id_shift || selectedShift.nama_shift === 'Semua') {
-      toast.warning('Silakan lengkapi data terlebih dahulu: Shift presensi harus dipilih secara spesifik')
+    if (!selectedJampel || !selectedJampel.id_jampel || selectedJampel.nama_jampel === 'Semua') {
+      toast.warning('Silakan lengkapi data terlebih dahulu: Jam Pelajaran harus dipilih secara spesifik')
       return false
     }
-    if (!selectedKamar || !selectedKamar.id_lokasi || selectedKamar.nama_lokasi === 'Semua') {
-      toast.warning('Silakan lengkapi data terlebih dahulu: Lokasi / Kamar harus dipilih secara spesifik')
+    if (!selectedLokasi || !selectedLokasi.id_lokasi || selectedLokasi.nama_lokasi === 'Semua') {
+      toast.warning('Silakan lengkapi data terlebih dahulu: Lokasi harus dipilih secara spesifik')
       return false
     }
     return true
@@ -294,13 +327,13 @@ const AbsenHarianSantriList = () => {
     setAnchorPresensi(null)
     if (!validatePresensiInput()) return
 
-    const idKmr = selectedKamar?.id_lokasi
-    const idSft = selectedShift?.id_shift
+    const idLokasi = selectedLokasi?.id_lokasi
+    const idJamPelajaran = selectedJampel?.id_jampel
     const tgl = format(tanggal!, 'yyyy-MM-dd')
-    const namaKmr = selectedKamar?.nama_lokasi || ''
-    const namaSft = selectedShift?.nama_shift || ''
+    const namaLokasi = selectedLokasi?.nama_lokasi || ''
+    const namaJampel = selectedJampel?.nama_jampel || ''
     router.push(
-      `/app/absen-harian-santri/form?mode=scan_qr&tanggal=${tgl}&id_lokasi_kamar=${idKmr}&id_shift_presensi=${idSft}&nama_shift=${namaSft}&nama_lokasi=${namaKmr}`
+      `/app/absen-kelas-santri/form?mode=scan_qr&tanggal=${tgl}&id_lokasi=${idLokasi}&id_jam_pelajaran=${idJamPelajaran}&nama_jampel=${namaJampel}&nama_lokasi=${namaLokasi}`
     )
   }
 
@@ -309,21 +342,17 @@ const AbsenHarianSantriList = () => {
     setAnchorPresensi(null)
     if (!validatePresensiInput()) return
 
-    const idKmr = selectedKamar?.id_lokasi as string
-    const waktuSekarang = format(new Date(), 'HH:mm')
-
-    await dispatch(fetchMatchingShiftAsrama({ waktu_absen: waktuSekarang }))
-    await dispatch(fetchSantriKamarReady({ id_lokasi_kamar: idKmr }))
+    await dispatch(fetchSantriCabangReady({ id_lokasi: selectedLokasi?.id_lokasi || '' }))
 
     setOpenModalKonfirmasi(true)
   }
 
   const handleLanjutkanPresensi = () => {
     setOpenModalKonfirmasi(false)
-    const idKmr = selectedKamar?.id_lokasi
-    const activeShift = store.currentShift?.id_shift || selectedShift?.id_shift
+    const idLokasi = selectedLokasi?.id_lokasi
+    const idJamPelajaran = selectedJampel?.id_jampel
     router.push(
-      `/app/absen-harian-santri/form?mode=kolektif&tanggal=${tanggal ? format(tanggal, 'yyyy-MM-dd') : ''}&id_lokasi_kamar=${idKmr}&id_shift_presensi=${activeShift}&nama_shift=${selectedShift?.nama_shift}&nama_lokasi=${selectedKamar?.nama_lokasi}`
+      `/app/absen-kelas-santri/form?mode=kolektif&tanggal=${tanggal ? format(tanggal, 'yyyy-MM-dd') : ''}&id_lokasi=${idLokasi}&id_jam_pelajaran=${idJamPelajaran}&nama_jampel=${selectedJampel?.nama_jampel}&nama_lokasi=${selectedLokasi?.nama_lokasi}`
     )
   }
 
@@ -335,10 +364,10 @@ const AbsenHarianSantriList = () => {
     try {
       setLoadingExport(true)
       const res = await dispatch(
-        postAbsenExport({
+        postAbsenKelasExport({
           tanggal: currentFilters.tanggal,
-          id_shift_presensi: currentFilters.idShift || undefined,
-          id_lokasi_kamar: currentFilters.idLokasi || undefined,
+          id_jam_pelajaran: currentFilters.id_jam_pelajaran || undefined,
+          id_lokasi: currentFilters.id_lokasi || undefined,
           status: currentFilters.status !== 'Semua' ? currentFilters.status : undefined,
           q: currentFilters.searchTyped || undefined
         })
@@ -358,7 +387,7 @@ const AbsenHarianSantriList = () => {
   }
 
   const renderOption = (row: any) => {
-    return <RowAction row={row} onDeleteSuccess={id => dispatch(deleteAbsenSantri(id))} />
+    return <RowAction row={row} onDeleteSuccess={id => dispatch(deleteAbsenKelasSantri(id))} />
   }
 
   const formatTanggal = (tanggal: Date | null, formatStr: string = 'yyyy-MM-dd') => {
@@ -377,7 +406,8 @@ const AbsenHarianSantriList = () => {
         tableColumn('NAMA SANTRI', 'santri.fullname'),
         tableColumn('NIS', 'santri.nis'),
         tableColumn('PETUGAS', 'petugas'),
-        tableColumn('KAMAR', 'lokasiKamar.nama_lokasi'),
+        tableColumn('LOKASI', 'lokasi.nama_lokasi'),
+        tableColumn('JAM PELAJARAN', 'jamPelajaran.nama_jampel'),
         tableColumn('WAKTU', 'waktu_absen'),
         tableColumn('STATUS', 'status_display')
       ],
@@ -435,21 +465,21 @@ const AbsenHarianSantriList = () => {
             <Grid size={{ xs: 12, sm: 2.4 }}>
               <Autocomplete
                 size='small'
-                options={listShift}
-                loading={loadingShift}
-                value={selectedShift}
-                onChange={(_, newValue) => setSelectedShift(newValue)}
-                getOptionLabel={option => option.nama_shift || ''}
-                isOptionEqualToValue={(option, value) => option.id_shift === value?.id_shift}
+                options={listJampel}
+                loading={loadingJampel}
+                value={selectedJampel}
+                onChange={(_, newValue) => setSelectedJampel(newValue)}
+                getOptionLabel={option => option.nama_jampel || ''}
+                isOptionEqualToValue={(option, value) => option.id_jampel === value?.id_jampel}
                 renderInput={params => (
                   <TextField
                     {...params}
-                    label='Shift'
+                    label='Jam Pelajaran'
                     InputProps={{
                       ...params.InputProps,
                       endAdornment: (
                         <>
-                          {loadingShift ? <CircularProgress color='inherit' size={20} /> : null}
+                          {loadingJampel ? <CircularProgress color='inherit' size={20} /> : null}
                           {params.InputProps.endAdornment}
                         </>
                       )
@@ -463,21 +493,21 @@ const AbsenHarianSantriList = () => {
             <Grid size={{ xs: 12, sm: 2.4 }}>
               <Autocomplete
                 size='small'
-                options={listKamar}
-                loading={loadingKamar}
-                value={selectedKamar}
-                onChange={(_, newValue) => setSelectedKamar(newValue)}
+                options={listLokasi}
+                loading={loadingLokasi}
+                value={selectedLokasi}
+                onChange={(_, newValue) => setSelectedLokasi(newValue)}
                 getOptionLabel={option => option.nama_lokasi || ''}
                 isOptionEqualToValue={(option, value) => option.id_lokasi === value?.id_lokasi}
                 renderInput={params => (
                   <TextField
                     {...params}
-                    label='Lokasi / Kamar'
+                    label='Lokasi'
                     InputProps={{
                       ...params.InputProps,
                       endAdornment: (
                         <>
-                          {loadingKamar ? <CircularProgress color='inherit' size={20} /> : null}
+                          {loadingLokasi ? <CircularProgress color='inherit' size={20} /> : null}
                           {params.InputProps.endAdornment}
                         </>
                       )
@@ -571,7 +601,7 @@ const AbsenHarianSantriList = () => {
                 variant='contained'
                 startIcon={<i className='tabler-file-import' />}
                 component={Link}
-                href='/app/absen-harian-santri/import'
+                href='/app/absen-kelas-santri/import'
               >
                 Import CSV
               </Button>
@@ -581,7 +611,7 @@ const AbsenHarianSantriList = () => {
 
         {/* LOG DATA UTAMA RENDERING */}
         <Card>
-          <CardHeader title='Log Presensi Harian Santri' />
+          <CardHeader title='Log Presensi Kelas Santri' />
 
           {!isFilterApplied ? (
             <Box sx={{ p: 10, textAlign: 'center', color: 'text.secondary' }}>
@@ -593,7 +623,8 @@ const AbsenHarianSantriList = () => {
                 Belum Ada Data Ditampilkan
               </Typography>
               <Typography variant='body2' color='text.secondary'>
-                Silakan tentukan filter di atas kemudian klik tombol <b>Cari</b> untuk memuat data log presensi santri.
+                Silakan tentukan filter di atas kemudian klik tombol <b>Cari</b> untuk memuat data log presensi kelas
+                santri.
               </Typography>
             </Box>
           ) : (
@@ -639,11 +670,11 @@ const AbsenHarianSantriList = () => {
             </Typography>
 
             <Typography variant='body2' color='text.secondary'>
-              Shift
+              Jam Pelajaran
             </Typography>
             <Typography variant='body2'>:</Typography>
             <Typography variant='body2' sx={{ fontWeight: 500 }}>
-              {store.currentShift?.nama_shift || selectedShift?.nama_shift || ''} (otomatis)
+              {store.jamPel?.nama_jampel || selectedJampel?.nama_jampel || ''} (otomatis)
             </Typography>
 
             <Typography variant='body2' color='text.secondary'>
@@ -651,13 +682,13 @@ const AbsenHarianSantriList = () => {
             </Typography>
             <Typography variant='body2'>:</Typography>
             <Typography variant='body2' sx={{ fontWeight: 500 }}>
-              {selectedKamar?.nama_lokasi || '-'} (otomatis)
+              {selectedLokasi?.nama_lokasi || '-'} (otomatis)
             </Typography>
           </Box>
 
           <Box sx={{ bgcolor: 'rgba(79, 129, 189, 0.08)', p: 3, borderRadius: 1, borderLeft: '4px solid #4F81BD' }}>
             <Typography variant='body2' color='primary.main' sx={{ fontWeight: 600 }}>
-              Santri terdeteksi: <span style={{ fontWeight: 800 }}>{store.santriKamar?.length || 0} orang</span>
+              Santri terdeteksi: <span style={{ fontWeight: 800 }}>{store.santriCabang?.length || 0} orang</span>
             </Typography>
           </Box>
         </DialogContent>
@@ -675,4 +706,4 @@ const AbsenHarianSantriList = () => {
   )
 }
 
-export default AbsenHarianSantriList
+export default AbsenKelasHarianSantriList

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -33,6 +33,7 @@ import { format, startOfWeek } from 'date-fns'
 import { fetchCabangAll } from '../../../cabang/slice'
 import { fetchLocationAll } from '../../../location/slice'
 import { fetchPegawaiAll } from '../../../guru-mata-pelajaran/slice'
+import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
 function RowAction(data: any) {
   const [anchorEl, setAnchorEl] = useState(null)
@@ -107,6 +108,17 @@ interface PetugasOption {
   nama_lengkap: string
 }
 
+const PickersComponent = forwardRef(({ ...props }: any, ref) => {
+  return (
+    <TextField
+      inputRef={ref}
+      fullWidth
+      size='small'
+      {...props}
+    />
+  )
+})
+
 const TableTemuan = () => {
   // ** Hooks
   const router = useRouter()
@@ -129,8 +141,8 @@ const TableTemuan = () => {
   const [loadingPetugas, setLoadingPetugas] = useState(false)
 
   // State Filter Utama UI
-  const [tanggalAwal, setTanggalAwal] = useState(format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'))
-  const [tanggalAkhir, setTanggalAkhir] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfWeek(new Date(), { weekStartsOn: 1 }))
+  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(new Date())
   const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>({ id_cabang: '', nama_cabang: 'Semua' })
   const [selectedLokasi, setSelectedLokasi] = useState<LokasiOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
   const [selectedPetugas, setSelectedPetugas] = useState<PetugasOption | null>({ id_pegawai: '', nama_lengkap: 'Semua' })
@@ -287,8 +299,8 @@ const TableTemuan = () => {
   }
 
   const handleResetFilter = () => {
-    const defaultTanggalAwal = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
-    const defaultTanggalAkhir = format(new Date(), 'yyyy-MM-dd')
+    const defaultTanggalAwal = startOfWeek(new Date(), { weekStartsOn: 1 })
+    const defaultTanggalAkhir = new Date()
     setTanggalAwal(defaultTanggalAwal)
     setTanggalAkhir(defaultTanggalAkhir)
     setSelectedCabang(listCabang.find(s => s.id_cabang === '') || null)
@@ -302,8 +314,8 @@ const TableTemuan = () => {
       id_cabang: '',
       id_lokasi: '',
       id_petugas: '',
-      tanggal_awal: defaultTanggalAwal,
-      tanggal_akhir: defaultTanggalAkhir,
+      tanggal_awal: format(defaultTanggalAwal, 'yyyy-MM-dd'),
+      tanggal_akhir: format(defaultTanggalAkhir, 'yyyy-MM-dd'),
       q: ''
     })
   }
@@ -466,26 +478,30 @@ const TableTemuan = () => {
           </Grid>
           <Grid container spacing={4} sx={{ mb: 4 }}>
             <Grid size={{ xs: 12, sm: 3 }}>
-              <TextField
-                fullWidth
-                label='Tanggal Awal'
-                type='date'
-                size='small'
-                value={tanggalAwal}
-                onChange={e => setTanggalAwal(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true } }}
+              <AppReactDatepicker
+                selected={tanggalAwal}
+                onChange={(date: Date | null) => setTanggalAwal(date)}
+                placeholderText='MM/DD/YYYY'
+                showMonthDropdown
+                showYearDropdown
+                scrollableYearDropdown
+                maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
+                dropdownMode='select'
+                customInput={<PickersComponent label="Tanggal Awal" />}
               />
             </Grid>
 
             <Grid size={{ xs: 12, sm: 3 }}>
-              <TextField
-                fullWidth
-                label='Tanggal Akhir'
-                type='date'
-                size='small'
-                value={tanggalAkhir}
-                onChange={e => setTanggalAkhir(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true } }}
+              <AppReactDatepicker
+                selected={tanggalAkhir}
+                onChange={(date: Date | null) => setTanggalAkhir(date)}
+                placeholderText='MM/DD/YYYY'
+                showMonthDropdown
+                showYearDropdown
+                scrollableYearDropdown
+                maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
+                dropdownMode='select'
+                customInput={<PickersComponent label="Tanggal Akhir" />}
               />
             </Grid>
           </Grid>

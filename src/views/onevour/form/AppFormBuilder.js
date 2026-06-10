@@ -1398,19 +1398,21 @@ const selectField = form => {
                 }}
               />
             )}
-            renderOption={(props, option) => (
-              <Box
-                key={option.value}
-                component='li'
-                {...props}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  whiteSpace: 'normal', // ✅ allow wrapping
-                  wordBreak: 'break-word', // ✅ break long words if needed
-                  lineHeight: 1.4 // nicer spacing for wrapped text
-                }}
-              >
+            renderOption={(props, option) => {
+              const { key, ...optionProps } = props
+              return (
+                <Box
+                  key={key}
+                  component='li'
+                  {...optionProps}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    whiteSpace: 'normal', // ✅ allow wrapping
+                    wordBreak: 'break-word', // ✅ break long words if needed
+                    lineHeight: 1.4 // nicer spacing for wrapped text
+                  }}
+                >
                 {option.icon && (
                   <i className={option.icon} style={{ marginRight: 8, flexShrink: 0, width: 24, height: 24 }} />
                 )}
@@ -1418,7 +1420,8 @@ const selectField = form => {
                   {option.html ? option.htmlLabel : option.label}
                 </Box>
               </Box>
-            )}
+              )
+            }}
             disabled={props.readOnly}
           />
         )
