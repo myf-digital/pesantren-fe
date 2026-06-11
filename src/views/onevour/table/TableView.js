@@ -9,14 +9,16 @@ import TableCell from '@mui/material/TableCell'
 import TableBody from '@mui/material/TableBody'
 import TablePagination from '@mui/material/TablePagination'
 import TableSortLabel from '@mui/material/TableSortLabel'
+import useMediaQuery from '@mui/material/useMediaQuery'
+import { useTheme } from '@mui/material/styles'
 
-import { useIsMobile } from '@core/hooks/useIsMobile'
 import { getNestedValue } from './TableViewBuilder'
 
 const TableView = ({ model, changeSort, ...res }) => {
   const [order, setOrder] = useState('asc') // "asc" | "desc"
   const [orderBy, setOrderBy] = useState('') // field name
-  const isMobile = useIsMobile(1000)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   useEffect(() => {
     if (changeSort) {

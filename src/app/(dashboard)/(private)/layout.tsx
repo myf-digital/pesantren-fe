@@ -24,7 +24,7 @@ import AuthGuard from '@/hocs/AuthGuard'
 import { getMode, getSystemMode } from '@core/utils/serverHelpers'
 import MobileBottomNav from '@/components/layout/vertical/MobileBottomNav'
 
-const Layout = async (props: ChildrenType ) => {
+const Layout = async (props: ChildrenType) => {
   const { children } = props
 
   // Vars
@@ -34,20 +34,16 @@ const Layout = async (props: ChildrenType ) => {
 
   return (
     <Providers direction={direction}>
-      <AuthGuard >
+      <AuthGuard>
         <LayoutWrapper
           systemMode={systemMode}
           verticalLayout={
-            <VerticalLayout
-              navigation={<Navigation  mode={mode} />}
-              navbar={<Navbar />}
-              footer={<VerticalFooter />}
-            >
+            <VerticalLayout navigation={<Navigation mode={mode} />} navbar={<Navbar />} footer={<VerticalFooter />}>
               {children}
             </VerticalLayout>
           }
           horizontalLayout={
-            <HorizontalLayout header={<Header  />} footer={<HorizontalFooter />}>
+            <HorizontalLayout header={<Header />} footer={<HorizontalFooter />}>
               {children}
             </HorizontalLayout>
           }

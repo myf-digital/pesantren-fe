@@ -260,7 +260,7 @@ export function formColumnSingleDetailField(state, o, i) {
   if ('space' === o?.type) {
     return (
       <Fragment>
-        <Grid item size={{ xs: 12, sm: 6 }} key={index} />
+        <Grid size={{ xs: 12, sm: 6 }} key={index} />
       </Fragment>
     )
   }
@@ -300,7 +300,7 @@ export function formColumnDetailField(form) {
 
   if ('submit' === props.type) {
     return (
-      <Grid item size={12} key={index}>
+      <Grid size={12} key={index}>
         <div className='demo-space-x'>
           <Button size='medium' type='submit' variant='contained' disabled={props.disabled}>
             {props?.loading ? (
@@ -325,7 +325,7 @@ export function formColumnDetailField(form) {
 
   if ('button' === props.type) {
     return (
-      <Grid item size={12} key={index}>
+      <Grid size={12} key={index}>
         <div className='demo-space-x'>
           {props.print ? (
             <Button
@@ -366,7 +366,7 @@ export function formColumnDetailField(form) {
 
   if ('approve' === props.type) {
     return (
-      <Grid item size={12} key={index}>
+      <Grid size={12} key={index}>
         <div className='demo-space-x'>
           {props.print ? (
             <Button
@@ -405,7 +405,7 @@ export function formColumnDetailField(form) {
 
   if ('approve-reject' === props.type) {
     return (
-      <Grid item size={12} key={index}>
+      <Grid size={12} key={index}>
         <div className='demo-space-x'>
           {props.print ? (
             <>
@@ -457,7 +457,7 @@ export function formColumnDetailField(form) {
 
   if ('check' === props.type) {
     return (
-      <Grid item size={12} key={index}>
+      <Grid size={12} key={index}>
         <div className='demo-space-x'>
           {props.print ? (
             <>
@@ -498,7 +498,7 @@ export function formColumnDetailField(form) {
 
   if ('paid-unpaid' === props.type) {
     return (
-      <Grid item size={12} key={index}>
+      <Grid size={12} key={index}>
         <div className='demo-space-x'>
           {props.print ? (
             <>
@@ -568,7 +568,7 @@ export function formColumnDetailField(form) {
 
   if ('text' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormControl fullWidth size='small'>
           {textField(form)}
         </FormControl>
@@ -578,7 +578,7 @@ export function formColumnDetailField(form) {
 
   if ('password' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormControl fullWidth size='small'>
           {textField(form)}
         </FormControl>
@@ -588,7 +588,7 @@ export function formColumnDetailField(form) {
 
   if ('checkbox' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormControl fullWidth size='small'>
           {checkboxField(form)}
         </FormControl>
@@ -598,7 +598,7 @@ export function formColumnDetailField(form) {
 
   if ('numeral' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormControl fullWidth size='small'>
           {numeralField(form)}
         </FormControl>
@@ -608,7 +608,7 @@ export function formColumnDetailField(form) {
 
   if ('textarea' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormControl fullWidth size='small'>
           {textareaField(form)}
         </FormControl>
@@ -618,7 +618,7 @@ export function formColumnDetailField(form) {
 
   if ('select' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormControl fullWidth size='small'>
           {selectField(form)}
         </FormControl>
@@ -628,7 +628,7 @@ export function formColumnDetailField(form) {
 
   if ('select-multi' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormControl fullWidth size='small'>
           {selectMultiField(form)}
         </FormControl>
@@ -638,7 +638,7 @@ export function formColumnDetailField(form) {
 
   if ('date' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: props?.options?.grid | 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: props?.options?.grid | 6 }} key={index}>
         <FormControl fullWidth size='small'>
           {selectDate(form)}
         </FormControl>
@@ -648,7 +648,7 @@ export function formColumnDetailField(form) {
 
   if ('date_custom' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: props?.options?.grid | 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: props?.options?.grid | 6 }} key={index}>
         <FormControl fullWidth size='small'>
           {selectDateCustom(form)}
         </FormControl>
@@ -658,7 +658,7 @@ export function formColumnDetailField(form) {
 
   if ('time' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: props?.options?.grid | 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: props?.options?.grid | 6 }} key={index}>
         <FormControl fullWidth size='small'>
           {selectTime(form)}
         </FormControl>
@@ -668,11 +668,11 @@ export function formColumnDetailField(form) {
 
   if ('separator' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: 12 }} key={index}>
-        <Grid item size={12}>
+      <Grid size={{ xs: 12, sm: 12 }} key={index}>
+        <Grid size={12}>
           <Divider sx={{ mb: '0 !important' }} />
         </Grid>
-        <Grid item size={12} mt={3} mb={3}>
+        <Grid size={12} mt={3} mb={3}>
           <Typography variant='body2' sx={{ fontWeight: 600 }}>
             {props.label}
           </Typography>
@@ -682,7 +682,7 @@ export function formColumnDetailField(form) {
   }
 
   if ('space' === props.type) {
-    return <Grid item size={{ xs: 12, sm: 6 }} key={index} />
+    return <Grid size={{ xs: 12, sm: 6 }} key={index} />
   }
 
   if ('image' === props.type) {
@@ -709,7 +709,7 @@ export function formColumnDetailField(form) {
     const selected = 'img'
 
     return (
-      <Grid item size={{ xs: 12, sm: 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormHelperText id='validation-basic-last-name'>{props.label}</FormHelperText>
         <InputImage
           className='mt-2'
@@ -737,7 +737,7 @@ export function formColumnDetailField(form) {
     const valueFile = session.state[key] ? session.state[key] : ''
 
     return (
-      <Grid item size={{ xs: 12, sm: 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormHelperText id='validation-basic-last-name'>{props.label}</FormHelperText>
         <InputFile
           key={index}
@@ -765,7 +765,7 @@ export function formColumnDetailField(form) {
     const valueMap = session.state[key] ? session.state[key] : ''
 
     return (
-      <Grid item size={{ xs: 12, sm: 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormHelperText id='validation-basic-last-name'>{props.label}</FormHelperText>
         <MapGoogle
           key={index}
@@ -783,7 +783,7 @@ export function formColumnDetailField(form) {
 
   if ('editor' === props.type) {
     return (
-      <Grid item size={{ xs: 12, sm: 12 }} key={index}>
+      <Grid size={{ xs: 12, sm: 12 }} key={index}>
         <FormControl fullWidth size='small'>
           {TextFieldEditor(form)}
         </FormControl>
@@ -796,7 +796,7 @@ export function formColumnDetailField(form) {
     const value = session.state[props.key] || ''
 
     return (
-      <Grid item size={{ xs: 12, sm: 6 }} key={index}>
+      <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormControl fullWidth size='small'>
           <TextField
             size='small'
@@ -826,7 +826,7 @@ export function formColumnDetailField(form) {
 
   if ('custom' === props.type) {
     return (
-      <Grid item size={{ xs: 12 }} key={index}>
+      <Grid size={{ xs: 12 }} key={index}>
         {typeof props.render === 'function' ? props.render() : null}
       </Grid>
     )
@@ -896,7 +896,7 @@ const formColumnDetailSingleField = form => {
     const selected = 'img'
 
     return (
-      <Grid item size={{ xs: 12, sm: 6 }}>
+      <Grid size={{ xs: 12, sm: 6 }}>
         <FormHelperText id='validation-basic-last-name'>{props.label}</FormHelperText>
         <InputImage
           data={imageData}
@@ -916,7 +916,7 @@ const formColumnDetailSingleField = form => {
 
   if ('custom' === props.type) {
     return (
-      <Grid item size={{ xs: 12 }} key={index}>
+      <Grid size={{ xs: 12 }} key={index}>
         {typeof props.render === 'function' ? props.render() : null}
       </Grid>
     )
@@ -1003,10 +1003,10 @@ const textField = form => {
             {...(errors[props.key] && { helperText: errors[props.key].message })}
             slotProps={{
               input: {
-                inputProps: {
-                  readOnly: props.readOnly,
-                  inputRef: props.ref
-                },
+                inputRef: props.ref,
+                  inputProps: {
+                    readOnly: props.readOnly
+                  },
                 startAdornment: props.startAdornment ? (
                   <InputAdornment position='start'>{props.startAdornment}</InputAdornment>
                 ) : null,
@@ -1400,10 +1400,10 @@ const selectField = form => {
                 helperText={errors[props.key]?.message}
                 placeholder={props.placeholder}
                 slotProps={{
+                  inputRef: props.ref,
                   htmlInput: {
                     ...params.inputProps,
-                    autoComplete: 'new-password', // disable autocomplete and autofill,
-                    inputRef: props.ref
+                    autoComplete: 'new-password',
                   },
 
                   inputLabel: {
@@ -1412,19 +1412,21 @@ const selectField = form => {
                 }}
               />
             )}
-            renderOption={(props, option) => (
-              <Box
-                key={option.value}
-                component='li'
-                {...props}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  whiteSpace: 'normal', // ✅ allow wrapping
-                  wordBreak: 'break-word', // ✅ break long words if needed
-                  lineHeight: 1.4 // nicer spacing for wrapped text
-                }}
-              >
+            renderOption={(props, option) => {
+              const { key, ...optionProps } = props
+              return (
+                <Box
+                  key={key}
+                  component='li'
+                  {...optionProps}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    whiteSpace: 'normal', // ✅ allow wrapping
+                    wordBreak: 'break-word', // ✅ break long words if needed
+                    lineHeight: 1.4 // nicer spacing for wrapped text
+                  }}
+                >
                 {option.icon && (
                   <i className={option.icon} style={{ marginRight: 8, flexShrink: 0, width: 24, height: 24 }} />
                 )}
@@ -1432,7 +1434,8 @@ const selectField = form => {
                   {option.html ? option.htmlLabel : option.label}
                 </Box>
               </Box>
-            )}
+              )
+            }}
             disabled={props.readOnly}
           />
         )
@@ -1597,10 +1600,10 @@ const selectDate = form => {
                 }
                 slotProps={{
                   input: {
-                    inputProps: {
-                      readOnly: props.readOnly,
-                      inputRef: props.ref
-                    }
+                    inputRef: props.ref,
+                  inputProps: {
+                    readOnly: props.readOnly
+                  }
                   },
 
                   inputLabel: {
@@ -1743,9 +1746,9 @@ const selectTime = form => {
               helperText={errors[props.key]?.message}
               slotProps={{
                 input: {
+                  inputRef: props.ref,
                   inputProps: {
-                    readOnly: props.readOnly,
-                    inputRef: props.ref
+                    readOnly: props.readOnly
                   }
                 },
 
@@ -1805,10 +1808,10 @@ export function textareaField(form) {
             onClick={props?.options?.onClick}
             slotProps={{
               input: {
-                inputProps: {
-                  readOnly: props.readOnly,
-                  inputRef: props.ref
-                }
+                inputRef: props.ref,
+                  inputProps: {
+                    readOnly: props.readOnly
+                  }
               },
 
               inputLabel: {

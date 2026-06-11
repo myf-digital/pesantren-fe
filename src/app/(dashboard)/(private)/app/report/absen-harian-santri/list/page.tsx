@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { forwardRef, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -19,7 +19,11 @@ import {
   InputLabel,
   Select,
   Autocomplete,
-  CircularProgress
+  CircularProgress,
+  useTheme,
+  useMediaQuery,
+  Box,
+  Typography
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -39,7 +43,8 @@ import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
 import { useCan } from '@/hooks/useCan'
-import { format } from 'date-fns'
+import { format, startOfWeek } from 'date-fns'
+import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
 interface ShiftOption {
   id_shift: string
@@ -55,20 +60,39 @@ interface KamarOption {
 const RowAction = ({ row }: { row: any }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [openConfirm, setOpenConfirm] = useState(false)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
-  return (
-    <TableCell size='small' sx={{ borderBottom: 0 }}>
+  const content = (
+    <>
       <IconButton size='small' onClick={e => setAnchorEl(e.currentTarget)}>
         <i className='tabler-dots-vertical' />
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <MenuItem component={Link} href={`/app/report/absen-harian-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_lokasi_kamar=${row.id_lokasi_kamar}&id_shift_presensi=${row.id_shift_presensi}&nama_shift=${row.shiftPresensi?.nama_shift || ''}&nama_lokasi=${row.lokasiKamar?.nama_lokasi || ''}`}>
+        <MenuItem
+          component={Link}
+          href={`/app/report/absen-harian-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_lokasi_kamar=${row.id_lokasi_kamar}&id_shift_presensi=${row.id_shift_presensi}&nama_shift=${row.shiftPresensi?.nama_shift || ''}&nama_lokasi=${row.lokasiKamar?.nama_lokasi || ''}`}
+        >
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View
         </MenuItem>
       </Menu>
+    </>
+  )
+
+  if (isMobile) {
+    return <Box sx={{ display: 'inline-block' }}>{content}</Box>
+  }
+
+  return (
+    <TableCell size='small' sx={{ borderBottom: 0 }}>
+      {content}
     </TableCell>
   )
 }
+
+const PickersComponent = forwardRef(({ ...props }: any, ref) => {
+  return <TextField inputRef={ref} fullWidth size='small' {...props} />
+})
 
 const AbsenHarianSantriList = () => {
   const router = useRouter()
@@ -85,7 +109,8 @@ const AbsenHarianSantriList = () => {
   const [loadingKamar, setLoadingKamar] = useState(false)
 
   // State Filter Utama UI
-  const [tanggal, setTanggal] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfWeek(new Date(), { weekStartsOn: 1 }))
+  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(new Date())
   const [selectedShift, setSelectedShift] = useState<ShiftOption | null>({ id_shift: '', nama_shift: 'Semua' })
   const [selectedKamar, setSelectedKamar] = useState<KamarOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
   const [status, setStatus] = useState('Semua')
@@ -93,7 +118,7 @@ const AbsenHarianSantriList = () => {
 
   // State Snapshot Filter Sah (Mencegah Auto Fetch)
   const [currentFilters, setCurrentFilters] = useState<any>({
-    tanggal: format(new Date(), 'yyyy-MM-dd'),
+    tanggal: new Date(),
     idShift: '',
     idLokasi: '',
     status: 'Semua',
@@ -153,7 +178,20 @@ const AbsenHarianSantriList = () => {
         fetchAbsenSantriPage({
           page: currentPage,
           perPage: currentPerPage,
-          tanggal: filters.tanggal,
+          tanggal_awal: filters.tanggal_awal
+            ? filters.tanggal_awal instanceof Date
+              ? format(filters.tanggal_awal, 'yyyy-MM-dd')
+              : filters.tanggal_awal
+            : tanggalAwal
+              ? format(tanggalAwal, 'yyyy-MM-dd')
+              : '',
+          tanggal_akhir: filters.tanggal_akhir
+            ? filters.tanggal_akhir instanceof Date
+              ? format(filters.tanggal_akhir, 'yyyy-MM-dd')
+              : filters.tanggal_akhir
+            : tanggalAkhir
+              ? format(tanggalAkhir, 'yyyy-MM-dd')
+              : '',
           id_shift_presensi: filters.idShift || undefined,
           id_lokasi_kamar: filters.idLokasi || undefined,
           status: filters.status !== 'Semua' ? filters.status : undefined,
@@ -161,7 +199,7 @@ const AbsenHarianSantriList = () => {
         })
       )
     },
-    [dispatch]
+    [dispatch, tanggalAwal, tanggalAkhir]
   )
 
   // Efek pagination halaman
@@ -174,7 +212,8 @@ const AbsenHarianSantriList = () => {
   // Handler Kirim Filter Utama via Tombol Cari / Enter
   const handleSearchSubmit = () => {
     const filters = {
-      tanggal,
+      tanggal_awal: tanggalAwal || '',
+      tanggal_akhir: tanggalAkhir || '',
       idShift: selectedShift?.id_shift || '',
       idLokasi: selectedKamar?.id_lokasi || '',
       status,
@@ -188,21 +227,24 @@ const AbsenHarianSantriList = () => {
 
   // Handler Reset Filter
   const handleResetFilter = () => {
-    const defaultTanggal = format(new Date(), 'yyyy-MM-dd')
+    const defaultTanggalAwal = startOfWeek(new Date(), { weekStartsOn: 1 })
+    const defaultTanggalAkhir = new Date()
     const filters = {
-      tanggal: defaultTanggal,
+      tanggal_awal: format(defaultTanggalAwal, 'yyyy-MM-dd'),
+      tanggal_akhir: format(defaultTanggalAkhir, 'yyyy-MM-dd'),
       idShift: '',
       idLokasi: '',
       status: 'Semua',
       searchTyped: ''
     }
 
-    setTanggal(defaultTanggal)
+    setTanggalAwal(defaultTanggalAwal)
+    setTanggalAkhir(defaultTanggalAkhir)
     setSelectedShift(listShift.find(s => s.id_shift === '') || null)
     setSelectedKamar(listKamar.find(k => k.id_lokasi === '') || null)
     setStatus('Semua')
     setSearchTyped('')
-    
+
     setPage(1)
     setIsFilterApplied(true)
     setCurrentFilters(filters)
@@ -215,25 +257,6 @@ const AbsenHarianSantriList = () => {
     }
   }
 
-  // ==========================================
-  // LOGIK VALIDASI KETAT MULAI PRESENSI
-  // ==========================================
-  const validatePresensiInput = (): boolean => {
-    if (!tanggal) {
-      toast.warning('Silakan lengkapi data terlebih dahulu: Tanggal belum diisi')
-      return false
-    }
-    if (!selectedShift || !selectedShift.id_shift || selectedShift.nama_shift === 'Semua') {
-      toast.warning('Silakan lengkapi data terlebih dahulu: Shift presensi harus dipilih secara spesifik')
-      return false
-    }
-    if (!selectedKamar || !selectedKamar.id_lokasi || selectedKamar.nama_lokasi === 'Semua') {
-      toast.warning('Silakan lengkapi data terlebih dahulu: Lokasi / Kamar harus dipilih secara spesifik')
-      return false
-    }
-    return true
-  }
-
   const onExport = async () => {
     if (!isFilterApplied || !currentFilters) {
       toast.warning('Silakan lakukan pencarian data terlebih dahulu sebelum export')
@@ -243,7 +266,8 @@ const AbsenHarianSantriList = () => {
       setLoadingExport(true)
       const res = await dispatch(
         postAbsenExport({
-          tanggal: currentFilters.tanggal,
+          tanggal_awal: currentFilters.tanggal_awal,
+          tanggal_akhir: currentFilters.tanggal_akhir,
           id_shift_presensi: currentFilters.idShift || undefined,
           id_lokasi_kamar: currentFilters.idLokasi || undefined,
           status: currentFilters.status !== 'Semua' ? currentFilters.status : undefined,
@@ -280,9 +304,8 @@ const AbsenHarianSantriList = () => {
         tableColumn('LOKASI', 'lokasi'),
         tableColumn('PETUGAS', 'petugas'),
         tableColumn('PRESENSI', 'presensi'),
-        tableColumn('NAMA SANTRI', 'santri.fullname'),
-        tableColumn('NIS', 'santri.nis'),
-        tableColumn('KAMAR', 'lokasiKamar.nama_lokasi'),
+        tableColumn('NAMA SANTRI', 'santri'),
+        tableColumn('TANGGAL', 'tanggal'),
         tableColumn('WAKTU', 'waktu_absen'),
         tableColumn('STATUS', 'status_display')
       ],
@@ -290,7 +313,8 @@ const AbsenHarianSantriList = () => {
         ...row,
         lokasi: row.lokasiKamar?.nama_lokasi || '-',
         presensi: row.shiftPresensi?.nama_shift || '-',
-        petugas: row.petugas?.nama_lengkap || '-',
+        petugas: row.petugas?.nama_lengkap || row.resource?.full_name || '-',
+        tanggal: row.tanggal ? format(new Date(row.tanggal), 'dd/MM/yyyy') : '-',
         status_display: (
           <Chip
             label={row.status_kehadiran}
@@ -306,6 +330,52 @@ const AbsenHarianSantriList = () => {
             }
             variant='tonal'
           />
+        ),
+        santri: (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+              minWidth: 0,
+              width: '100%'
+            }}
+          >
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                variant='body2'
+                sx={{
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+                title={row?.santri?.fullname}
+              >
+                {row?.santri?.fullname}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start', mt: 0.5 }}>
+                <Typography
+                  variant='caption'
+                  sx={{
+                    px: 1,
+                    py: 0.2,
+                    borderRadius: 1,
+                    bgcolor: 'grey.100',
+                    color: 'text.secondary',
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '100%'
+                  }}
+                >
+                  NIS: {row?.santri?.nis || '-'}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
         )
       })),
       count: tableCount,
@@ -325,14 +395,30 @@ const AbsenHarianSantriList = () => {
           {/* PANEL FILTER DENGAN SELECTABLE SEARCH AUTOCOMPLETE */}
           <Grid container spacing={4} sx={{ mb: 4 }}>
             <Grid size={{ xs: 12, sm: 2.4 }}>
-              <TextField
-                fullWidth
-                label='Tanggal'
-                type='date'
-                size='small'
-                value={tanggal}
-                onChange={e => setTanggal(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true } }}
+              <AppReactDatepicker
+                selected={tanggalAwal}
+                onChange={(date: Date | null) => setTanggalAwal(date)}
+                placeholderText='MM/DD/YYYY'
+                showMonthDropdown
+                showYearDropdown
+                scrollableYearDropdown
+                maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
+                dropdownMode='select'
+                customInput={<PickersComponent label='Tanggal Awal' />}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 2.4 }}>
+              <AppReactDatepicker
+                selected={tanggalAkhir}
+                onChange={(date: Date | null) => setTanggalAkhir(date)}
+                placeholderText='MM/DD/YYYY'
+                showMonthDropdown
+                showYearDropdown
+                scrollableYearDropdown
+                maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
+                dropdownMode='select'
+                customInput={<PickersComponent label='Tanggal Akhir' />}
               />
             </Grid>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, forwardRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -25,7 +25,9 @@ import {
   DialogContent,
   DialogActions,
   Autocomplete,
-  CircularProgress
+  CircularProgress,
+  useTheme,
+  useMediaQuery
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -47,6 +49,7 @@ import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
 import { useCan } from '@/hooks/useCan'
 import { format } from 'date-fns'
+import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
 interface ShiftOption {
   id_shift: string
@@ -62,17 +65,25 @@ interface KamarOption {
 const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: string) => void }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [openConfirm, setOpenConfirm] = useState(false)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
-  return (
-    <TableCell size='small' sx={{ borderBottom: 0 }}>
+  const content = (
+    <>
       <IconButton size='small' onClick={e => setAnchorEl(e.currentTarget)}>
         <i className='tabler-dots-vertical' />
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <MenuItem component={Link} href={`/app/absen-harian-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_lokasi_kamar=${row.id_lokasi_kamar}&id_shift_presensi=${row.id_shift_presensi}&nama_shift=${row.shiftPresensi?.nama_shift || ''}&nama_lokasi=${row.lokasiKamar?.nama_lokasi || ''}`}>
+        <MenuItem
+          component={Link}
+          href={`/app/absen-harian-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_lokasi_kamar=${row.id_lokasi_kamar}&id_shift_presensi=${row.id_shift_presensi}&nama_shift=${row.shiftPresensi?.nama_shift || ''}&nama_lokasi=${row.lokasiKamar?.nama_lokasi || ''}`}
+        >
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View
         </MenuItem>
-        <MenuItem component={Link} href={`/app/absen-harian-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_lokasi_kamar=${row.id_lokasi_kamar}&id_shift_presensi=${row.id_shift_presensi}&nama_shift=${row.shiftPresensi?.nama_shift || ''}&nama_lokasi=${row.lokasiKamar?.nama_lokasi || ''}`}>
+        <MenuItem
+          component={Link}
+          href={`/app/absen-harian-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_lokasi_kamar=${row.id_lokasi_kamar}&id_shift_presensi=${row.id_shift_presensi}&nama_shift=${row.shiftPresensi?.nama_shift || ''}&nama_lokasi=${row.lokasiKamar?.nama_lokasi || ''}`}
+        >
           <i className='tabler-edit' style={{ marginRight: 8 }} /> Edit
         </MenuItem>
         <MenuItem onClick={() => setOpenConfirm(true)} sx={{ color: 'error.main' }}>
@@ -90,9 +101,23 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
         }}
         handleClose={() => setOpenConfirm(false)}
       />
+    </>
+  )
+
+  if (isMobile) {
+    return <Box sx={{ display: 'inline-block' }}>{content}</Box>
+  }
+
+  return (
+    <TableCell size='small' sx={{ borderBottom: 0 }}>
+      {content}
     </TableCell>
   )
 }
+
+const PickersComponent = forwardRef(({ ...props }: any, ref) => {
+  return <TextField inputRef={ref} fullWidth size='small' {...props} label='Tanggal' />
+})
 
 const AbsenHarianSantriList = () => {
   const router = useRouter()
@@ -111,7 +136,7 @@ const AbsenHarianSantriList = () => {
   const [loadingKamar, setLoadingKamar] = useState(false)
 
   // State Filter Utama UI
-  const [tanggal, setTanggal] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [tanggal, setTanggal] = useState<Date | null>(new Date())
   const [selectedShift, setSelectedShift] = useState<ShiftOption | null>({ id_shift: '', nama_shift: 'Semua' })
   const [selectedKamar, setSelectedKamar] = useState<KamarOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
   const [status, setStatus] = useState('Semua')
@@ -208,7 +233,7 @@ const AbsenHarianSantriList = () => {
   // Handler Kirim Filter Utama via Tombol Cari / Enter
   const handleSearchSubmit = () => {
     const filters = {
-      tanggal,
+      tanggal: formatTanggal(tanggal),
       idShift: selectedShift?.id_shift || '',
       idLokasi: selectedKamar?.id_lokasi || '',
       status,
@@ -222,7 +247,7 @@ const AbsenHarianSantriList = () => {
 
   // Handler Reset Filter
   const handleResetFilter = () => {
-    setTanggal(format(new Date(), 'yyyy-MM-dd'))
+    setTanggal(new Date())
     setSelectedShift(listShift.find(s => s.id_shift === '') || null)
     setSelectedKamar(listKamar.find(k => k.id_lokasi === '') || null)
     setStatus('Semua')
@@ -271,8 +296,11 @@ const AbsenHarianSantriList = () => {
 
     const idKmr = selectedKamar?.id_lokasi
     const idSft = selectedShift?.id_shift
+    const tgl = format(tanggal!, 'yyyy-MM-dd')
+    const namaKmr = selectedKamar?.nama_lokasi || ''
+    const namaSft = selectedShift?.nama_shift || ''
     router.push(
-      `/app/absen-harian-santri/form?mode=scan_qr&tanggal=${tanggal}&id_lokasi_kamar=${idKmr}&id_shift_presensi=${idSft}&nama_shift=${selectedShift?.nama_shift}&nama_lokasi=${selectedKamar?.nama_lokasi}`
+      `/app/absen-harian-santri/form?mode=scan_qr&tanggal=${tgl}&id_lokasi_kamar=${idKmr}&id_shift_presensi=${idSft}&nama_shift=${namaSft}&nama_lokasi=${namaKmr}`
     )
   }
 
@@ -295,7 +323,7 @@ const AbsenHarianSantriList = () => {
     const idKmr = selectedKamar?.id_lokasi
     const activeShift = store.currentShift?.id_shift || selectedShift?.id_shift
     router.push(
-      `/app/absen-harian-santri/form?mode=kolektif&tanggal=${tanggal}&id_lokasi_kamar=${idKmr}&id_shift_presensi=${activeShift}&nama_shift=${selectedShift?.nama_shift}&nama_lokasi=${selectedKamar?.nama_lokasi}`
+      `/app/absen-harian-santri/form?mode=kolektif&tanggal=${tanggal ? format(tanggal, 'yyyy-MM-dd') : ''}&id_lokasi_kamar=${idKmr}&id_shift_presensi=${activeShift}&nama_shift=${selectedShift?.nama_shift}&nama_lokasi=${selectedKamar?.nama_lokasi}`
     )
   }
 
@@ -333,6 +361,10 @@ const AbsenHarianSantriList = () => {
     return <RowAction row={row} onDeleteSuccess={id => dispatch(deleteAbsenSantri(id))} />
   }
 
+  const formatTanggal = (tanggal: Date | null, formatStr: string = 'yyyy-MM-dd') => {
+    return tanggal ? format(new Date(tanggal), formatStr) : ''
+  }
+
   const buildTable = () => {
     const { dataPage } = store
     const tableValues = isFilterApplied ? dataPage?.values || [] : []
@@ -344,12 +376,14 @@ const AbsenHarianSantriList = () => {
         tableColumn('OPTION', 'act-x', 'left', renderOption as any),
         tableColumn('NAMA SANTRI', 'santri.fullname'),
         tableColumn('NIS', 'santri.nis'),
+        tableColumn('PETUGAS', 'petugas'),
         tableColumn('KAMAR', 'lokasiKamar.nama_lokasi'),
         tableColumn('WAKTU', 'waktu_absen'),
         tableColumn('STATUS', 'status_display')
       ],
       values: tableValues.map((row: any) => ({
         ...row,
+        petugas: row.petugas?.nama_lengkap || row.resource?.full_name || '-',
         status_display: (
           <Chip
             label={row.status_kehadiran}
@@ -384,14 +418,16 @@ const AbsenHarianSantriList = () => {
           {/* PANEL FILTER DENGAN SELECTABLE SEARCH AUTOCOMPLETE */}
           <Grid container spacing={4} sx={{ mb: 4 }}>
             <Grid size={{ xs: 12, sm: 2.4 }}>
-              <TextField
-                fullWidth
-                label='Tanggal'
-                type='date'
-                size='small'
-                value={tanggal}
-                onChange={e => setTanggal(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true } }}
+              <AppReactDatepicker
+                selected={tanggal}
+                onChange={(date: Date | null) => setTanggal(date)}
+                placeholderText='MM/DD/YYYY'
+                showMonthDropdown
+                showYearDropdown
+                scrollableYearDropdown
+                maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
+                dropdownMode='select'
+                customInput={<PickersComponent />}
               />
             </Grid>
 
@@ -568,7 +604,10 @@ const AbsenHarianSantriList = () => {
 
       {/* POPUP MODAL KONFIRMASI OTOMATIS */}
       <Dialog open={openModalKonfirmasi} onClose={() => setOpenModalKonfirmasi(false)} maxWidth='xs' fullWidth>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}>
+        <DialogTitle
+          component='div'
+          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}
+        >
           <Typography variant='h6' sx={{ fontWeight: 700 }}>
             Konfirmasi Presensi Hari Ini
           </Typography>
@@ -588,7 +627,7 @@ const AbsenHarianSantriList = () => {
             </Typography>
             <Typography variant='body2'>:</Typography>
             <Typography variant='body2' sx={{ fontWeight: 500 }}>
-              {tanggal} (otomatis)
+              {formatTanggal(tanggal, 'dd/MM/yyyy')} (otomatis)
             </Typography>
 
             <Typography variant='body2' color='text.secondary'>

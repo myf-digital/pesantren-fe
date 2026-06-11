@@ -18,7 +18,9 @@ import {
   MenuItem,
   Box,
   Chip,
-  Tooltip
+  Tooltip,
+  useTheme,
+  useMediaQuery
 } from '@mui/material'
 
 import { toast } from 'react-toastify'
@@ -36,6 +38,8 @@ import DialogDelete from '@views/onevour/components/dialog-delete'
 const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: string) => void }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [openConfirm, setOpenConfirm] = useState(false)
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   const canEdit = useCan('edit')
   const canDelete = useCan('delete')
@@ -43,8 +47,8 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
   const handleOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget)
   const handleClose = () => setAnchorEl(null)
 
-  return (
-    <TableCell size='small' sx={{ borderBottom: 0 }}>
+  const content = (
+    <>
       <IconButton size='small' onClick={handleOpen}>
         <i className='tabler-dots-vertical' />
       </IconButton>
@@ -76,6 +80,16 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
         }}
         handleClose={() => setOpenConfirm(false)}
       />
+    </>
+  )
+    
+  if (isMobile) {
+    return <Box sx={{ display: 'inline-block' }}>{content}</Box>
+  }
+
+  return (
+    <TableCell size='small' sx={{ borderBottom: 0 }}>
+      {content}
     </TableCell>
   )
 }
@@ -203,7 +217,15 @@ const LocationList = () => {
       <Grid size={12}>
         <Card>
           <CardHeader title='Master Data Lokasi' />
-          <Toolbar sx={{ gap: 2, mb: 4, px: '1.5rem !important' }}>
+            <Toolbar
+              sx={{
+                px: '1.5rem !important',
+                minHeight: 'auto',
+                gap: 2,
+                flexWrap: 'wrap',
+                mb: '10px'
+              }}
+            >
             {canCreate && (
               <Tooltip title='Tambah'>
                 <Button
