@@ -12,8 +12,8 @@ import { formatDate } from 'date-fns/format'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchUserById, postUser, postUserUpdate, resetRedux } from '../slice'
-import { fetchOrgUnitPage } from '../../organisasi/slice'
-import { fetchJabatanPage } from '../../jabatan/slice'
+import { fetchRoleAll } from '../../role/slice'
+import { fetchProvinces, fetchRegenciesByProvince } from '../../areas/slice'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
 
@@ -23,70 +23,101 @@ const UserForm = () => {
   const id = searchParams.get('id')
   const view = searchParams.get('view')
   const dispatch = useAppDispatch()
-  const store = useAppSelector(state => state.pegawai)
+  const store = useAppSelector(state => state.user)
 
   const [opt, setOpt] = useState<any>({
-    units: [],
-    jabatans: [],
-    gender: [{ label: 'Laki-laki', value: 'Laki-laki' }, { label: 'Perempuan', value: 'Perempuan' }],
-    status: [{ label: 'Aktif', value: 'Aktif' }, { label: 'Tidak Aktif', value: 'Tidak Aktif' }, { label: 'Pensiun', value: 'Pensiun' }]
+    roles: [],
+    provinces: [],
+    regencies: [],
+    status: [
+      { label: 'Belum Verifikasi', value: 'NV' },
+      { label: 'Aktif', value: 'A' }
+    ]
   })
 
   const [state, setState] = useState<any>({
-    nama_lengkap: '',
-    nik: '',
-    nip: '',
+    username: '',
     email: '',
-    id_orgunit: null,
-    id_jabatan: null,
-    jenis_kelamin: null,
-    status_pegawai: { label: 'Aktif', value: 'Aktif' },
-    tanggal_lahir: '',
-    umur: 0
+    password: '',
+    full_name: '',
+    place_of_birth: '',
+    date_of_birth: '',
+    telepon: '',
+    image_foto: '',
+    status: { label: 'Belum Verifikasi', value: 'NV' },
+    role_id: null,
+    province_id: null,
+    regency_id: null
   })
 
-  const { control, handleSubmit, formState: { errors }, reset } = useForm({ values: state })
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset
+  } = useForm({ values: state })
+
+  const loadRegencies = async (provId: string) => {
+    try {
+      const res = await dispatch(fetchRegenciesByProvince(provId)).unwrap()
+      setOpt((prev: any) => ({
+        ...prev,
+        regencies: (res?.data || []).map((i: any) => ({ label: i.name, value: i.id }))
+      }))
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   const initForm = useCallback(async () => {
     try {
-      const [resUnit, resJabatan] = await Promise.all([
-        dispatch(fetchOrgUnitPage({ perPage: 1000 })).unwrap(),
-        dispatch(fetchJabatanPage({ perPage: 1000 })).unwrap()
+      const [resRole, resProv] = await Promise.all([
+        dispatch(fetchRoleAll()).unwrap(),
+        dispatch(fetchProvinces()).unwrap()
       ])
 
-      const unitOpts = (resUnit?.data?.values || []).map((i: any) => ({ label: i.nama_orgunit, value: i.id_orgunit }))
-      const jabOpts = (resJabatan?.data?.values || []).map((i: any) => ({ label: i.nama_jabatan, value: i.id_jabatan }))
+      const roleOpts = (resRole?.data || []).map((i: any) => ({ label: i.role_name, value: i.role_id }))
+      const provOpts = (resProv?.data || []).map((i: any) => ({ label: i.name, value: i.id }))
 
-      setOpt((prev: any) => ({ ...prev, units: unitOpts, jabatans: jabOpts }))
+      setOpt((prev: any) => ({ ...prev, roles: roleOpts, provinces: provOpts }))
 
       if (id) {
         const resDetail = await dispatch(fetchUserById(id)).unwrap()
         const d = resDetail?.data
 
         if (d) {
+          if (d.area_province_id) {
+            await loadRegencies(d.area_province_id)
+          }
+
           const formatted = {
             ...d,
-            id_orgunit: unitOpts.find((o: any) => o.value === d.id_orgunit),
-            id_jabatan: jabOpts.find((o: any) => o.value === d.id_jabatan),
-            jenis_kelamin: { label: d.jenis_kelamin, value: d.jenis_kelamin },
-            status_pegawai: { label: d.status_pegawai, value: d.status_pegawai }
+            role_id: d.role ? { label: d.role.role_name, value: d.role.role_id } : null,
+            province_id: d.province ? { label: d.province.name, value: d.province.id } : null,
+            regency_id: d.regency ? { label: d.regency.name, value: d.regency.id } : null,
+            status: opt.status.find((o: any) => o.value === d.status) || { label: 'Belum Verifikasi', value: 'NV' },
+            password: ''
           }
 
           setState(formatted)
           reset(formatted)
         }
       }
-    } catch (err) { toast.error("Gagal memuat referensi data") }
+    } catch (err) {
+      toast.error('Gagal memuat referensi data')
+    }
   }, [id, dispatch, reset])
 
-  useEffect(() => { initForm() }, [initForm])
+  useEffect(() => {
+    initForm()
+  }, [initForm])
 
   useEffect(() => {
     if (store.crud) {
       if (store.crud.status) {
         toast.success(store.crud.message)
         dispatch(resetRedux())
-        router.replace('/app/pegawai/list')
+        router.replace('/app/user/list')
       } else {
         toast.error(store.crud.message)
         dispatch(resetRedux())
@@ -97,38 +128,85 @@ const UserForm = () => {
   const onSubmit = () => {
     const payload = {
       ...state,
-      id_orgunit: state.id_orgunit?.value,
-      id_jabatan: state.id_jabatan?.value,
-      jenis_kelamin: state.jenis_kelamin?.value,
-      status_pegawai: state.status_pegawai?.value,
-      tanggal_lahir: state.tanggal_lahir ? formatDate(state.tanggal_lahir, 'yyyy-MM-dd') : null,
-      tmt: state.tmt ? formatDate(state.tmt, 'yyyy-MM-dd') : null
+      role_id: state.role_id,
+      province_id: state.province_id,
+      regency_id: state.regency_id,
+      status: state.status?.value || 'NV',
+      date_of_birth: state.date_of_birth ? formatDate(new Date(state.date_of_birth), 'yyyy-MM-dd') : null
     }
 
-    id ? dispatch(postUserUpdate({ id, params: payload })) : dispatch(postUser([payload]))
+    id ? dispatch(postUserUpdate({ id, params: payload })) : dispatch(postUser(payload))
   }
 
   const fields = () => [
+    { section: 'Informasi Akun' },
+    field({ type: 'text', key: 'username', label: 'Username', required: true, readOnly: !!view || !!id }),
+    field({ type: 'text', key: 'email', label: 'Email', required: true, readOnly: !!view }),
+    field({
+      type: 'password',
+      key: 'password',
+      label: 'Password',
+      required: !id,
+      readOnly: !!view,
+      placeholder: id ? 'Kosongkan jika tidak ingin mengubah password' : 'Masukkan password baru'
+    }),
+
     { section: 'Informasi Pribadi' },
-    field({ type: 'text', key: 'nama_lengkap', label: 'Nama Lengkap', required: true, readOnly: !!view }),
-    field({ type: 'text', key: 'nik', label: 'NIK', required: true, readOnly: !!view }),
-    field({ type: 'text', key: 'nip', label: 'NIP', readOnly: !!view }),
-    field({ type: 'select', key: 'jenis_kelamin', label: 'Jenis Kelamin', options: { values: opt.gender }, readOnly: !!view }),
-    field({ type: 'date_custom', key: 'tanggal_lahir', label: 'Tanggal Lahir', readOnly: !!view }),
-    field({ type: 'numeral', key: 'umur', label: 'Umur (Otomatis)', readOnly: true }),
+    field({ type: 'text', key: 'full_name', label: 'Nama Lengkap', required: true, readOnly: !!view }),
+    field({ type: 'text', key: 'place_of_birth', label: 'Tempat Lahir', readOnly: !!view }),
+    field({ type: 'date_custom', key: 'date_of_birth', label: 'Tanggal Lahir', readOnly: !!view }),
+    field({ type: 'text', key: 'telepon', label: 'No. Telepon / HP', required: true, readOnly: !!view }),
 
-    { section: 'Kontak & Alamat' },
-    field({ type: 'text', key: 'email', label: 'Email', readOnly: !!view }),
-    field({ type: 'text', key: 'no_hp', label: 'No. HP', readOnly: !!view }),
-    field({ type: 'textarea', key: 'alamat', label: 'Alamat Lengkap', readOnly: !!view }),
+    { section: 'Hak Akses & Alamat' },
+    field({
+      type: 'select',
+      key: 'role_id',
+      label: 'Role / Hak Akses',
+      options: { values: opt.roles },
+      required: true,
+      readOnly: !!view
+    }),
+    field({
+      type: 'select',
+      key: 'status',
+      label: 'Status User',
+      options: { values: opt.status },
+      readOnly: !!view
+    }),
+    field({
+      type: 'select',
+      key: 'province_id',
+      label: 'Provinsi',
+      options: {
+        values: opt.provinces,
+        onChange: (e: any) => {
+          setState((prev: any) => ({
+            ...prev,
+            province_id: e,
+            regency_id: null
+          }))
+          if (e?.value) loadRegencies(e.value)
+        }
+      },
+      readOnly: !!view
+    }),
+    field({
+      type: 'select',
+      key: 'regency_id',
+      label: 'Kabupaten/Kota',
+      options: { values: opt.regencies },
+      readOnly: !state.province_id || !!view
+    }),
+    field({
+      type: 'image',
+      key: 'image_foto',
+      label: 'Foto Profil',
+      placeholder: 'Foto',
+      urlImage: '/uploads/resource/',
+      readOnly: !!view
+    }),
 
-    { section: 'Kepegawaian' },
-    field({ type: 'select', key: 'id_orgunit', label: 'Unit Organisasi', options: { values: opt.units }, required: true, readOnly: !!view }),
-    field({ type: 'select', key: 'id_jabatan', label: 'Jabatan', options: { values: opt.jabatans }, required: true, readOnly: !!view }),
-    field({ type: 'select', key: 'status_pegawai', label: 'Status User', options: { values: opt.status }, readOnly: !!view }),
-    field({ type: 'date_custom', key: 'tmt', label: 'TMT (Terhitung Mulai Tanggal)', readOnly: !!view }),
-
-    fieldBuildSubmit({ onCancel: () => router.push('/app/pegawai/list'), loading: store.loading, disabled: !!view })
+    fieldBuildSubmit({ onCancel: () => router.push('/app/user/list'), loading: store.loading, disabled: !!view })
   ]
 
   return (
