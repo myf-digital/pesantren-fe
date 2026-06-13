@@ -159,6 +159,8 @@ const NotificationDropdown = ({ notifications }: { notifications: NotificationsT
     ).then(res => {
       window.location.href = data.url
     })
+
+    handleClose()
   }
 
   // Remove notification when close icon is clicked
