@@ -29,7 +29,11 @@ const CardStatsVertical = (props: CardStatsVerticalProps) => {
           <Typography color='text.disabled'>{subtitle}</Typography>
           <Typography color='text.primary'>{stats}</Typography>
         </div>
-        <Chip label={chipText} color={chipColor} variant={chipVariant} size='small' />
+        {chipText ? (
+          <Chip label={chipText} color={chipColor} variant={chipVariant} size='small' />
+        ) : (
+          <Chip label='Placeholder' size='small' style={{ visibility: 'hidden' }} />
+        )}
       </CardContent>
     </Card>
   )

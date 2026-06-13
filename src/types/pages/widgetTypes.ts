@@ -71,7 +71,7 @@ export type CardStatsVerticalProps = {
   avatarSize?: number
   avatarSkin?: CustomAvatarProps['skin']
   avatarColor?: ThemeColor
-  chipText: string
+  chipText?: string
   chipColor?: ThemeColor
   chipVariant?: ChipProps['variant']
 }
