@@ -962,7 +962,13 @@ const textField = form => {
             value={valueText}
             label={
               <Box component='span' sx={{ display: 'inline-flex', alignItems: 'center' }}>
-                {props.label}
+                {props.required ? (
+                  <span>
+                    {props.label} <span style={{ color: '#ea5455' }}>*</span>
+                  </span>
+                ) : (
+                  props.label
+                )}
                 {props.tooltip && (
                   <Tooltip title={props.tooltip} placement='top' arrow>
                     <Box component='span' sx={{ display: 'inline-flex', ml: 1, cursor: 'help' }}>
@@ -1381,7 +1387,15 @@ const selectField = form => {
             renderInput={params => (
               <TextField
                 {...params}
-                label={props.label}
+                label={
+                  props.required ? (
+                    <span>
+                      {props.label} <span style={{ color: '#ea5455' }}>*</span>
+                    </span>
+                  ) : (
+                    props.label
+                  )
+                }
                 error={Boolean(errors[props.key])}
                 helperText={errors[props.key]?.message}
                 placeholder={props.placeholder}
@@ -1485,7 +1499,15 @@ const selectMultiField = form => {
             renderInput={params => (
               <TextField
                 {...params}
-                label={props.label}
+                label={
+                  props.required ? (
+                    <span>
+                      {props.label} <span style={{ color: '#ea5455' }}>*</span>
+                    </span>
+                  ) : (
+                    props.label
+                  )
+                }
                 error={Boolean(errors[props.key])}
                 helperText={errors[props.key]?.message}
                 placeholder={props.placeholder}
@@ -1513,45 +1535,43 @@ const selectDate = form => {
 
   const popperPlacement = 'bottom-start'
 
-  if (undefined === props.options || null === props.options) {
-    props.options = {}
-  }
-
-  if (undefined === props.options.values || null === props.options.values) {
-    props.options.values = []
-  }
-
+  // Mengambil value langsung dari state session builder
   const valueTmp = session.state[props.key]
 
-  let selected = valueTmp ? props.options.values.find(e => e.value === valueTmp) : { label: '', value: null }
+  // Pastikan default value berupa objek Date asli atau null, bukan wrapper object agar dibaca pas oleh DatePicker
+  const initialDate = valueTmp ? new Date(valueTmp) : null
 
   return (
     <Controller
       control={control}
       name={props.key}
-      value={selected}
-      defaultValue={null}
+      defaultValue={initialDate}
       rules={{
         validate: value => {
+          // Jika required dan value kosong (null/undefined)
           if (props.required && !value) {
             return `${props.label} wajib diisi`
+          }
+
+          // Validasi tambahan jika tipenya objek Date malformat/invalid
+          if (value && isNaN(new Date(value).getTime())) {
+            return `${props.label} format tanggal tidak valid`
           }
 
           return true
         }
       }}
       render={({ field: { value, onChange } }) => {
-        if (value && value?.value) {
-          selected = value
-        }
+        // Konversi string ke objek Date jika react-hook-form menyimpan dalam bentuk string ISO/Text
+        const dateValue = value ? new Date(value) : null
 
         return (
           <DatePicker
-            selected={value}
+            selected={dateValue} // Menggunakan value murni hasil deteksi Controller
             id='basic-input'
             popperPlacement={popperPlacement}
             onChange={date => {
-              onChange(date)
+              onChange(date) // Memicu react-hook-form untuk mendeteksi perubahan & menjalankan validasi
               updateValueDate(session, props, date)
 
               if (typeof props?.options?.onChange === 'function') {
@@ -1559,7 +1579,7 @@ const selectDate = form => {
               }
             }}
             dateFormat={'dd/MM/yyyy'}
-            placeholderText='Click to select a date'
+            placeholderText={props.placeholder || 'Click to select a date'}
             disabled={props.readOnly}
             portalId={props.portalId}
             minDate={props.minDate}
@@ -1567,7 +1587,17 @@ const selectDate = form => {
               <TextField
                 fullWidth
                 size='small'
-                label={props.label}
+                error={Boolean(errors[props.key])} // Menampilkan outline merah jika error validasi terpicu
+                helperText={errors[props.key]?.message} // Menampilkan pesan error di bawah input text
+                label={
+                  props.required ? (
+                    <span>
+                      {props.label} <span style={{ color: '#ea5455' }}>*</span>
+                    </span>
+                  ) : (
+                    props.label
+                  )
+                }
                 slotProps={{
                   input: {
                     inputRef: props.ref,
@@ -1759,7 +1789,15 @@ export function textareaField(form) {
             rows={4}
             multiline
             {...field}
-            label={props.label}
+            label={
+              props.required ? (
+                <span>
+                  {props.label} <span style={{ color: '#ea5455' }}>*</span>
+                </span>
+              ) : (
+                props.label
+              )
+            }
             error={Boolean(errors[props.key])}
             helperText={errors[props.key]?.message}
             aria-describedby='validation-basic-textarea'
