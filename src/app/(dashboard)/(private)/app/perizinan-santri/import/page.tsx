@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'react-toastify'
 import Button from '@mui/material/Button'
 
@@ -49,6 +49,8 @@ interface Props {
 export default function ImportExcelPerizinanSantriPage() {
   const dispatch = useAppDispatch()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const ub = searchParams.get('ub') || 'kewaliasuhan'
 
   const fileRef = useRef<HTMLInputElement | null>(null)
   const [mode, setMode] = useState<'preview' | 'commit'>('preview')
@@ -61,8 +63,8 @@ export default function ImportExcelPerizinanSantriPage() {
   /** Navigasi kembali ke list riwayat perizinan santri */
   const onCancel = useCallback(() => {
     dispatch(resetRedux())
-    router.replace('/app/perizinan-santri/list')
-  }, [dispatch, router])
+    router.replace(`/app/perizinan-santri/${ub}`)
+  }, [dispatch, router, ub])
 
   const downloadTemplate = async () => {
     try {
@@ -292,7 +294,7 @@ export default function ImportExcelPerizinanSantriPage() {
       <div className='max-w-4xl mx-auto'>
         <div className='mb-6'>
           <Link
-            href='/app/perizinan-santri/list'
+            href={`/app/perizinan-santri/${ub}`}
             className='inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900'
           >
             <i className='tabler-arrow-back-up'></i> Kembali ke Riwayat Perizinan

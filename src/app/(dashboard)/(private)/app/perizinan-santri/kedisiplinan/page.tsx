@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { forwardRef, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 
 import {
@@ -33,8 +33,9 @@ import { fetchPerizinanSantriPage, postPerizinanExport, resetRedux } from '../sl
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import { useCan } from '@/hooks/useCan'
-import { format } from 'date-fns'
+import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { useSession } from 'next-auth/react'
+import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
 // ==========================================
 // KOMPONEN AKSI BARIS TABEL (ROW ACTION)
@@ -85,6 +86,10 @@ const RowAction = ({ row, currentUserRole }: { row: any; currentUserRole: string
   )
 }
 
+const PickersComponent = forwardRef(({ ...props }: any, ref) => {
+  return <TextField inputRef={ref} fullWidth size='small' {...props} />
+})
+
 // ==========================================
 // KOMPONEN UTAMA
 // ==========================================
@@ -106,17 +111,16 @@ const PerizinanSantriTabsList = () => {
   const [activeTab, setActiveTab] = useState<number>(0)
 
   // State Filter Utama
-  const todayStr = format(new Date(), 'yyyy-MM-dd')
-  const [startDate, setStartDate] = useState(todayStr)
-  const [endDate, setEndDate] = useState(todayStr)
+  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfMonth(new Date()))
+  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(endOfMonth(new Date()))
   const [statusApproval, setStatusApproval] = useState('Semua')
   const [jenisIzin, setJenisIzin] = useState('Semua')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Snapshot filter state
   const [currentFilters, setCurrentFilters] = useState<any>({
-    startDate: todayStr,
-    endDate: todayStr,
+    startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+    endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
     statusApproval: 'Semua',
     jenisIzin: 'Semua',
     searchQuery: ''
@@ -172,12 +176,18 @@ const PerizinanSantriTabsList = () => {
   }
 
   const handleSearchSubmit = () => {
-    if (startDate && endDate && startDate > endDate) {
+    if (tanggalAwal && tanggalAkhir && tanggalAwal > tanggalAkhir) {
       toast.error('Tanggal awal tidak boleh melebihi batas tanggal akhir pencarian')
       return
     }
 
-    const filters = { startDate, endDate, statusApproval, jenisIzin, searchQuery }
+    const filters = {
+      startDate: tanggalAwal ? format(tanggalAwal, 'yyyy-MM-dd') : '',
+      endDate: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : '',
+      statusApproval,
+      jenisIzin,
+      searchQuery
+    }
     setPage(1)
     setIsFilterApplied(true)
     setCurrentFilters(filters)
@@ -185,8 +195,10 @@ const PerizinanSantriTabsList = () => {
   }
 
   const handleResetFilter = () => {
-    setStartDate(todayStr)
-    setEndDate(todayStr)
+    const defaultStart = startOfMonth(new Date())
+    const defaultEnd = endOfMonth(new Date())
+    setTanggalAwal(defaultStart)
+    setTanggalAkhir(defaultEnd)
     setStatusApproval('Semua')
     setJenisIzin('Semua')
     setSearchQuery('')
@@ -194,8 +206,8 @@ const PerizinanSantriTabsList = () => {
     setIsFilterApplied(true)
 
     const baseFilters = {
-      startDate: todayStr,
-      endDate: todayStr,
+      startDate: format(defaultStart, 'yyyy-MM-dd'),
+      endDate: format(defaultEnd, 'yyyy-MM-dd'),
       statusApproval: 'Semua',
       jenisIzin: 'Semua',
       searchQuery: ''
@@ -366,27 +378,31 @@ const PerizinanSantriTabsList = () => {
         {/* CONTAINER PANEL FILTER (SHARED FOR BOTH TABS) */}
         <Card sx={{ p: 5, mb: 4 }}>
           <Grid container spacing={4} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-              <TextField
-                fullWidth
-                label='Dari Tanggal'
-                type='date'
-                size='small'
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true } }}
+            <Grid size={{ xs: 12, sm: 2.4 }}>
+              <AppReactDatepicker
+                selected={tanggalAwal}
+                onChange={(date: Date | null) => setTanggalAwal(date)}
+                placeholderText='MM/DD/YYYY'
+                showMonthDropdown
+                showYearDropdown
+                scrollableYearDropdown
+                maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
+                dropdownMode='select'
+                customInput={<PickersComponent label='Tanggal Awal' />}
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-              <TextField
-                fullWidth
-                label='Sampai Tanggal'
-                type='date'
-                size='small'
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true } }}
+            <Grid size={{ xs: 12, sm: 2.4 }}>
+              <AppReactDatepicker
+                selected={tanggalAkhir}
+                onChange={(date: Date | null) => setTanggalAkhir(date)}
+                placeholderText='MM/DD/YYYY'
+                showMonthDropdown
+                showYearDropdown
+                scrollableYearDropdown
+                maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
+                dropdownMode='select'
+                customInput={<PickersComponent label='Tanggal Akhir' />}
               />
             </Grid>
 
@@ -483,7 +499,7 @@ const PerizinanSantriTabsList = () => {
                 fullWidth={isMobile}
                 startIcon={<i className='tabler-file-import' />}
                 component={Link}
-                href='/app/perizinan-santri/import'
+                href='/app/perizinan-santri/import?ub=kedisiplinan'
               >
                 Import Excel
               </Button>
