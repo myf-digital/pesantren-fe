@@ -95,7 +95,7 @@ const FormPerizinanSantriPage = () => {
     if (store.crud?.status) {
       toast.success(store.crud?.message || 'Data pengajuan perizinan berhasil disimpan')
       dispatch(resetRedux())
-      router.replace('/app/perizinan-santri/list')
+      router.replace('/app/perizinan-santri/kewaliasuhan')
     } else if (store.crud?.message) {
       toast.error(store.crud?.message || 'Gagal menyimpan pengajuan perizinan')
       dispatch(resetRedux())
@@ -263,7 +263,7 @@ const FormPerizinanSantriPage = () => {
                   <Button
                     variant='outlined'
                     color='secondary'
-                    onClick={() => router.push('/app/perizinan-santri/list')}
+                    onClick={() => router.push('/app/perizinan-santri/kewaliasuhan')}
                   >
                     Batal
                   </Button>

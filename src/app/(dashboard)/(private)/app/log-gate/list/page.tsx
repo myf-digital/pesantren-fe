@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { forwardRef, useCallback, useEffect, useState } from 'react'
 
 import {
   Card,
@@ -28,6 +28,7 @@ import {
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
 import { format } from 'date-fns'
+import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import {
@@ -43,6 +44,10 @@ import { useCan } from '@/hooks/useCan'
 
 import QRScanner from '@/views/onevour/components/qr-scanner'
 
+const PickersComponent = forwardRef(({ ...props }: any, ref) => {
+  return <TextField inputRef={ref} fullWidth size='small' {...props} />
+})
+
 const LogGateSantriList = () => {
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.perizinan_santri)
@@ -57,7 +62,7 @@ const LogGateSantriList = () => {
 
   // State Utama Filter Log Gate (Berdasarkan Waktu Keluar / Masuk)
   const todayStr = format(new Date(), 'yyyy-MM-dd')
-  const [filterDate, setFilterDate] = useState(todayStr)
+  const [tanggalLog, setTanggalLog] = useState<Date | null>(new Date())
   const [filterStatus, setFilterStatus] = useState('Semua')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -114,7 +119,7 @@ const LogGateSantriList = () => {
   // Handler Kirim Form Pencarian Filter
   const handleSearchSubmit = () => {
     const filters = {
-      date: filterDate,
+      date: tanggalLog ? format(tanggalLog, 'yyyy-MM-dd') : '',
       status: filterStatus,
       keyword: searchQuery
     }
@@ -124,7 +129,7 @@ const LogGateSantriList = () => {
 
   // Handler Reset Form Pencarian
   const handleResetFilter = () => {
-    setFilterDate(todayStr)
+    setTanggalLog(new Date())
     setFilterStatus('Semua')
     setSearchQuery('')
     setPage(1)
@@ -332,14 +337,16 @@ const LogGateSantriList = () => {
           <Grid container spacing={4} sx={{ mb: 4 }}>
             {/* Filter Tanggal Sirkulasi Gerbang */}
             <Grid size={{ xs: 12, sm: 4, md: 3 }}>
-              <TextField
-                fullWidth
-                label='Tanggal Log'
-                type='date'
-                size='small'
-                value={filterDate}
-                onChange={e => setFilterDate(e.target.value)}
-                slotProps={{ inputLabel: { shrink: true } }}
+              <AppReactDatepicker
+                selected={tanggalLog}
+                onChange={(date: Date | null) => setTanggalLog(date)}
+                placeholderText='MM/DD/YYYY'
+                showMonthDropdown
+                showYearDropdown
+                scrollableYearDropdown
+                maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
+                dropdownMode='select'
+                customInput={<PickersComponent label='Tanggal Log' />}
               />
             </Grid>
 
@@ -440,7 +447,10 @@ const LogGateSantriList = () => {
           4. POPUP COMPONENT A: SCANNER VIEW (DIALANGUANGE LAUNCHER)
           ======================================================== */}
       <Dialog open={openModalScanQrCode} onClose={() => setOpenModalScanQrCode(false)} maxWidth='xs' fullWidth>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}>
+        <DialogTitle
+          component='div'
+          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}
+        >
           <Typography variant='h6' sx={{ fontWeight: 700 }}>
             Scan QR Code Kartu Santri
           </Typography>
@@ -458,7 +468,10 @@ const LogGateSantriList = () => {
           5. POPUP COMPONENT B: RESUME DISPLAY HASIL SCANNING QR CODE
           ======================================================== */}
       <Dialog open={openModalResult} onClose={() => setOpenModalResult(false)} maxWidth='sm' fullWidth>
-        <DialogTitle sx={{ m: 0, p: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogTitle
+          component='div'
+          sx={{ m: 0, p: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
           <Typography variant='h6' sx={{ fontWeight: 700 }}>
             Informasi Hasil Autentikasi Gerbang
           </Typography>
@@ -542,9 +555,12 @@ const LogGateSantriList = () => {
                   </Typography>
                 </Grid>
                 <Grid size={8}>
-                  <Typography variant='body2'>
-                    : <Chip label={scanResult.jenis_izin || '-'} size='small' variant='outlined' sx={{ height: 20 }} />
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography variant='body2' sx={{ mr: 1 }}>
+                      :
+                    </Typography>
+                    <Chip label={scanResult.jenis_izin || '-'} size='small' variant='outlined' sx={{ height: 20 }} />
+                  </Box>
                 </Grid>
 
                 <Grid size={4}>
