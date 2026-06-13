@@ -18,6 +18,7 @@ import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchKebersihanTemuanById, postKebersihanTemuan, postKebersihanTemuanUpdate, resetRedux } from '../slice/index'
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
 import { fetchKebersihanInspeksiAll } from '../../kebersihan-inspeksi/slice'
+import DialogLoading from '@/views/onevour/components/dialog-loading'
 
 const FormValidationBasic = () => {
   const router = useRouter()
@@ -298,6 +299,7 @@ const FormValidationBasic = () => {
 
   return (
     <Card>
+      <DialogLoading open={store.loading} loadingProgress={store.loadingProgress} />
       <CardHeader title='Form Temuan' />
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} autoComplete='off'>

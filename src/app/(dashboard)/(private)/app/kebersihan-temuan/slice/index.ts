@@ -29,6 +29,8 @@ export interface InitialState {
   delete: string | null
   import: any
   export: any
+  loading: boolean
+  loadingProgress: number
 }
 
 /* --------------------------
@@ -45,7 +47,9 @@ const initialState: InitialState = {
   crud: null,
   delete: null,
   import: null,
-  export: null
+  export: null,
+  loading: false,
+  loadingProgress: 0
 }
 
 /* --------------------------
@@ -95,7 +99,13 @@ export const fetchKebersihanTemuanById = createAsyncThunk<any, string>(
 
 export const postKebersihanTemuan = createAsyncThunk<any, any>('kebersihan-temuan/create', async (params, thunkAPI) => {
   try {
-    const response = await api.post(`/app/kebersihan-temuan`, params)
+    const response = await api.post(`/app/kebersihan-temuan`, params, {
+      onUploadProgress: progressEvent => {
+        const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1))
+
+        thunkAPI.dispatch(setLoadingProgress(percent))
+      }
+    })
 
     return response.data
   } catch (e: any) {
@@ -120,7 +130,13 @@ export const postKebersihanTemuanUpdate = createAsyncThunk<any, { id: string; pa
   'kebersihan-temuan/update',
   async ({ id, params }, thunkAPI) => {
     try {
-      const response = await api.put(`/app/kebersihan-temuan/${id}`, params)
+      const response = await api.put(`/app/kebersihan-temuan/${id}`, params, {
+        onUploadProgress: progressEvent => {
+          const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1))
+
+          thunkAPI.dispatch(setLoadingProgress(percent))
+        }
+      })
 
       return response.data
     } catch (e: any) {
@@ -170,7 +186,10 @@ export const slice = createSlice({
   name: 'kebersihan_temuan',
   initialState,
   reducers: {
-    resetRedux: () => initialState
+    resetRedux: () => initialState,
+    setLoadingProgress: (state, action) => {
+      state.loadingProgress = action.payload
+    }
   },
   extraReducers: builder => {
     builder.addCase(fetchKebersihanTemuanAll.fulfilled, (state, action) => {
@@ -192,12 +211,36 @@ export const slice = createSlice({
       state.delete = action.payload.message
     })
 
+    builder.addCase(postKebersihanTemuan.pending, state => {
+      state.loading = true
+      state.loadingProgress = 0
+    })
+
     builder.addCase(postKebersihanTemuan.fulfilled, (state, action) => {
+      state.loading = false
+      state.loadingProgress = 100
       state.crud = action.payload
     })
 
+    builder.addCase(postKebersihanTemuan.rejected, state => {
+      state.loading = false
+      state.loadingProgress = 0
+    })
+
+    builder.addCase(postKebersihanTemuanUpdate.pending, state => {
+      state.loading = true
+      state.loadingProgress = 0
+    })
+
     builder.addCase(postKebersihanTemuanUpdate.fulfilled, (state, action) => {
+      state.loading = false
+      state.loadingProgress = 100
       state.crud = action.payload
+    })
+
+    builder.addCase(postKebersihanTemuanUpdate.rejected, state => {
+      state.loading = false
+      state.loadingProgress = 0
     })
 
     builder.addCase(postBatchKebersihanTemuan.fulfilled, (state, action) => {
@@ -215,4 +258,5 @@ export const slice = createSlice({
 })
 
 export const { resetRedux } = slice.actions
+export const { setLoadingProgress } = slice.actions
 export default slice.reducer

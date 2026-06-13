@@ -1004,9 +1004,9 @@ const textField = form => {
             slotProps={{
               input: {
                 inputRef: props.ref,
-                  inputProps: {
-                    readOnly: props.readOnly
-                  },
+                inputProps: {
+                  readOnly: props.readOnly
+                },
                 startAdornment: props.startAdornment ? (
                   <InputAdornment position='start'>{props.startAdornment}</InputAdornment>
                 ) : null,
@@ -1403,7 +1403,7 @@ const selectField = form => {
                   inputRef: props.ref,
                   htmlInput: {
                     ...params.inputProps,
-                    autoComplete: 'new-password',
+                    autoComplete: 'new-password'
                   },
 
                   inputLabel: {
@@ -1414,6 +1414,7 @@ const selectField = form => {
             )}
             renderOption={(props, option) => {
               const { key, ...optionProps } = props
+
               return (
                 <Box
                   key={key}
@@ -1427,13 +1428,13 @@ const selectField = form => {
                     lineHeight: 1.4 // nicer spacing for wrapped text
                   }}
                 >
-                {option.icon && (
-                  <i className={option.icon} style={{ marginRight: 8, flexShrink: 0, width: 24, height: 24 }} />
-                )}
-                <Box component='span' sx={{ flex: 1 }}>
-                  {option.html ? option.htmlLabel : option.label}
+                  {option.icon && (
+                    <i className={option.icon} style={{ marginRight: 8, flexShrink: 0, width: 24, height: 24 }} />
+                  )}
+                  <Box component='span' sx={{ flex: 1 }}>
+                    {option.html ? option.htmlLabel : option.label}
+                  </Box>
                 </Box>
-              </Box>
               )
             }}
             disabled={props.readOnly}
@@ -1601,9 +1602,9 @@ const selectDate = form => {
                 slotProps={{
                   input: {
                     inputRef: props.ref,
-                  inputProps: {
-                    readOnly: props.readOnly
-                  }
+                    inputProps: {
+                      readOnly: props.readOnly
+                    }
                   },
 
                   inputLabel: {
@@ -1809,9 +1810,9 @@ export function textareaField(form) {
             slotProps={{
               input: {
                 inputRef: props.ref,
-                  inputProps: {
-                    readOnly: props.readOnly
-                  }
+                inputProps: {
+                  readOnly: props.readOnly
+                }
               },
 
               inputLabel: {
