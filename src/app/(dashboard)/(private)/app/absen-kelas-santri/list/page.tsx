@@ -39,10 +39,9 @@ import {
   postAbsenKelasExport,
   resetRedux,
   fetchMatchingJamPelajaran,
-  fetchSantriCabangReady
+  fetchKelasSantri,
+  fetchKelasList
 } from '../slice'
-
-import { fetchLocationPage } from '../../location/slice'
 
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
@@ -56,9 +55,9 @@ interface JamPelOption {
   nama_jampel: string
 }
 
-interface LokasiOption {
-  id_lokasi: string
-  nama_lokasi: string
+interface KelasOption {
+  id_kelas: string
+  nama_kelas: string
 }
 
 // Komponen Aksi Baris Tabel
@@ -76,13 +75,13 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem
           component={Link}
-          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_lokasi=${row.id_lokasi}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_lokasi=${row.lokasi?.nama_lokasi || ''}`}
+          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_kelas=${row.id_kelas}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_kelas=${row.lokasi?.nama_kelas || ''}`}
         >
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View
         </MenuItem>
         <MenuItem
           component={Link}
-          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_lokasi=${row.id_lokasi}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_lokasi=${row.lokasi?.nama_lokasi || ''}`}
+          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_kelas=${row.id_kelas}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_kelas=${row.lokasi?.nama_kelas || ''}`}
         >
           <i className='tabler-edit' style={{ marginRight: 8 }} /> Edit
         </MenuItem>
@@ -131,14 +130,14 @@ const AbsenKelasHarianSantriList = () => {
 
   // Opsi Data Dropdown Master
   const [listJampel, setListJamPel] = useState<JamPelOption[]>([])
-  const [listLokasi, setListLokasi] = useState<LokasiOption[]>([])
+  const [listLokasi, setListLokasi] = useState<KelasOption[]>([])
   const [loadingJampel, setLoadingJampel] = useState(false)
   const [loadingLokasi, setLoadingLokasi] = useState(false)
 
   // State Filter Utama UI
   const [tanggal, setTanggal] = useState<Date | null>(new Date())
   const [selectedJampel, setSelectedJampel] = useState<JamPelOption | null>({ id_jampel: '', nama_jampel: 'Semua' })
-  const [selectedLokasi, setSelectedLokasi] = useState<LokasiOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
+  const [selectedLokasi, setSelectedLokasi] = useState<KelasOption | null>({ id_kelas: '', nama_kelas: 'Semua' })
   const [status, setStatus] = useState('Semua')
   const [searchTyped, setSearchTyped] = useState('')
 
@@ -181,17 +180,21 @@ const AbsenKelasHarianSantriList = () => {
     getShiftMaster()
   }, [dispatch])
 
-  // Ambil Master Data Lokasi Kamar via fetchLocationPage
+  // Ambil Master Data Kelas via fetchKelasList
   useEffect(() => {
     const getLokasiMaster = async () => {
       try {
         setLoadingLokasi(true)
-        const res = await dispatch(fetchLocationPage({ page: 1, perPage: 50, keyword: 'kelas' })).unwrap()
+        const res = await dispatch(fetchKelasList({})).unwrap()
 
-        const valuesData = res?.data?.values || res?.values || []
-        setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }, ...valuesData])
+        const valuesData = res?.data || res || []
+        const formatted = valuesData.map((c: any) => ({
+          id_kelas: c.id_kelas,
+          nama_kelas: c.nama_kelas
+        }))
+        setListLokasi([{ id_kelas: '', nama_kelas: 'Semua' }, ...formatted])
       } catch {
-        setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }])
+        setListLokasi([{ id_kelas: '', nama_kelas: 'Semua' }])
       } finally {
         setLoadingLokasi(false)
       }
@@ -209,7 +212,7 @@ const AbsenKelasHarianSantriList = () => {
           perPage: currentPerPage,
           tanggal: filters.tanggal,
           id_jam_pelajaran: filters.id_jam_pelajaran || undefined,
-          id_lokasi: filters.id_lokasi || undefined,
+          id_kelas: filters.id_kelas || undefined,
           status: filters.status !== 'Semua' ? filters.status : undefined,
           q: filters.searchTyped || undefined
         })
@@ -224,7 +227,7 @@ const AbsenKelasHarianSantriList = () => {
       const filters = {
         tanggal: formatTanggal(tanggal),
         id_jam_pelajaran: selectedJampel?.id_jampel || '',
-        id_lokasi: selectedLokasi?.id_lokasi || '',
+        id_kelas: selectedLokasi?.id_kelas || '',
         status,
         searchTyped
       }
@@ -268,7 +271,7 @@ const AbsenKelasHarianSantriList = () => {
     const filters = {
       tanggal: formatTanggal(tanggal),
       id_jam_pelajaran: selectedJampel?.id_jampel || '',
-      id_lokasi: selectedLokasi?.id_lokasi || '',
+      id_kelas: selectedLokasi?.id_kelas || '',
       status,
       searchTyped
     }
@@ -282,7 +285,7 @@ const AbsenKelasHarianSantriList = () => {
   const handleResetFilter = () => {
     setTanggal(new Date())
     setSelectedJampel(listJampel.find(s => s.id_jampel === '') || null)
-    setSelectedLokasi(listLokasi.find(k => k.id_lokasi === '') || null)
+    setSelectedLokasi(listLokasi.find(k => k.id_kelas === '') || null)
     setStatus('Semua')
     setSearchTyped('')
     setPage(1)
@@ -308,7 +311,7 @@ const AbsenKelasHarianSantriList = () => {
       toast.warning('Silakan lengkapi data terlebih dahulu: Jam Pelajaran harus dipilih secara spesifik')
       return false
     }
-    if (!selectedLokasi || !selectedLokasi.id_lokasi || selectedLokasi.nama_lokasi === 'Semua') {
+    if (!selectedLokasi || !selectedLokasi.id_kelas || selectedLokasi.nama_kelas === 'Semua') {
       toast.warning('Silakan lengkapi data terlebih dahulu: Lokasi harus dipilih secara spesifik')
       return false
     }
@@ -327,13 +330,13 @@ const AbsenKelasHarianSantriList = () => {
     setAnchorPresensi(null)
     if (!validatePresensiInput()) return
 
-    const idLokasi = selectedLokasi?.id_lokasi
+    const idLokasi = selectedLokasi?.id_kelas
     const idJamPelajaran = selectedJampel?.id_jampel
     const tgl = format(tanggal!, 'yyyy-MM-dd')
-    const namaLokasi = selectedLokasi?.nama_lokasi || ''
+    const namaLokasi = selectedLokasi?.nama_kelas || ''
     const namaJampel = selectedJampel?.nama_jampel || ''
     router.push(
-      `/app/absen-kelas-santri/form?mode=scan_qr&tanggal=${tgl}&id_lokasi=${idLokasi}&id_jam_pelajaran=${idJamPelajaran}&nama_jampel=${namaJampel}&nama_lokasi=${namaLokasi}`
+      `/app/absen-kelas-santri/form?mode=scan_qr&tanggal=${tgl}&id_kelas=${idLokasi}&id_jam_pelajaran=${idJamPelajaran}&nama_jampel=${namaJampel}&nama_kelas=${namaLokasi}`
     )
   }
 
@@ -342,17 +345,17 @@ const AbsenKelasHarianSantriList = () => {
     setAnchorPresensi(null)
     if (!validatePresensiInput()) return
 
-    await dispatch(fetchSantriCabangReady({ id_lokasi: selectedLokasi?.id_lokasi || '' }))
+    await dispatch(fetchKelasSantri({ id_kelas: selectedLokasi?.id_kelas || '' }))
 
     setOpenModalKonfirmasi(true)
   }
 
   const handleLanjutkanPresensi = () => {
     setOpenModalKonfirmasi(false)
-    const idLokasi = selectedLokasi?.id_lokasi
+    const idLokasi = selectedLokasi?.id_kelas
     const idJamPelajaran = selectedJampel?.id_jampel
     router.push(
-      `/app/absen-kelas-santri/form?mode=kolektif&tanggal=${tanggal ? format(tanggal, 'yyyy-MM-dd') : ''}&id_lokasi=${idLokasi}&id_jam_pelajaran=${idJamPelajaran}&nama_jampel=${selectedJampel?.nama_jampel}&nama_lokasi=${selectedLokasi?.nama_lokasi}`
+      `/app/absen-kelas-santri/form?mode=kolektif&tanggal=${tanggal ? format(tanggal, 'yyyy-MM-dd') : ''}&id_kelas=${idLokasi}&id_jam_pelajaran=${idJamPelajaran}&nama_jampel=${selectedJampel?.nama_jampel}&nama_kelas=${selectedLokasi?.nama_kelas}`
     )
   }
 
@@ -367,7 +370,7 @@ const AbsenKelasHarianSantriList = () => {
         postAbsenKelasExport({
           tanggal: currentFilters.tanggal,
           id_jam_pelajaran: currentFilters.id_jam_pelajaran || undefined,
-          id_lokasi: currentFilters.id_lokasi || undefined,
+          id_kelas: currentFilters.id_kelas || undefined,
           status: currentFilters.status !== 'Semua' ? currentFilters.status : undefined,
           q: currentFilters.searchTyped || undefined
         })
@@ -406,13 +409,14 @@ const AbsenKelasHarianSantriList = () => {
         tableColumn('NAMA SANTRI', 'santri.fullname'),
         tableColumn('NIS', 'santri.nis'),
         tableColumn('PETUGAS', 'petugas'),
-        tableColumn('LOKASI', 'lokasi.nama_lokasi'),
+        tableColumn('KELAS', 'lokasi'),
         tableColumn('JAM PELAJARAN', 'jamPelajaran.nama_jampel'),
         tableColumn('WAKTU', 'waktu_absen'),
         tableColumn('STATUS', 'status_display')
       ],
       values: tableValues.map((row: any) => ({
         ...row,
+        lokasi: row?.lokasi?.nama_kelas || row?.kelasFormal?.nama_kelas || row?.kelasMda?.nama_kelas_mda || '-',
         petugas: row.petugas?.nama_lengkap || row.resource?.full_name || '-',
         status_display: (
           <Chip
@@ -489,7 +493,7 @@ const AbsenKelasHarianSantriList = () => {
               />
             </Grid>
 
-            {/* SELECTABLE SEARCH: LOKASI KAMAR */}
+            {/* SELECTABLE SEARCH: KELAS */}
             <Grid size={{ xs: 12, sm: 2.4 }}>
               <Autocomplete
                 size='small'
@@ -497,12 +501,12 @@ const AbsenKelasHarianSantriList = () => {
                 loading={loadingLokasi}
                 value={selectedLokasi}
                 onChange={(_, newValue) => setSelectedLokasi(newValue)}
-                getOptionLabel={option => option.nama_lokasi || ''}
-                isOptionEqualToValue={(option, value) => option.id_lokasi === value?.id_lokasi}
+                getOptionLabel={option => option.nama_kelas || ''}
+                isOptionEqualToValue={(option, value) => option.id_kelas === value?.id_kelas}
                 renderInput={params => (
                   <TextField
                     {...params}
-                    label='Lokasi'
+                    label='Kelas'
                     InputProps={{
                       ...params.InputProps,
                       endAdornment: (
@@ -678,17 +682,17 @@ const AbsenKelasHarianSantriList = () => {
             </Typography>
 
             <Typography variant='body2' color='text.secondary'>
-              Lokasi
+              Kelas
             </Typography>
             <Typography variant='body2'>:</Typography>
             <Typography variant='body2' sx={{ fontWeight: 500 }}>
-              {selectedLokasi?.nama_lokasi || '-'} (otomatis)
+              {selectedLokasi?.nama_kelas || '-'} (otomatis)
             </Typography>
           </Box>
 
           <Box sx={{ bgcolor: 'rgba(79, 129, 189, 0.08)', p: 3, borderRadius: 1, borderLeft: '4px solid #4F81BD' }}>
             <Typography variant='body2' color='primary.main' sx={{ fontWeight: 600 }}>
-              Santri terdeteksi: <span style={{ fontWeight: 800 }}>{store.santriCabang?.length || 0} orang</span>
+              Santri terdeteksi: <span style={{ fontWeight: 800 }}>{store.santriList?.length || 0} orang</span>
             </Typography>
           </Box>
         </DialogContent>

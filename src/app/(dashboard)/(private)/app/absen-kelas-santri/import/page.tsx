@@ -179,7 +179,7 @@ export default function ImportExcelAbsenSantriPage() {
                 <th className='px-3 py-2'>NIS</th>
                 <th className='px-3 py-2'>Nama Lengkap</th>
                 <th className='px-3 py-2'>Tanggal Jurnal</th>
-                <th className='px-3 py-2'>ID Lokasi</th>
+                <th className='px-3 py-2'>ID Kelas</th>
                 <th className='px-3 py-2'>ID Jam Pelajaran</th>
                 <th className='px-3 py-2'>Status Kehadiran</th>
                 <th className='px-3 py-2'>Keterangan Opsional</th>
@@ -202,7 +202,7 @@ export default function ImportExcelAbsenSantriPage() {
                   {/* 4. Tanggal Jurnal */}
                   <td className='px-3 py-2 font-mono'>{row.payload.tanggal || '-'}</td>
 
-                  {/* 5. ID Lokasi Kamar */}
+                  {/* 5. ID Kelas */}
                   <td className='px-3 py-2 font-mono text-gray-600'>{row.payload.id_lokasi || '-'}</td>
 
                   {/* 6. ID Shift Presensi */}

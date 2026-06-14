@@ -13,7 +13,7 @@ export interface InitialState {
   }
   data: any
   jamPel: any
-  santriCabang: any[]
+  santriList: any[]
   crud: any
   delete: any
   loading: boolean
@@ -29,7 +29,7 @@ const initialState: InitialState = {
   },
   data: {},
   jamPel: null,
-  santriCabang: [],
+  santriList: [],
   crud: null,
   delete: null,
   loading: false
@@ -51,17 +51,26 @@ export const fetchAbsenKelasSantriPage = createAsyncThunk(
   }
 )
 
-export const fetchSantriCabangReady = createAsyncThunk(
-  'absenSantri/fetchSantriCabang',
-  async (params: { id_cabang?: string; id_lokasi?: string }, thunkAPI) => {
+export const fetchKelasSantri = createAsyncThunk(
+  'absenSantri/fetchKelasSantri',
+  async (params: { id_kelas?: string }, thunkAPI) => {
     try {
-      const response = await api.get('/app/absen-kelas-santri/santri-cabang', { params })
+      const response = await api.get('/app/absen-kelas-santri/kelas-santri', { params })
       return response.data
     } catch (e: any) {
       return thunkAPI.rejectWithValue(e.response?.data)
     }
   }
 )
+
+export const fetchKelasList = createAsyncThunk('absenKelasSantri/fetchKelasList', async (params: any, thunkAPI) => {
+  try {
+    const response = await api.get('/app/absen-kelas-santri/kelas-list', { params })
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.rejectWithValue(e.response?.data)
+  }
+})
 
 export const fetchMatchingJamPelajaran = createAsyncThunk(
   'absenKelasSantri/fetchJamPelajaran',
@@ -177,8 +186,8 @@ export const absenKelasSantriSlice = createSlice({
       state.delete = null
       state.jamPel = null
     },
-    clearSantriCabang: state => {
-      state.santriCabang = []
+    clearSantriList: state => {
+      state.santriList = []
     }
   },
   extraReducers: builder => {
@@ -189,8 +198,8 @@ export const absenKelasSantriSlice = createSlice({
       }
     })
 
-    builder.addCase(fetchSantriCabangReady.fulfilled, (state, action) => {
-      state.santriCabang = action.payload.data || []
+    builder.addCase(fetchKelasSantri.fulfilled, (state, action) => {
+      state.santriList = action.payload.data || []
     })
 
     builder.addCase(fetchMatchingJamPelajaran.fulfilled, (state, action) => {

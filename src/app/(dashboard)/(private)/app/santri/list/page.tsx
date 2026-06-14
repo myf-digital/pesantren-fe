@@ -229,10 +229,13 @@ const TableSantri = () => {
   }
 
   useEffect(() => {
+    dispatch(fetchCabangAll({}))
+  }, [dispatch])
+
+  useEffect(() => {
     if (store.delete) {
       executeFetchData({ page: 1, perPage: perPage, q: filter })
 
-      dispatch(fetchCabangAll({}))
       dispatch(resetRedux())
     }
   }, [dispatch, filter, perPage, store.delete])

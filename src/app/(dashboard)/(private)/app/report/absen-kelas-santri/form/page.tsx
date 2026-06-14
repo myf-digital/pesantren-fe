@@ -129,7 +129,7 @@ const PresensiFormPage = () => {
               </Grid>
               <Grid size={{ xs: 12, sm: 3 }}>
                 <Typography variant='body2' color='text.secondary'>
-                  Lokasi Terpilih
+                  Kelas Terpilih
                 </Typography>
                 <Typography variant='h6' sx={{ fontWeight: 700 }}>
                   {namaLokasiParam}
@@ -174,7 +174,7 @@ const PresensiFormPage = () => {
                     NIS
                   </TableCell>
                   <TableCell width={150} sx={{ fontWeight: 600 }}>
-                    Lokasi
+                    Kelas
                   </TableCell>
                   <TableCell width={170} sx={{ fontWeight: 600 }}>
                     Status Kehadiran
@@ -208,7 +208,7 @@ const PresensiFormPage = () => {
                       {/* 3. Kolom NIS */}
                       <TableCell sx={{ fontWeight: 500 }}>{santri.nis}</TableCell>
 
-                      {/* 4. Kolom Lokasi */}
+                      {/* 4. Kolom Kelas */}
                       <TableCell sx={{ color: 'text.secondary' }}>
                         {namaLokasiParam || santri?.lokasi?.nama_lokasi}
                       </TableCell>

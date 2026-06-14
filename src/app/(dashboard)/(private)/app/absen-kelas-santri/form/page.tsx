@@ -37,7 +37,7 @@ import { toast } from 'react-toastify'
 import { format } from 'date-fns'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { fetchSantriCabangReady, postAbsenKelasSantri, postAbsenKelasScanQR } from '../slice'
+import { fetchKelasSantri, postAbsenKelasSantri, postAbsenKelasScanQR } from '../slice'
 import QRScanner from '@/views/onevour/components/qr-scanner'
 
 // Interface untuk baris data di Form Kolektif
@@ -67,13 +67,13 @@ const PresensiFormPage = () => {
   // 1. Ambil data query param dari URL navigasi halaman sebelumnya
   const mode = searchParams.get('mode') // 'scan_qr' atau 'kolektif'
   const tanggal = searchParams.get('tanggal') || format(new Date(), 'yyyy-MM-dd')
-  const idLokasi = searchParams.get('id_lokasi') || ''
+  const idKelas = searchParams.get('id_kelas') || ''
   const idJamPelajaran = searchParams.get('id_jam_pelajaran') || ''
   const qrCodeParam = searchParams.get('qrcode') || ''
 
   // Label readable untuk header komponen UI
   const namaJamPelParam = searchParams.get('nama_jampel') || '-'
-  const namaLokasiParam = searchParams.get('nama_lokasi') || '-'
+  const namaKelasParam = searchParams.get('nama_kelas') || '-'
 
   const store = useAppSelector(state => state.absen_kelas_santri)
 
@@ -91,15 +91,15 @@ const PresensiFormPage = () => {
 
   // Fetch data antrean santri siap absen jika memilih mode kolektif
   useEffect(() => {
-    if (mode === 'kolektif' && idLokasi) {
-      dispatch(fetchSantriCabangReady({ id_lokasi: idLokasi }))
+    if (mode === 'kolektif' && idKelas) {
+      dispatch(fetchKelasSantri({ id_kelas: idKelas }))
     }
-  }, [dispatch, mode, idLokasi])
+  }, [dispatch, mode, idKelas])
 
   // Menyalin data dari Redux Store ke Local State agar form input bisa diubah secara interaktif
   useEffect(() => {
-    if (mode === 'kolektif' && store.santriCabang) {
-      const formatted = store.santriCabang.map((s: any) => ({
+    if (mode === 'kolektif' && store.santriList) {
+      const formatted = store.santriList.map((s: any) => ({
         id_santri: s.id_santri,
         fullname: s.fullname,
         nis: s.nis,
@@ -109,7 +109,7 @@ const PresensiFormPage = () => {
 
       setListSantriAbsen(formatted as AbsenItemInput[])
     }
-  }, [store.santriCabang, mode])
+  }, [store.santriList, mode])
 
   // Handler ubah status kehadiran via Select Dropdown per baris santri
   const handleStatusChange = (idSantri: string, value: 'Hadir' | 'Izin' | 'Sakit' | 'Alfa') => {
@@ -139,7 +139,7 @@ const PresensiFormPage = () => {
       const payload = {
         tanggal: tanggal,
         waktu_absen: format(new Date(), 'HH:mm'),
-        id_lokasi: idLokasi,
+        id_lokasi: idKelas,
         id_jam_pelajaran: idJamPelajaran,
         data_absen: listSantriAbsen.map(s => ({
           id_santri: s.id_santri,
@@ -150,7 +150,7 @@ const PresensiFormPage = () => {
 
       await dispatch(postAbsenKelasSantri(payload)).unwrap()
 
-      toast.success('Data presensi massal kamar berhasil disimpan!')
+      toast.success('Data presensi massal kelas berhasil disimpan!')
       router.push('/app/absen-kelas-santri/list')
     } catch (err: any) {
       toast.error(err?.message || 'Gagal menyimpan data presensi kolektif')
@@ -170,7 +170,7 @@ const PresensiFormPage = () => {
         nis: nis.trim(),
         tanggal_custom: tanggal,
         waktu_custom: format(new Date(), 'HH:mm:ss'),
-        id_lokasi: idLokasi,
+        id_lokasi: idKelas,
         id_jam_pelajaran: idJamPelajaran
       }
 
@@ -256,10 +256,10 @@ const PresensiFormPage = () => {
               </Grid>
               <Grid size={{ xs: 12, sm: 3 }}>
                 <Typography variant='body2' color='text.secondary'>
-                  Lokasi Terpilih
+                  Kelas Terpilih
                 </Typography>
                 <Typography variant='h6' sx={{ fontWeight: 700 }}>
-                  {namaLokasiParam}
+                  {namaKelasParam}
                 </Typography>
               </Grid>
               <Grid size={{ xs: 6, sm: 3 }}>
@@ -434,7 +434,7 @@ const PresensiFormPage = () => {
                       NIS
                     </TableCell>
                     <TableCell width={150} sx={{ fontWeight: 600 }}>
-                      Lokasi
+                      Kelas
                     </TableCell>
                     <TableCell width={170} sx={{ fontWeight: 600 }}>
                       Status Kehadiran
@@ -453,7 +453,7 @@ const PresensiFormPage = () => {
                   ) : listSantriAbsen.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} align='center' sx={{ py: 10, color: 'text.secondary' }}>
-                        Tidak ditemukan santri terdaftar aktif di kamar asrama ini.
+                        Tidak ditemukan santri terdaftar aktif di kelas ini.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -469,7 +469,7 @@ const PresensiFormPage = () => {
                         <TableCell sx={{ fontWeight: 500 }}>{santri.nis}</TableCell>
 
                         {/* 4. Kolom Lokasi */}
-                        <TableCell sx={{ color: 'text.secondary' }}>{namaLokasiParam}</TableCell>
+                        <TableCell sx={{ color: 'text.secondary' }}>{namaKelasParam}</TableCell>
 
                         {/* 5. Kolom Status Kehadiran Dropdown */}
                         <TableCell>

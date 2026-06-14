@@ -31,10 +31,9 @@ import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import {
   fetchAbsenKelasSantriPage,
   postAbsenKelasExport,
-  fetchMatchingJamPelajaran
+  fetchMatchingJamPelajaran,
+  fetchKelasList
 } from '../../../absen-kelas-santri/slice'
-
-import { fetchLocationPage } from '../../../location/slice'
 
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
@@ -148,15 +147,19 @@ const AbsenHarianSantriList = () => {
     getJamPelMaster()
   }, [dispatch])
 
-  // Ambil Master Data Lokasi Lokasi via fetchLocationPage
+  // Ambil Master Data Kelas via fetchKelasList
   useEffect(() => {
     const getLokasiMaster = async () => {
       try {
         setLoadingLokasi(true)
-        const res = await dispatch(fetchLocationPage({ page: 1, perPage: 50, keyword: 'kelas' })).unwrap()
+        const res = await dispatch(fetchKelasList({})).unwrap()
 
-        const valuesData = res?.data?.values || res?.values || []
-        setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }, ...valuesData])
+        const valuesData = res?.data || res || []
+        const formatted = valuesData.map((c: any) => ({
+          id_lokasi: c.id_kelas,
+          nama_lokasi: c.nama_kelas
+        }))
+        setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }, ...formatted])
       } catch {
         setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }])
       } finally {
@@ -328,7 +331,7 @@ const AbsenHarianSantriList = () => {
       page: page,
       fields: [
         tableColumn('OPTION', 'act-x', 'left', renderOption as any),
-        tableColumn('LOKASI', 'lokasi'),
+        tableColumn('KELAS', 'lokasi'),
         tableColumn('PETUGAS', 'petugas'),
         tableColumn('PRESENSI', 'presensi'),
         tableColumn('NAMA SANTRI', 'santri'),
@@ -490,7 +493,7 @@ const AbsenHarianSantriList = () => {
                 renderInput={params => (
                   <TextField
                     {...params}
-                    label='Lokasi'
+                    label='Kelas'
                     InputProps={{
                       ...params.InputProps,
                       endAdornment: (
