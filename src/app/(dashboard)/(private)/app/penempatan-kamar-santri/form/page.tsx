@@ -135,6 +135,9 @@ const FormValidationBasic = () => {
             value: datas.id_tahunajaran,
             label: datas.tahunAjaran?.tahun_ajaran
           }
+          datas.tanggal_masuk = datas.tanggal_masuk || ''
+          datas.tanggal_keluar = datas.tanggal_keluar || ''
+          datas.keterangan = datas.keterangan || ''
 
           setState(datas)
           reset(datas)
