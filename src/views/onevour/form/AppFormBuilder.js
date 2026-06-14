@@ -752,6 +752,10 @@ export function formColumnDetailField(form) {
           gridProps={{ sm: 4, md: 2, xs: 12 }}
           selected={valueFile}
           url={props?.urlImage}
+          accept={props?.accept}
+          helperText={props?.helperText}
+          previewTitle={props?.label}
+          readOnly={props?.readOnly}
         />
       </Grid>
     )

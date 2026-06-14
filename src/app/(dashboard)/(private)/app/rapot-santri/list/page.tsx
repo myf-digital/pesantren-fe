@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
-
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -19,27 +18,26 @@ import {
   MenuItem,
   Box,
   Chip,
-  Avatar,
-  useTheme,
-  useMediaQuery,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Tooltip
 } from '@mui/material'
 
 import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { deleteUser, fetchUserPage, resetRedux } from '../slice/index'
+import { deleteRapotSantri, fetchRapotSantriPage, resetRedux } from '../slice/index'
+import { useCan } from '@/hooks/useCan'
 
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
-import { useCan } from '@/hooks/useCan'
 
 const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: string) => void }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [openConfirm, setOpenConfirm] = useState(false)
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   const canEdit = useCan('edit')
   const canDelete = useCan('delete')
@@ -50,11 +48,11 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
         <i className='tabler-dots-vertical' />
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <MenuItem component={Link} href={`/app/user/form?id=${row.resource_id}&view=true`}>
+        <MenuItem component={Link} href={`/app/rapot-santri/form?id=${row.id_rapot}&view=true`}>
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View
         </MenuItem>
         {canEdit && (
-          <MenuItem component={Link} href={`/app/user/form?id=${row.resource_id}`}>
+          <MenuItem component={Link} href={`/app/rapot-santri/form?id=${row.id_rapot}`}>
             <i className='tabler-edit' style={{ marginRight: 8 }} /> Edit
           </MenuItem>
         )}
@@ -66,21 +64,17 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       </Menu>
 
       <DialogDelete
-        id={row.full_name || row.username}
+        id={`Rapot ${row.santri?.fullname || 'Santri'}`}
         open={openConfirm}
         onClose={() => setOpenConfirm(false)}
         handleOk={() => {
-          onDeleteSuccess(row.resource_id)
+          onDeleteSuccess(row.id_rapot)
           setOpenConfirm(false)
         }}
         handleClose={() => setOpenConfirm(false)}
       />
     </>
   )
-
-  if (isMobile) {
-    return <Box sx={{ display: 'inline-block' }}>{content}</Box>
-  }
 
   return (
     <TableCell size='small' sx={{ borderBottom: 0 }}>
@@ -90,7 +84,7 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
 }
 
 const formatDate = (date: string) => {
-  if (!date || date == '-') return ''
+  if (!date || date === '-') return ''
   try {
     const d = new Date(date)
     const year = d.getFullYear()
@@ -106,10 +100,10 @@ const formatDate = (date: string) => {
   }
 }
 
-const UserList = () => {
+const RapotSantriList = () => {
   const router = useRouter()
   const dispatch = useAppDispatch()
-  const store = useAppSelector(state => state.user)
+  const store = useAppSelector(state => state.rapot_santri)
 
   const canCreate = useCan('create')
 
@@ -117,8 +111,12 @@ const UserList = () => {
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
 
+  const [openPdf, setOpenPdf] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState('')
+  const [pdfTitle, setPdfTitle] = useState('')
+
   const fetchData = useCallback(() => {
-    dispatch(fetchUserPage({ page, perPage, keyword: filter }))
+    dispatch(fetchRapotSantriPage({ page, perPage, keyword: filter }))
   }, [dispatch, page, perPage, filter])
 
   useEffect(() => {
@@ -129,18 +127,18 @@ const UserList = () => {
 
   useEffect(() => {
     if (store.delete) {
-      toast.success('User berhasil dihapus (Soft Delete)')
+      toast.success('Rapot Santri berhasil dihapus')
       fetchData()
       dispatch(resetRedux())
     }
   }, [store.delete, dispatch, fetchData])
 
   const renderOption = (row: any) => {
-    return <RowAction row={row} onDeleteSuccess={id => dispatch(deleteUser(id))} />
+    return <RowAction row={row} onDeleteSuccess={id => dispatch(deleteRapotSantri(id))} />
   }
 
   const onAddForm = () => {
-    router.replace('/app/user/form')
+    router.replace('/app/rapot-santri/form')
   }
 
   const buildTable = () => {
@@ -150,61 +148,60 @@ const UserList = () => {
       page: page,
       fields: [
         tableColumn('OPTION', 'act-x', 'left', renderOption as any),
-        tableColumn('USER', 'user'),
-        tableColumn('KONTAK', 'contact'),
-        tableColumn('ROLE', 'role'),
-        tableColumn('STATUS', 'status'),
-        tableColumn('TERAKHIR DIUBAH', 'updated_at')
+        tableColumn('SANTRI', 'santri_info'),
+        tableColumn('TAHUN AJARAN', 'tahun_ajaran'),
+        tableColumn('SEMESTER', 'semester'),
+        tableColumn('STATUS', 'status_chip'),
+        tableColumn('FILE RAPOT', 'file_rapot_link'),
+        tableColumn('TERAKHIR DIUBAH', 'updated_date')
       ],
       values: (dataPage?.values || []).map((row: any) => {
-        let avatarUrl = ''
-        if (row.image_foto) {
-          avatarUrl = row.image_foto.startsWith('http')
-            ? row.image_foto
-            : `${process.env.NEXT_PUBLIC_API_URL || ''}/uploads/resource/${row.image_foto}`
-        }
+        const fileUrl = row.file_rapot
+          ? row.file_rapot.startsWith('http')
+            ? row.file_rapot
+            : `${process.env.NEXT_PUBLIC_API_URL || ''}${row.file_rapot.startsWith('/') ? '' : '/'}${row.file_rapot}`
+          : ''
 
         return {
           ...row,
-          user: (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <Avatar src={avatarUrl} sx={{ width: 38, height: 38 }}>
-                {(row.full_name || row.username || '?').charAt(0).toUpperCase()}
-              </Avatar>
-              <Box>
-                <Typography variant='body2' sx={{ fontWeight: 600, color: 'text.primary' }}>
-                  {row.full_name || '-'}
-                </Typography>
-                <Typography variant='caption'>{row.username || '-'}</Typography>
-              </Box>
-            </Box>
-          ),
-          contact: (
+          santri_info: (
             <Box>
-              <Typography variant='body2'>{row.email || '-'}</Typography>
-              <Typography variant='caption' color='text.disabled'>
-                {row.telepon || '-'}
+              <Typography variant='body2' sx={{ fontWeight: 600, color: 'text.primary' }}>
+                {row.santri?.fullname || '-'}
               </Typography>
+              <Typography variant='caption'>NIS: {row.santri?.nis || '-'}</Typography>
             </Box>
           ),
-          role: (
-            <Box>
-              <Typography variant='body2' sx={{ fontWeight: 500 }}>
-                {row.role?.role_name || '-'}
-              </Typography>
-            </Box>
-          ),
-          status: (
-            <Chip
-              label={row.status === 'A' ? 'Aktif' : row.status === 'NV' ? 'Belum Verifikasi' : 'Tidak Aktif'}
+          file_rapot_link: fileUrl ? (
+            <Button
               size='small'
-              color={row.status === 'A' ? 'success' : row.status === 'NV' ? 'warning' : 'secondary'}
+              color='primary'
+              variant='tonal'
+              startIcon={<i className='tabler-file-download' />}
+              onClick={() => {
+                setPdfUrl(fileUrl)
+                setPdfTitle(`Rapot ${row.santri?.fullname || 'Santri'} - ${row.tahun_ajaran}`)
+                setOpenPdf(true)
+              }}
+            >
+              Lihat Rapot
+            </Button>
+          ) : (
+            <Typography variant='caption' color='text.disabled'>
+              Belum ada Rapot
+            </Typography>
+          ),
+          status_chip: (
+            <Chip
+              label={row.status || 'Aktif'}
+              size='small'
+              color={row.status === 'Aktif' ? 'success' : 'secondary'}
               variant='tonal'
             />
           ),
-          updated_at: (
+          updated_date: (
             <Typography variant='body2' sx={{ fontWeight: 500 }}>
-              {formatDate(row.modified_date || row.created_date)}
+              {formatDate(row.updated_at || row.created_at)}
             </Typography>
           )
         }
@@ -223,7 +220,7 @@ const UserList = () => {
     <Grid container spacing={6}>
       <Grid size={12}>
         <Card>
-          <CardHeader title='User' subheader='Manajemen data pengguna' />
+          <CardHeader title='Rapot Santri' subheader='Manajemen rapot santri' />
           <Toolbar sx={{ gap: 2, mb: 4, px: '1.5rem !important' }}>
             {canCreate && (
               <Tooltip title='Tambah'>
@@ -241,7 +238,7 @@ const UserList = () => {
             <Typography sx={{ flex: '1 1 auto' }} />
             <TextField
               size='small'
-              placeholder='Cari Nama, Username, atau Email...'
+              placeholder='Cari Nama Santri...'
               onChange={e => {
                 setFilter(e.target.value)
                 setPage(1)
@@ -251,8 +248,55 @@ const UserList = () => {
           <TableView changeSort={() => {}} model={buildTable()} />
         </Card>
       </Grid>
+
+      <Dialog
+        open={openPdf}
+        onClose={() => {
+          setOpenPdf(false)
+          setPdfUrl('')
+        }}
+        maxWidth='md'
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{pdfTitle}</span>
+          <IconButton
+            onClick={() => {
+              setOpenPdf(false)
+              setPdfUrl('')
+            }}
+          >
+            <i className='tabler-x' />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0, height: '650px' }}>
+          {pdfUrl ? (
+            <iframe src={pdfUrl} width='100%' height='100%' style={{ border: 'none' }} title='PDF Preview' />
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setOpenPdf(false)
+              setPdfUrl('')
+            }}
+            color='secondary'
+            variant='tonal'
+          >
+            Tutup
+          </Button>
+          <Button
+            onClick={() => window.open(pdfUrl, '_blank')}
+            color='primary'
+            variant='contained'
+            startIcon={<i className='tabler-external-link' />}
+          >
+            Buka di Tab Baru
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   )
 }
 
-export default UserList
+export default RapotSantriList
