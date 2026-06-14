@@ -9,7 +9,7 @@ export async function initOneSignal(): Promise<void> {
     await OneSignal.init({
       appId: process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID!,
       safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
-      allowLocalhostAsSecureOrigin: false
+      allowLocalhostAsSecureOrigin: process.env.NODE_ENV === 'development'
     })
 
     initialized = true
@@ -40,10 +40,21 @@ export async function initOneSignal(): Promise<void> {
   }
 }
 
-export async function loginOneSignal(externalId: string): Promise<void> {
+export async function loginOneSignal(externalId: string, retryCount = 0): Promise<void> {
   if (typeof window === 'undefined' || !externalId) return
 
+  if (!initialized) {
+    console.warn('⚠️ OneSignal is not initialized yet. Retrying login in 500ms...')
+    setTimeout(() => loginOneSignal(externalId, retryCount), 500)
+    return
+  }
+
   try {
+    // Berikan jeda waktu singkat jika ini percobaan pertama agar internal module SDK siap
+    if (retryCount === 0) {
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+
     await OneSignal.login(externalId)
 
     console.log(`✅ OneSignal login success (${externalId})`)
@@ -51,8 +62,14 @@ export async function loginOneSignal(externalId: string): Promise<void> {
     console.log('OneSignal ID:', OneSignal.User.onesignalId)
 
     console.log('External ID:', OneSignal.User.externalId)
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ OneSignal login failed:', error)
+
+    // Jika error adalah TypeError (biasanya karena internal module belum fully loaded), coba lagi
+    if (error instanceof TypeError && retryCount < 5) {
+      console.warn(`⚠️ OneSignal login failed due to TypeError. Retrying (${retryCount + 1}/5) in 1000ms...`)
+      setTimeout(() => loginOneSignal(externalId, retryCount + 1), 1000)
+    }
   }
 }
 
