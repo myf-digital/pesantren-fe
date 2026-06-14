@@ -2,12 +2,13 @@ version: "3.9"
 
 services:
   app:
-    image: pesantren-fe:${IMAGE_TAG}
+    image: pesantren-fe:${IMAGE_TAG:-latest}
     container_name: pesantren-fe
     env_file:
       - .env
     environment:
       - PORT=${PORT}
+      - API_URL=${API_URL}
     ports:
       - "127.0.0.1:${PORT}:${PORT}"
     restart: always
