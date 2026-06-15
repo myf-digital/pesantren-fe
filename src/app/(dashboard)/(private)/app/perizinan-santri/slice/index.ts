@@ -229,12 +229,12 @@ export const postLogGateSantriExport = createAsyncThunk(
   }
 )
 
-// ⭐ [POST] Pemindaian QR Code Gate Keeper (Dinamis Keluar / Kembali)
+// [POST] Pemindaian QR Code Gate Keeper (Dinamis Keluar / Kembali)
 export const postScanQrGate = createAsyncThunk(
   'perizinanSantri/scanQrGate',
-  async (payload: { qrcode_token: string; keterangan?: string }, thunkAPI) => {
+  async (payload: { nomor_kartu_santri: string; keterangan?: string }, thunkAPI) => {
     try {
-      const response = await api.post('/app/perizinan-santri/scan-qr-gate', payload)
+      const response = await api.post('/app/perizinan-santri/scan-card-gate', payload)
       return response.data // Respon: { status, message, data: { nama_santri, status_gate, kondisi, ... } }
     } catch (e: any) {
       return thunkAPI.rejectWithValue(e.response?.data)

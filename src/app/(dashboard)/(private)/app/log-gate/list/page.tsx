@@ -151,7 +151,7 @@ const LogGateSantriList = () => {
 
     try {
       // Eksekusi API Scan Gate
-      await dispatch(postScanQrGate({ qrcode_token: token })).unwrap()
+      await dispatch(postScanQrGate({ nomor_kartu_santri: token })).unwrap()
       // Tampilkan popup resume status profil hasil scan keluar/masuk
       setOpenModalResult(true)
       // Refresh list data tabel & summary metrics ter-update hari ini
