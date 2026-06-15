@@ -27,6 +27,12 @@ const InputImage = props => {
     setCameraSupported(!!navigator.mediaDevices?.getUserMedia)
   }, [])
 
+  useEffect(() => {
+    if (data.img && data.img.includes('placehold')) {
+      setFile(null)
+    }
+  }, [data.img])
+
   const getBase64 = file => {
     return new Promise(resolve => {
       const reader = new FileReader()
@@ -54,6 +60,8 @@ const InputImage = props => {
     const base64 = await getBase64(fileUploaded)
 
     handleChange(base64)
+
+    event.target.value = ''
   }
 
   const startCamera = async () => {

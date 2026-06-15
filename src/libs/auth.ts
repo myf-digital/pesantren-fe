@@ -1,25 +1,24 @@
-import CredentialsProvider from "next-auth/providers/credentials"
-import type { NextAuthOptions } from "next-auth"
+import CredentialsProvider from 'next-auth/providers/credentials'
+import type { NextAuthOptions } from 'next-auth'
 
-import { normalizeAbility } from "./permission"
+import { normalizeAbility } from './permission'
 
 export const authOptions: NextAuthOptions = {
   adapter: undefined, // DO NOT USE PrismaAdapter for external API
 
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: 'Credentials',
       credentials: {
-        username: { label: "Username", type: "username" },
-        password: { label: "Password", type: "password" }
+        username: { label: 'Username', type: 'username' },
+        password: { label: 'Password', type: 'password' }
       },
 
       async authorize(credentials) {
-
         try {
           const res = await fetch(`${process.env.API_URL}/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(credentials)
           })
 
@@ -29,7 +28,7 @@ export const authOptions: NextAuthOptions = {
             throw new Error(
               JSON.stringify({
                 message: 'Username atau password salah',
-                message_dev: json?.message || 'Login gagal',
+                message_dev: json?.message || 'Login gagal'
               })
             )
           }
@@ -45,20 +44,21 @@ export const authOptions: NextAuthOptions = {
               full_name: data.userdata.full_name,
               email: data.userdata.email,
               role_name: data.userdata.role.role_name,
+              pegawai: data.userdata.pegawai
             },
 
             permissions: normalizeAbility(data.userdata.ability)
           }
         } catch (err) {
-          console.error("LOGIN ERROR:", err);
-          
+          console.error('LOGIN ERROR:', err)
+
           return null
         }
       }
     })
   ],
 
-  session: { strategy: "jwt" },
+  session: { strategy: 'jwt' },
 
   callbacks: {
     async jwt({ token, user, trigger, session }) {
@@ -84,6 +84,6 @@ export const authOptions: NextAuthOptions = {
   },
 
   pages: {
-    signIn: "/login"
+    signIn: '/login'
   }
 }

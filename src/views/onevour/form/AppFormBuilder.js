@@ -724,6 +724,7 @@ export function formColumnDetailField(form) {
             session.setState(store)
           }}
           gridProps={{ sm: 4, md: 2, xs: 12 }}
+          ref={props.ref}
         />
       </Grid>
     )
@@ -909,6 +910,7 @@ const formColumnDetailSingleField = form => {
             session.setState(store)
           }}
           gridProps={{ sm: 4, md: 2, xs: 12 }}
+          ref={props.ref}
         />
       </Grid>
     )
