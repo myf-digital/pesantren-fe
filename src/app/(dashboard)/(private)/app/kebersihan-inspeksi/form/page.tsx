@@ -21,6 +21,8 @@ import { formatDate } from 'date-fns/format'
 
 import { Button } from '@mui/material'
 
+import { useSession } from 'next-auth/react'
+
 import DatePickerWrapper from '@core/styles/libs/react-datepicker'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
@@ -53,6 +55,10 @@ const statusOption = {
     {
       label: 'KOTOR',
       value: 'KOTOR'
+    },
+    {
+      label: 'RUSAK',
+      value: 'RUSAK'
     }
   ]
 }
@@ -102,6 +108,9 @@ const haris = [
 
 const FormValidationBasic = () => {
   const router = useRouter()
+
+  const { data: session } = useSession()
+  const currentUser: any = session?.userdata
 
   const searchParams = useSearchParams()
   const id = searchParams.get('id')
@@ -319,6 +328,86 @@ const FormValidationBasic = () => {
     }
   }, [onCancel, store])
 
+  useEffect(() => {
+    if (storeCabang.datas.length > 0) {
+      if (currentUser?.pegawai) {
+        const findCabang = storeCabang.datas.find(
+          cabang => cabang.id_cabang === currentUser?.pegawai?.organizationUnit?.cabang?.id_cabang
+        )
+
+        if (findCabang) {
+          setValue('id_cabang', {
+            value: findCabang.id_cabang,
+            label: findCabang.nama_cabang
+          } as any)
+          setState(prevState => {
+            return {
+              ...prevState,
+              id_cabang: {
+                value: findCabang.id_cabang,
+                label: findCabang.nama_cabang
+              }
+            }
+          })
+        }
+      }
+    }
+  }, [storeCabang.datas])
+
+  useEffect(() => {
+    if (storePegawai.pegawai.length > 0) {
+      if (currentUser?.pegawai) {
+        const findPegawai = storePegawai.pegawai.find(
+          pegawai => pegawai.id_pegawai === currentUser?.pegawai?.id_pegawai
+        )
+
+        if (findPegawai) {
+          handleJadwal({
+            value: findPegawai.id_pegawai,
+            label: findPegawai.nama_lengkap
+          })
+          setValue('id_petugas', {
+            value: findPegawai.id_pegawai,
+            label: findPegawai.nama_lengkap
+          } as any)
+          setState(prevState => {
+            return {
+              ...prevState,
+              id_petugas: {
+                value: findPegawai.id_pegawai,
+                label: findPegawai.nama_lengkap
+              }
+            }
+          })
+        }
+      }
+    }
+  }, [storePegawai.pegawai])
+
+  useEffect(() => {
+    if (storeSlot.datas.length > 0) {
+      const timeNow = formatDate(state.waktu, 'HH:mm')
+
+      const findSlot = storeSlot.datas.find(slot => timeNow >= slot.jam_mulai && timeNow < slot.jam_selesai)
+
+      if (findSlot) {
+        setValue('kode_slot', {
+          value: findSlot.kode_slot,
+          label: findSlot.kode_slot
+        } as any)
+        setState(prevState => {
+          return {
+            ...prevState,
+            kode_slot: {
+              value: findSlot.kode_slot,
+              label: findSlot.kode_slot
+            }
+          }
+        })
+      }
+    }
+  }, [storeSlot.datas])
+
   const onSubmit = () => {
     if (loading) return
 
@@ -369,6 +458,7 @@ const FormValidationBasic = () => {
         })
       ).then(res => {
         const result = { ...res?.payload }
+
         if (result?.status) {
           dispatch(
             postKebersihanScanLog({
@@ -486,8 +576,8 @@ const FormValidationBasic = () => {
         },
         readOnly: Boolean(view)
       }),
-      field({ type: 'date', key: 'tanggal', label: 'Tanggal', required: true, readOnly: Boolean(view) }),
-      field({ type: 'time', key: 'waktu', label: 'Waktu', required: true, readOnly: Boolean(view) }),
+      field({ type: 'date', key: 'tanggal', label: 'Tanggal', required: true, readOnly: true }),
+      field({ type: 'time', key: 'waktu', label: 'Waktu', required: true, readOnly: true }),
       field({
         type: 'select',
         key: 'status_kondisi',
