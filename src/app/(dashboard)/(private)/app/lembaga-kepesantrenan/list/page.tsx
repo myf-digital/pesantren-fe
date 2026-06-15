@@ -31,6 +31,7 @@ import { useCan } from '@/hooks/useCan'
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
+import CopyTooltip from '@/components/CopyTooltip'
 
 /* -----------------------------------------------------------
    RowAction: Menggunakan id_lembaga
@@ -90,7 +91,7 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       />
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -191,6 +192,18 @@ const LembagaKepesantrenanList = () => {
       ],
       values: values.map((row: any) => ({
         ...row,
+        nama_lembaga: (
+          <CopyTooltip
+            textToCopy={row.id_lembaga}
+            title={
+              <Box>
+                <Typography variant='body2' sx={{ fontWeight: 600, color: 'inherit' }}>
+                  {row.nama_lembaga}
+                </Typography>
+              </Box>
+            }
+          />
+        ),
         // Chip untuk Nama Cabang agar lebih eye-catching
         cabang_display: (
           <Chip

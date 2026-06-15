@@ -40,6 +40,7 @@ import DialogDelete from '@views/onevour/components/dialog-delete'
 
 // ** Icons
 import '@assets/iconify-icons/generated-icons.css'
+import CopyTooltip from '@/components/CopyTooltip'
 
 /* -----------------------------------------------------------
    Component: RowAction
@@ -140,8 +141,7 @@ const CabangList = () => {
       fetchData()
     }, 500)
 
-    
-return () => clearTimeout(timer)
+    return () => clearTimeout(timer)
   }, [fetchData])
 
   // Handle Action Success
@@ -215,7 +215,18 @@ return () => clearTimeout(timer)
       ],
       values: values.map((row: any) => ({
         ...row,
-
+        nama_cabang: (
+          <CopyTooltip
+            textToCopy={row.id_cabang}
+            title={
+              <Box>
+                <Typography variant='body2' sx={{ fontWeight: 600, color: 'inherit' }}>
+                  {row.nama_cabang}
+                </Typography>
+              </Box>
+            }
+          />
+        ),
         // Custom display untuk Kontak & Email
         contact_display: (
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>

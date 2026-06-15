@@ -34,6 +34,7 @@ import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
 import { useCan } from '@/hooks/useCan'
+import CopyTooltip from '@/components/CopyTooltip'
 
 const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: string) => void }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -77,7 +78,7 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       />
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -175,69 +176,74 @@ const PegawaiList = () => {
       values: (dataPage?.values || []).map((row: any) => ({
         ...row,
         nama_display: (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-              minWidth: 0,
-              width: '100%'
-            }}
-          >
-            <Avatar src={row.foto} sx={{ width: 38, height: 38 }} />
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography
-                variant='body2'
+          <CopyTooltip
+            textToCopy={row.id_pegawai}
+            title={
+              <Box
                 sx={{
-                  fontWeight: 600,
-                  color: 'text.primary',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3,
+                  minWidth: 0,
+                  width: '100%'
                 }}
-                title={row.nama_lengkap}
               >
-                {row.nama_lengkap}
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start', mt: 0.5 }}>
-                <Typography
-                  variant='caption'
-                  sx={{
-                    px: 1,
-                    py: 0.2,
-                    borderRadius: 1,
-                    bgcolor: 'grey.100',
-                    color: 'text.secondary',
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    maxWidth: '100%'
-                  }}
-                >
-                  NIK: {row.nik || '-'}
-                </Typography>
+                <Avatar src={row.foto} sx={{ width: 38, height: 38 }} />
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography
+                    variant='body2'
+                    sx={{
+                      fontWeight: 600,
+                      color: 'text.primary',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                    title={row.nama_lengkap}
+                  >
+                    {row.nama_lengkap}
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start', mt: 0.5 }}>
+                    <Typography
+                      variant='caption'
+                      sx={{
+                        px: 1,
+                        py: 0.2,
+                        borderRadius: 1,
+                        bgcolor: 'grey.100',
+                        color: 'text.secondary',
+                        fontWeight: 500,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '100%'
+                      }}
+                    >
+                      NIK: {row.nik || '-'}
+                    </Typography>
 
-                <Typography
-                  variant='caption'
-                  sx={{
-                    px: 1,
-                    py: 0.2,
-                    borderRadius: 1,
-                    bgcolor: 'primary.lighter',
-                    color: 'primary.main',
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    maxWidth: '100%'
-                  }}
-                >
-                  NIP: {row.nip || '-'}
-                </Typography>
+                    <Typography
+                      variant='caption'
+                      sx={{
+                        px: 1,
+                        py: 0.2,
+                        borderRadius: 1,
+                        bgcolor: 'primary.lighter',
+                        color: 'primary.main',
+                        fontWeight: 500,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '100%'
+                      }}
+                    >
+                      NIP: {row.nip || '-'}
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
-            </Box>
-          </Box>  
+            }
+          />
         ),
         kontak_display: (
           <Box sx={{ minWidth: 0 }}>

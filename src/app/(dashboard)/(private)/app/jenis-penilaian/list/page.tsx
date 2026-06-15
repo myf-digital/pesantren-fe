@@ -31,6 +31,7 @@ import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
 import { useCan } from '@/hooks/useCan'
+import CopyTooltip from '@/components/CopyTooltip'
 
 const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: string) => void }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -74,7 +75,7 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       />
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -170,12 +171,16 @@ const JenisPenilaianList = () => {
       values: (dataPage?.values || []).map((row: any) => ({
         ...row,
         pengujian_display: (
-          <Box>
-            <Typography variant='body2' sx={{ fontWeight: 600, color: 'text.primary' }}>
-              {row.jenis_pengujian}
-            </Typography>
-            <Typography variant='caption'>{row.singkatan || '-'}</Typography>
-          </Box>
+          <CopyTooltip
+            textToCopy={row.id_penilaian}
+            title={
+              <Box>
+                <Typography variant='body2' sx={{ fontWeight: 600, color: 'inherit' }}>
+                  {row.jenis_pengujian}
+                </Typography>
+              </Box>
+            }
+          />
         ),
         lembaga_display: (
           <Chip

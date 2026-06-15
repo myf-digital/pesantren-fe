@@ -31,6 +31,7 @@ import { useCan } from '@/hooks/useCan'
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
+import CopyTooltip from '@/components/CopyTooltip'
 
 /* -----------------------------------------------------------
    RowAction: Menggunakan id_lembaga
@@ -86,7 +87,7 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       />
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -189,14 +190,19 @@ const LembagaFormalList = () => {
         ...row,
         // Nama Lembaga dengan Subtitle Keterangan
         nama_lembaga_display: (
-          <Box>
-            <Typography variant='body2' sx={{ fontWeight: 600, color: 'text.primary' }}>
-              {row.nama_lembaga}
-            </Typography>
-            <Typography variant='caption' color='text.disabled'>
-              {row.keterangan || '-'}
-            </Typography>
-          </Box>
+          <CopyTooltip
+            textToCopy={row.id_lembaga}
+            title={
+              <Box>
+                <Typography variant='body2' sx={{ fontWeight: 600, color: 'inherit' }}>
+                  {row.nama_lembaga}
+                </Typography>
+                <Typography variant='caption' color='text.disabled'>
+                  {row.keterangan || '-'}
+                </Typography>
+              </Box>
+            }
+          />
         ),
         // Chip untuk Jenis Lembaga (SD, SMP, dll)
         jenis_display: (

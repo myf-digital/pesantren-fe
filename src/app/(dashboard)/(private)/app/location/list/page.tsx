@@ -31,6 +31,7 @@ import { useCan } from '@/hooks/useCan'
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
+import CopyTooltip from '@/components/CopyTooltip'
 
 /* -----------------------------------------------------------
    RowAction: Menggunakan id_lokasi
@@ -82,7 +83,7 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       />
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -148,6 +149,18 @@ const LocationList = () => {
       ],
       values: values.map((row: any) => ({
         ...row,
+        nama_lokasi: (
+          <CopyTooltip
+            textToCopy={row.id_lokasi}
+            title={
+              <Box>
+                <Typography variant='body2' sx={{ fontWeight: 600, color: 'inherit' }}>
+                  {row.nama_lokasi}
+                </Typography>
+              </Box>
+            }
+          />
+        ),
         // Chip untuk Jenis Lokasi
         jenis_display: (
           <Chip label={row.jenis_lokasi} size='small' variant='tonal' color='primary' sx={{ fontWeight: 500 }} />
@@ -217,15 +230,15 @@ const LocationList = () => {
       <Grid size={12}>
         <Card>
           <CardHeader title='Master Data Lokasi' />
-            <Toolbar
-              sx={{
-                px: '1.5rem !important',
-                minHeight: 'auto',
-                gap: 2,
-                flexWrap: 'wrap',
-                mb: '10px'
-              }}
-            >
+          <Toolbar
+            sx={{
+              px: '1.5rem !important',
+              minHeight: 'auto',
+              gap: 2,
+              flexWrap: 'wrap',
+              mb: '10px'
+            }}
+          >
             {canCreate && (
               <Tooltip title='Tambah'>
                 <Button
