@@ -31,6 +31,7 @@ import { useCan } from '@/hooks/useCan'
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
+import CopyTooltip from '@/components/CopyTooltip'
 
 /* -----------------------------------------------------------
    RowAction: Menggunakan id_jabatan
@@ -82,7 +83,7 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       />
     </>
   )
-  
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -189,6 +190,18 @@ const JabatanList = () => {
       ],
       values: values.map((row: any) => ({
         ...row,
+        nama_jabatan: (
+          <CopyTooltip
+            textToCopy={row.id_jabatan}
+            title={
+              <Box>
+                <Typography variant='body2' sx={{ fontWeight: 600, color: 'inherit' }}>
+                  {row.nama_jabatan}
+                </Typography>
+              </Box>
+            }
+          />
+        ),
         // Menampilkan Unit Organisasi dari relasi
         orgunit_display: (
           <Box>

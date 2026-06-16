@@ -43,7 +43,7 @@ const FormPerizinanSantriPage = () => {
   const [state, setState] = useState<any>({
     id_santri: null,
     id_lokasi_kamar: null,
-    sumber_pengajuan: { label: 'Santri', value: 'Santri' },
+    sumber_pengajuan: { label: 'Santri', value: 'Waliasuh' },
     jenis_izin: { label: 'Izin', value: 'Izin' },
     tanggal_mulai: '',
     tanggal_selesai: '',
@@ -129,7 +129,7 @@ const FormPerizinanSantriPage = () => {
     const payload = {
       id_santri: state.id_santri.value,
       id_lokasi_kamar: state.id_lokasi_kamar.value,
-      sumber_pengajuan: state.sumber_pengajuan?.value || 'Santri',
+      sumber_pengajuan: state.sumber_pengajuan?.value || 'Waliasuh',
       jenis_izin: state.jenis_izin?.value || 'Izin',
       tanggal_mulai: state.tanggal_mulai,
       tanggal_selesai: state.tanggal_selesai,

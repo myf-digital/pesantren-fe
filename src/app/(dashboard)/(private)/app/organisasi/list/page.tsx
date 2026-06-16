@@ -31,6 +31,7 @@ import { useCan } from '@/hooks/useCan'
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
+import CopyTooltip from '@/components/CopyTooltip'
 
 const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: string) => void }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -79,7 +80,7 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       />
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -187,14 +188,19 @@ const OrganizationUnitList = () => {
       values: values.map((row: any) => ({
         ...row,
         unit_display: (
-          <Box sx={{ pl: (row.level_orgunit || 0) * 2 }}>
-            <Typography variant='body2' sx={{ fontWeight: 600 }}>
-              {row.nama_orgunit}
-            </Typography>
-            <Typography variant='caption' color='text.disabled'>
-              {row.keterangan || '-'}
-            </Typography>
-          </Box>
+          <CopyTooltip
+            textToCopy={row.id_orgunit}
+            title={
+              <Box sx={{ pl: (row.level_orgunit || 0) * 2 }}>
+                <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                  {row.nama_orgunit}
+                </Typography>
+                <Typography variant='caption' color='text.disabled'>
+                  {row.keterangan || '-'}
+                </Typography>
+              </Box>
+            }
+          />
         ),
         jenis_display: (
           <Chip
