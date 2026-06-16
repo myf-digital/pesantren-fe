@@ -98,6 +98,10 @@ const statuss = [
   {
     label: 'KOTOR',
     value: 'KOTOR'
+  },
+  {
+    label: 'RUSAK',
+    value: 'RUSAK'
   }
 ]
 
@@ -195,7 +199,7 @@ function RowAction(data: any) {
       </Menu>
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
