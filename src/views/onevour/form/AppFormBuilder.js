@@ -94,7 +94,9 @@ export function field(props) {
     urlImage = null,
     render,
     interval = 30,
-    base64 = false
+    base64 = false,
+    accept,
+    helperText
   } = props
 
   return {
@@ -122,7 +124,9 @@ export function field(props) {
     render,
     interval,
     base64,
-    onChange
+    onChange,
+    accept,
+    helperText
   }
 }
 
@@ -959,7 +963,7 @@ const textField = form => {
         }
       }}
       render={({ field: { value, onChange } }) => {
-        const valueText = props?.options?.converter ? props.options.converter(value) : value
+        const valueText = (props?.options?.converter ? props.options.converter(value) : value) ?? ''
 
         return (
           <TextField
@@ -1119,7 +1123,7 @@ const numeralField = form => {
         }
       }}
       render={({ field: { value, onChange } }) => {
-        const valueText = props?.options?.converter ? props.options.converter(value) : value
+        const valueText = (props?.options?.converter ? props.options.converter(value) : value) ?? ''
 
         return (
           <TextField
@@ -1369,7 +1373,7 @@ const selectField = form => {
           <Autocomplete
             size='small'
             autoHighlight
-            value={value}
+            value={value ?? null}
             defaultValue={null}
             getOptionLabel={option => {
               return option.label || ''
@@ -1792,10 +1796,9 @@ export function textareaField(form) {
         return (
           <TextField
             size='small'
-            value={value}
+            value={value ?? ''}
             rows={4}
             multiline
-            {...field}
             label={
               props.required ? (
                 <span>

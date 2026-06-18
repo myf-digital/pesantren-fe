@@ -22,7 +22,11 @@ import {
   useTheme,
   useMediaQuery,
   Tabs,
-  Tab
+  Tab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -130,6 +134,11 @@ const PerizinanSantriTabsList = () => {
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
+
+  // State PDF Preview Modal
+  const [openPdf, setOpenPdf] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState('')
+  const [pdfTitle, setPdfTitle] = useState('')
 
   // Core API Fetcher
   const executeFetchData = useCallback(
@@ -309,10 +318,39 @@ const PerizinanSantriTabsList = () => {
   // ==========================================
   const buildTable = () => {
     const { dataPage } = store
-    let tableValues = (dataPage?.values || []).map((item: any, index: number) => ({
-      ...item,
-      no: (page - 1) * perPage + index + 1
-    }))
+    let tableValues = (dataPage?.values || []).map((item: any, index: number) => {
+      const fileUrl = item.file_izin
+        ? item.file_izin.startsWith('http')
+          ? item.file_izin
+          : `${process.env.NEXT_PUBLIC_API_URL || ''}${item.file_izin.startsWith('/') ? '' : '/'}${item.file_izin}`
+        : ''
+
+      return {
+        ...item,
+        no: (page - 1) * perPage + index + 1,
+        jenis_izin: (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start' }}>
+            <Typography variant='body2'>{item.jenis_izin}</Typography>
+            {fileUrl && (
+              <Button
+                size='small'
+                color='primary'
+                variant='tonal'
+                startIcon={<i className='tabler-file-download' />}
+                onClick={() => {
+                  setPdfUrl(fileUrl)
+                  setPdfTitle(`Berkas Izin ${item.santri?.fullname || 'Santri'} - ${item.jenis_izin}`)
+                  setOpenPdf(true)
+                }}
+                sx={{ py: 0.5, px: 2, height: 26, fontSize: '0.7rem' }}
+              >
+                Lihat Berkas
+              </Button>
+            )}
+          </Box>
+        )
+      }
+    })
     const tableCount = dataPage?.total || 0
 
     // 💡 TAB 2: Request Pembatalan List
@@ -515,6 +553,54 @@ const PerizinanSantriTabsList = () => {
           <TableView changeSort={() => {}} model={buildTable()} />
         </Card>
       </Grid>
+
+      {/* PREVIEW MODAL */}
+      <Dialog
+        open={openPdf}
+        onClose={() => {
+          setOpenPdf(false)
+          setPdfUrl('')
+        }}
+        maxWidth='md'
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{pdfTitle}</span>
+          <IconButton
+            onClick={() => {
+              setOpenPdf(false)
+              setPdfUrl('')
+            }}
+          >
+            <i className='tabler-x' />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0, height: '650px' }}>
+          {pdfUrl ? (
+            <iframe src={pdfUrl} width='100%' height='100%' style={{ border: 'none' }} title='PDF Preview' />
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setOpenPdf(false)
+              setPdfUrl('')
+            }}
+            color='secondary'
+            variant='tonal'
+          >
+            Tutup
+          </Button>
+          <Button
+            onClick={() => window.open(pdfUrl, '_blank')}
+            color='primary'
+            variant='contained'
+            startIcon={<i className='tabler-external-link' />}
+          >
+            Buka di Tab Baru
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   )
 }

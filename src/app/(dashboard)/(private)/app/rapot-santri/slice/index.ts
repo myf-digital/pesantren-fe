@@ -61,8 +61,10 @@ export const postRapotSantri = createAsyncThunk('rapot_santri/post', async (para
     const formData = new FormData()
     for (const key in params) {
       if (params[key] !== undefined && params[key] !== null) {
-        if (key === 'file_rapot' && params[key] instanceof File) {
-          formData.append('file_rapot', params[key])
+        if (key == 'file_rapot' || key == 'file_rapot_mda') {
+          if (params[key] instanceof File) {
+            formData.append(key, params[key])
+          }
         } else {
           formData.append(key, params[key])
         }
@@ -85,9 +87,9 @@ export const postRapotSantriUpdate = createAsyncThunk('rapot_santri/update', asy
     const formData = new FormData()
     for (const key in params) {
       if (params[key] !== undefined && params[key] !== null) {
-        if (key === 'file_rapot') {
+        if (key == 'file_rapot' || key == 'file_rapot_mda') {
           if (params[key] instanceof File) {
-            formData.append('file_rapot', params[key])
+            formData.append(key, params[key])
           }
         } else {
           formData.append(key, params[key])

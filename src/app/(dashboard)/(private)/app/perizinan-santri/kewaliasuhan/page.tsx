@@ -154,6 +154,11 @@ const PerizinanSantriList = () => {
   const [openDetailModal, setOpenDetailModal] = useState(false)
   const [selectedDetailRow, setSelectedDetailRow] = useState<any>(null)
 
+  // State PDF Preview Modal
+  const [openPdf, setOpenPdf] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState('')
+  const [pdfTitle, setPdfTitle] = useState('')
+
   // Core API Caller Page Fetcher
   const executeFetchData = useCallback(
     (currentPage: number, currentPerPage: number, filters: any) => {
@@ -386,7 +391,38 @@ const PerizinanSantriList = () => {
         tableColumn('STATUS', 'status_approval_display', 'center', renderStatusApproval as any),
         tableColumn('KONDISI', 'kondisi_display', 'center', renderKondisi as any)
       ],
-      values: tableValues,
+      values: tableValues.map((row: any) => {
+        const fileUrl = row.file_izin
+          ? row.file_izin.startsWith('http')
+            ? row.file_izin
+            : `${process.env.NEXT_PUBLIC_API_URL || ''}${row.file_izin.startsWith('/') ? '' : '/'}${row.file_izin}`
+          : ''
+
+        return {
+          ...row,
+          jenis_izin: (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start' }}>
+              <Typography variant='body2'>{row.jenis_izin}</Typography>
+              {fileUrl && (
+                <Button
+                  size='small'
+                  color='primary'
+                  variant='tonal'
+                  startIcon={<i className='tabler-file-download' />}
+                  onClick={() => {
+                    setPdfUrl(fileUrl)
+                    setPdfTitle(`Berkas Izin ${row.santri?.fullname || 'Santri'} - ${row.jenis_izin}`)
+                    setOpenPdf(true)
+                  }}
+                  sx={{ py: 0.5, px: 2, height: 26, fontSize: '0.7rem' }}
+                >
+                  Lihat Berkas
+                </Button>
+              )}
+            </Box>
+          )
+        }
+      }),
       count: tableCount,
       perPage: perPage,
       changePage: (_: any, n: number) => setPage(n + 1),
@@ -646,6 +682,54 @@ const PerizinanSantriList = () => {
             color={actionApprovalStatus === 'Disetujui' ? 'success' : 'error'}
           >
             Eksekusi Keputusan
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* PREVIEW MODAL */}
+      <Dialog
+        open={openPdf}
+        onClose={() => {
+          setOpenPdf(false)
+          setPdfUrl('')
+        }}
+        maxWidth='md'
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{pdfTitle}</span>
+          <IconButton
+            onClick={() => {
+              setOpenPdf(false)
+              setPdfUrl('')
+            }}
+          >
+            <i className='tabler-x' />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0, height: '650px' }}>
+          {pdfUrl ? (
+            <iframe src={pdfUrl} width='100%' height='100%' style={{ border: 'none' }} title='PDF Preview' />
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setOpenPdf(false)
+              setPdfUrl('')
+            }}
+            color='secondary'
+            variant='tonal'
+          >
+            Tutup
+          </Button>
+          <Button
+            onClick={() => window.open(pdfUrl, '_blank')}
+            color='primary'
+            variant='contained'
+            startIcon={<i className='tabler-external-link' />}
+          >
+            Buka di Tab Baru
           </Button>
         </DialogActions>
       </Dialog>

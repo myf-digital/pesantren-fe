@@ -45,8 +45,10 @@ const semesterOption = {
 
 const defaultValues = {
   id_santri: null,
+  tahun_ajaran: '',
   semester: null,
   file_rapot: '',
+  file_rapot_mda: '',
   status: {
     value: 'Aktif',
     label: 'Aktif'
@@ -66,6 +68,7 @@ const RapotSantriForm = () => {
 
   const [state, setState] = useState<any>(defaultValues)
   const [fileObject, setFileObject] = useState<File | null>(null)
+  const [fileObjectMda, setFileObjectMda] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
 
   const {
@@ -121,6 +124,12 @@ const RapotSantriForm = () => {
   }, [state.file_rapot])
 
   useEffect(() => {
+    if (!state.file_rapot_mda) {
+      setFileObject(null)
+    }
+  }, [state.file_rapot_mda])
+
+  useEffect(() => {
     if (!store.crud) return
 
     if (store.crud.status) {
@@ -162,7 +171,8 @@ const RapotSantriForm = () => {
       tahun_ajaran: state.tahun_ajaran,
       semester: state.semester.value,
       status: state.status.value,
-      file_rapot: fileObject
+      file_rapot: fileObject,
+      file_rapot_mda: fileObjectMda
     }
 
     if (id) {
@@ -222,7 +232,7 @@ const RapotSantriForm = () => {
       field({
         type: 'file',
         key: 'file_rapot',
-        label: 'File Rapot (PDF)',
+        label: 'Rapot Kelas Formal (PDF)',
         required: !id,
         readOnly: Boolean(view),
         accept: 'application/pdf',
@@ -242,6 +252,31 @@ const RapotSantriForm = () => {
             ? state.file_rapot.startsWith('http')
               ? state.file_rapot
               : `${process.env.NEXT_PUBLIC_API_URL || ''}${state.file_rapot.startsWith('/') ? '' : '/'}${state.file_rapot}`
+            : ''
+      }),
+      field({
+        type: 'file',
+        key: 'file_rapot_mda',
+        label: 'Rapot Kelas MDA (PDF)',
+        required: !id,
+        readOnly: Boolean(view),
+        accept: 'application/pdf',
+        helperText: 'Hanya mendukung file PDF (maks. 10MB)',
+        options: {
+          onChange: (file: File) => {
+            setFileObjectMda(file)
+            setState((prev: any) => ({
+              ...prev,
+              file_rapot_mda: file.name
+            }))
+          }
+        },
+        urlImage: fileObject
+          ? URL.createObjectURL(fileObject)
+          : state.file_rapot_mda && typeof state.file_rapot_mda === 'string'
+            ? state.file_rapot_mda.startsWith('http')
+              ? state.file_rapot_mda
+              : `${process.env.NEXT_PUBLIC_API_URL || ''}${state.file_rapot_mda.startsWith('/') ? '' : '/'}${state.file_rapot_mda}`
             : ''
       })
     ]
