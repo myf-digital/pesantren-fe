@@ -9,17 +9,19 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContentText from '@mui/material/DialogContentText'
 
-const DialogConfirmation = ({ ...res }) => {
+const DialogConfirmation = ({ id, handleClose, handleOk, ...res }) => {
   return (
     <Fragment>
-      <Dialog {...res} aria-labelledby='alert-dialog-title' aria-describedby='alert-dialog-description'>
+      <Dialog maxWidth='xs' fullWidth={true} {...res} onClose={handleClose} aria-labelledby='alert-dialog-title' aria-describedby='alert-dialog-description'>
         <DialogTitle id='alert-dialog-title'>Hapus</DialogTitle>
         <DialogContent>
-          <DialogContentText id='alert-dialog-description'>Apakah yakin menghapus data {res.id}?</DialogContentText>
+          <DialogContentText component='div' id='alert-dialog-description'>
+            Apakah yakin menghapus data <div style={{ display: 'inline-block', paddingLeft: '0px', fontWeight: 600 }}>{id}</div>?
+          </DialogContentText>
         </DialogContent>
         <DialogActions className='dialog-actions-dense'>
-          <Button onClick={res.handleClose}>Tidak</Button>
-          <Button onClick={res.handleOk} color='error'>
+          <Button onClick={handleClose}>Tidak</Button>
+          <Button onClick={handleOk} color='error'>
             Ya
           </Button>
         </DialogActions>

@@ -9,19 +9,21 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContentText from '@mui/material/DialogContentText'
 
-const DialogConfirmation = ({ ...res }) => {
+const DialogConfirmation = ({ title, content, handleClose, handleOk, ...res }) => {
   return (
     <Fragment>
-      <Dialog {...res} aria-labelledby='alert-dialog-title' aria-describedby='alert-dialog-description'>
-        <DialogTitle id='alert-dialog-title'>{res.title}</DialogTitle>
+      <Dialog maxWidth='xs' fullWidth={true} {...res} onClose={handleClose} aria-labelledby='alert-dialog-title' aria-describedby='alert-dialog-description'>
+        <DialogTitle id='alert-dialog-title'>{title}</DialogTitle>
         <DialogContent>
-          <DialogContentText id='alert-dialog-description'>{res.content}</DialogContentText>
+          <DialogContentText component='div' id='alert-dialog-description'>
+            {content}
+          </DialogContentText>
         </DialogContent>
         <DialogActions className='dialog-actions-dense'>
-          <Button onClick={res.handleClose} color='error'>
+          <Button onClick={handleClose} color='error'>
             Tidak
           </Button>
-          <Button onClick={res.handleOk} color='success'>
+          <Button onClick={handleOk} color='success'>
             Ya
           </Button>
         </DialogActions>
