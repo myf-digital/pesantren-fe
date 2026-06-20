@@ -182,7 +182,7 @@ const AbsenHarianSantriList = () => {
     const getKamarMaster = async () => {
       try {
         setLoadingKamar(true)
-        const res = await dispatch(fetchLocationPage({ page: 1, perPage: 50, keyword: 'kamar' })).unwrap()
+        const res = await dispatch(fetchLocationPage({ page: 1, perPage: 1000, keyword: 'kamar' })).unwrap()
 
         const valuesData = res?.data?.values || res?.values || []
         setListKamar([{ id_lokasi: '', nama_lokasi: 'Semua' }, ...valuesData])
