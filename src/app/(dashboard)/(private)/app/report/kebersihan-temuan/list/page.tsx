@@ -92,7 +92,6 @@ function RowAction(data: any) {
     </TableCell>
   )
 }
-
 interface CabangOption {
   id_cabang: string
   nama_cabang: string
