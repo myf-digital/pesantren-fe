@@ -152,7 +152,8 @@ const RapotSantriList = () => {
         tableColumn('TAHUN AJARAN', 'tahun_ajaran'),
         tableColumn('SEMESTER', 'semester'),
         tableColumn('STATUS', 'status_chip'),
-        tableColumn('FILE RAPOT', 'file_rapot_link'),
+        tableColumn('RAPOT FORMAL', 'file_rapot_link'),
+        tableColumn('RAPOT MDA', 'file_rapot_mda_link'),
         tableColumn('TERAKHIR DIUBAH', 'updated_date')
       ],
       values: (dataPage?.values || []).map((row: any) => {
@@ -160,6 +161,12 @@ const RapotSantriList = () => {
           ? row.file_rapot.startsWith('http')
             ? row.file_rapot
             : `${process.env.NEXT_PUBLIC_API_URL || ''}${row.file_rapot.startsWith('/') ? '' : '/'}${row.file_rapot}`
+          : ''
+
+        const fileUrlMda = row.file_rapot_mda
+          ? row.file_rapot_mda.startsWith('http')
+            ? row.file_rapot_mda
+            : `${process.env.NEXT_PUBLIC_API_URL || ''}${row.file_rapot_mda.startsWith('/') ? '' : '/'}${row.file_rapot_mda}`
           : ''
 
         return {
@@ -184,11 +191,30 @@ const RapotSantriList = () => {
                 setOpenPdf(true)
               }}
             >
-              Lihat Rapot
+              Rapot Formal
             </Button>
           ) : (
             <Typography variant='caption' color='text.disabled'>
-              Belum ada Rapot
+              Belum ada Rapot Formal
+            </Typography>
+          ),
+          file_rapot_mda_link: fileUrlMda ? (
+            <Button
+              size='small'
+              color='primary'
+              variant='tonal'
+              startIcon={<i className='tabler-file-download' />}
+              onClick={() => {
+                setPdfUrl(fileUrlMda)
+                setPdfTitle(`Rapot MDA ${row.santri?.fullname || 'Santri'} - ${row.tahun_ajaran}`)
+                setOpenPdf(true)
+              }}
+            >
+              Rapot MDA
+            </Button>
+          ) : (
+            <Typography variant='caption' color='text.disabled'>
+              Belum ada Rapot MDA
             </Typography>
           ),
           status_chip: (

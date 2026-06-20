@@ -72,50 +72,73 @@ const initialState: InitialState = {
 --------------------------- */
 
 // [GET] Fetch List Perizinan Santri (Index Page) dengan Multi-Filter & Search Keyword
-export const fetchPerizinanSantriPage = createAsyncThunk(
-  'perizinanSantri/fetchPage',
-  async (params: any, thunkAPI) => {
-    try {
-      const response = await api.get('/app/perizinan-santri', { params })
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.rejectWithValue(e.response?.data)
-    }
+export const fetchPerizinanSantriPage = createAsyncThunk('perizinanSantri/fetchPage', async (params: any, thunkAPI) => {
+  try {
+    const response = await api.get('/app/perizinan-santri', { params })
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.rejectWithValue(e.response?.data)
   }
-)
+})
 
 // [GET] Fetch Detail Perizinan beserta Dokumen Surat Terkait berdasarkan ID Izin
-export const fetchPerizinanSantriById = createAsyncThunk(
-  'perizinanSantri/fetchById',
-  async (id: string, thunkAPI) => {
-    try {
-      const response = await api.get(`/app/perizinan-santri/${id}`)
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.rejectWithValue(e.response?.data)
-    }
+export const fetchPerizinanSantriById = createAsyncThunk('perizinanSantri/fetchById', async (id: string, thunkAPI) => {
+  try {
+    const response = await api.get(`/app/perizinan-santri/${id}`)
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.rejectWithValue(e.response?.data)
   }
-)
+})
 
 // [POST] Mengajukan Perizinan Baru
-export const postPerizinanSantri = createAsyncThunk(
-  'perizinanSantri/post',
-  async (payload: any, thunkAPI) => {
-    try {
-      const response = await api.post('/app/perizinan-santri', payload)
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.rejectWithValue(e.response?.data)
+export const postPerizinanSantri = createAsyncThunk('perizinanSantri/post', async (payload: any, thunkAPI) => {
+  try {
+    const formData = new FormData()
+    for (const key in payload) {
+      if (payload[key] !== undefined && payload[key] !== null) {
+        if (key == 'file_izin') {
+          if (payload[key] instanceof File) {
+            formData.append(key, payload[key])
+          }
+        } else {
+          formData.append(key, payload[key])
+        }
+      }
     }
+    const response = await api.post('/app/perizinan-santri', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.rejectWithValue(e.response?.data)
   }
-)
+})
 
 // [PUT] Mengubah Data Pengajuan Perizinan (Kondisi status masih 'Menunggu')
 export const putPerizinanSantriUpdate = createAsyncThunk(
   'perizinanSantri/update',
   async ({ id, params }: { id: string; params: any }, thunkAPI) => {
     try {
-      const response = await api.put(`/app/perizinan-santri/${id}`, params)
+      const formData = new FormData()
+      for (const key in params) {
+        if (params[key] !== undefined && params[key] !== null) {
+          if (key == 'file_izin') {
+            if (params[key] instanceof File) {
+              formData.append(key, params[key])
+            }
+          } else {
+            formData.append(key, params[key])
+          }
+        }
+      }
+      const response = await api.put(`/app/perizinan-santri/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
       return response.data
     } catch (e: any) {
       return thunkAPI.rejectWithValue(e.response?.data)
@@ -163,32 +186,26 @@ export const postPerizinanCancel = createAsyncThunk(
 )
 
 // [POST] Download Data Logs / Template File Excel Kosongan
-export const postPerizinanExport = createAsyncThunk<any, any>(
-  'perizinanSantri/export',
-  async (payload, thunkAPI) => {
-    try {
-      const response = await api.post('/app/perizinan-santri/export', payload)
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+export const postPerizinanExport = createAsyncThunk<any, any>('perizinanSantri/export', async (payload, thunkAPI) => {
+  try {
+    const response = await api.post('/app/perizinan-santri/export', payload)
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
 // [POST] Upload File Berkas Excel untuk Analisis Data & Preview Hasil Import Berkas
-export const postPerizinanImport = createAsyncThunk<any, any>(
-  'perizinanSantri/import',
-  async (formData, thunkAPI) => {
-    try {
-      const response = await api.post('/app/perizinan-santri/import', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+export const postPerizinanImport = createAsyncThunk<any, any>('perizinanSantri/import', async (formData, thunkAPI) => {
+  try {
+    const response = await api.post('/app/perizinan-santri/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
 // [POST] Commit Massal / Batch Insert Larik Object Hasil Analisis Valid Validasi Import
 export const postPerizinanBatchInsert = createAsyncThunk<any, any>(
@@ -249,7 +266,7 @@ export const perizinanSantriSlice = createSlice({
   name: 'perizinanSantri',
   initialState,
   reducers: {
-    resetRedux: (state) => {
+    resetRedux: state => {
       state.crud = null
       state.delete = null
       state.scanResult = null // Otomatis bersihkan data hasil scan saat ditutup di komponen UI
@@ -346,8 +363,18 @@ export const perizinanSantriSlice = createSlice({
     })
 
     // Matcher Global untuk mengelola status loading state secara terpusat
-    builder.addMatcher(a => a.type.endsWith('/pending'), (state) => { state.loading = true })
-    builder.addMatcher(a => a.type.endsWith('/fulfilled') || a.type.endsWith('/rejected'), (state) => { state.loading = false })
+    builder.addMatcher(
+      a => a.type.endsWith('/pending'),
+      state => {
+        state.loading = true
+      }
+    )
+    builder.addMatcher(
+      a => a.type.endsWith('/fulfilled') || a.type.endsWith('/rejected'),
+      state => {
+        state.loading = false
+      }
+    )
   }
 })
 

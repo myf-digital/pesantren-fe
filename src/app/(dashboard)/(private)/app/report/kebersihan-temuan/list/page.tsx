@@ -3,7 +3,7 @@
 import React, { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 // ** MUI Imports
 import Grid from '@mui/material/Grid2'
@@ -34,10 +34,10 @@ import { fetchCabangAll } from '../../../cabang/slice'
 import { fetchLocationAll } from '../../../location/slice'
 import { fetchPegawaiAll } from '../../../guru-mata-pelajaran/slice'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
+import CustomChip from '@/@core/components/mui/Chip'
 
 function RowAction(data: any) {
   const [anchorEl, setAnchorEl] = useState(null)
-  const dispatch = useAppDispatch()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
@@ -81,7 +81,7 @@ function RowAction(data: any) {
       </Menu>
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -92,7 +92,6 @@ function RowAction(data: any) {
     </TableCell>
   )
 }
-
 interface CabangOption {
   id_cabang: string
   nama_cabang: string
@@ -109,25 +108,70 @@ interface PetugasOption {
 }
 
 const PickersComponent = forwardRef(({ ...props }: any, ref) => {
-  return (
-    <TextField
-      inputRef={ref}
-      fullWidth
-      size='small'
-      {...props}
-    />
-  )
+  return <TextField inputRef={ref} fullWidth size='small' {...props} />
 })
+
+interface StatusOption {
+  label: string
+  value: number | string
+}
+
+interface KondisiOption {
+  label: string
+  value: string
+}
+
+const statuss: StatusOption[] = [
+  { label: 'Semua', value: '' },
+  { label: 'Belum Diproses', value: 0 },
+  { label: 'Sedang Diproses', value: 1 },
+  { label: 'Sudah Diproses', value: 2 },
+  { label: 'Tidak Dapat Diproses', value: 3 }
+]
+
+const kondisis: KondisiOption[] = [
+  { label: 'Semua', value: '' },
+  { label: 'BERSIH', value: 'BERSIH' },
+  { label: 'KOTOR', value: 'KOTOR' },
+  { label: 'RUSAK', value: 'RUSAK' }
+]
+
+const statusObj: Record<string, { color: any; value: string }> = {
+  0: {
+    color: 'secondary',
+    value: 'Belum Diproses'
+  },
+  1: {
+    color: 'info',
+    value: 'Sedang Diproses'
+  },
+  2: {
+    color: 'success',
+    value: 'Sudah Diproses'
+  },
+  3: {
+    color: 'error',
+    value: 'Tidak Dapat Diproses'
+  }
+}
 
 const TableTemuan = () => {
   // ** Hooks
   const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.kebersihan_temuan)
 
   const canExport = useCan('export')
 
-  const [filter, setFilter] = useState('')
+  // Read initial filters from URL params
+  const initialQ = searchParams.get('q') || ''
+  const initialTanggalMulai = searchParams.get('tanggal_mulai')
+  const initialTanggalSelesai = searchParams.get('tanggal_selesai')
+  const initialStatus = searchParams.get('status') || ''
+  const initialKondisi = searchParams.get('status_kondisi') || searchParams.get('kondisi') || ''
+
+  const [filter, setFilter] = useState(initialQ)
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
@@ -141,12 +185,25 @@ const TableTemuan = () => {
   const [loadingPetugas, setLoadingPetugas] = useState(false)
 
   // State Filter Utama UI
-  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfWeek(new Date(), { weekStartsOn: 1 }))
-  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(new Date())
+  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(
+    initialTanggalMulai ? new Date(initialTanggalMulai) : startOfWeek(new Date(), { weekStartsOn: 1 })
+  )
+  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(
+    initialTanggalSelesai ? new Date(initialTanggalSelesai) : new Date()
+  )
   const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>({ id_cabang: '', nama_cabang: 'Semua' })
   const [selectedLokasi, setSelectedLokasi] = useState<LokasiOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
-  const [selectedPetugas, setSelectedPetugas] = useState<PetugasOption | null>({ id_pegawai: '', nama_lengkap: 'Semua' })
-  const [searchTyped, setSearchTyped] = useState('')
+  const [selectedPetugas, setSelectedPetugas] = useState<PetugasOption | null>({
+    id_pegawai: '',
+    nama_lengkap: 'Semua'
+  })
+  const [selectedStatus, setSelectedStatus] = useState<StatusOption | null>(
+    statuss.find(s => String(s.value) === initialStatus) || { label: 'Semua', value: '' }
+  )
+  const [selectedKondisi, setSelectedKondisi] = useState<KondisiOption | null>(
+    kondisis.find(k => k.value === initialKondisi) || { label: 'Semua', value: '' }
+  )
+  const [searchTyped, setSearchTyped] = useState(initialQ)
 
   // Ambil Master Data Cabang via fetchCabangAll
   useEffect(() => {
@@ -190,41 +247,64 @@ const TableTemuan = () => {
     getLokasiMaster()
   }, [dispatch])
 
-    // Ambil Master Data Petugas via fetchPegawaiAll
-    useEffect(() => {
-      const getPetugasMaster = async () => {
-        try {
-          setLoadingPetugas(true)
-          const res = await dispatch(fetchPegawaiAll({ page: 1, perPage: 100, q: filter })).unwrap()
-  
-          if (res?.status && res?.data) {
-            setListPetugas([{ id_pegawai: '', nama_lengkap: 'Semua' }, ...res.data])
-          } else if (Array.isArray(res)) {
-            setListPetugas([{ id_pegawai: '', nama_lengkap: 'Semua' }, ...res])
-          }
-        } catch {
-          setListPetugas([{ id_pegawai: '', nama_lengkap: 'Semua' }])
-        } finally {
-          setLoadingPetugas(false)
-        }
-      }
-      getPetugasMaster()
-    }, [dispatch])
+  // Ambil Master Data Petugas via fetchPegawaiAll
+  useEffect(() => {
+    const getPetugasMaster = async () => {
+      try {
+        setLoadingPetugas(true)
+        const res = await dispatch(fetchPegawaiAll({ page: 1, perPage: 100, q: filter })).unwrap()
 
-  const executeFetchData = useCallback((overrides?: any) => {
-    dispatch(
-      fetchKebersihanTemuanPage({
-        page: overrides?.page !== undefined ? overrides.page : page,
-        perPage: overrides?.perPage !== undefined ? overrides.perPage : perPage,
-        id_cabang: overrides?.id_cabang !== undefined ? overrides.id_cabang : (selectedCabang?.id_cabang || ''),
-        id_lokasi: overrides?.id_lokasi !== undefined ? overrides.id_lokasi : (selectedLokasi?.id_lokasi || ''),
-        id_petugas: overrides?.id_petugas !== undefined ? overrides.id_petugas : (selectedPetugas?.id_pegawai || ''),
-        tanggal_awal: overrides?.tanggal_awal !== undefined ? overrides.tanggal_awal : (tanggalAwal || ''),
-        tanggal_akhir: overrides?.tanggal_akhir !== undefined ? overrides.tanggal_akhir : (tanggalAkhir || ''),
-        q: overrides?.q !== undefined ? overrides.q : searchTyped
-      })
-    )
-  }, [dispatch, page, perPage, selectedCabang, selectedLokasi, selectedPetugas, tanggalAwal, tanggalAkhir, searchTyped])
+        if (res?.status && res?.data) {
+          setListPetugas([{ id_pegawai: '', nama_lengkap: 'Semua' }, ...res.data])
+        } else if (Array.isArray(res)) {
+          setListPetugas([{ id_pegawai: '', nama_lengkap: 'Semua' }, ...res])
+        }
+      } catch {
+        setListPetugas([{ id_pegawai: '', nama_lengkap: 'Semua' }])
+      } finally {
+        setLoadingPetugas(false)
+      }
+    }
+    getPetugasMaster()
+  }, [dispatch])
+
+  const executeFetchData = useCallback(
+    (overrides?: any) => {
+      dispatch(
+        fetchKebersihanTemuanPage({
+          page: overrides?.page !== undefined ? overrides.page : page,
+          perPage: overrides?.perPage !== undefined ? overrides.perPage : perPage,
+          id_cabang: overrides?.id_cabang !== undefined ? overrides.id_cabang : selectedCabang?.id_cabang || '',
+          id_lokasi: overrides?.id_lokasi !== undefined ? overrides.id_lokasi : selectedLokasi?.id_lokasi || '',
+          id_petugas: overrides?.id_petugas !== undefined ? overrides.id_petugas : selectedPetugas?.id_pegawai || '',
+          tanggal_awal: overrides?.tanggal_awal !== undefined ? overrides.tanggal_awal : tanggalAwal || '',
+          tanggal_akhir: overrides?.tanggal_akhir !== undefined ? overrides.tanggal_akhir : tanggalAkhir || '',
+          status:
+            overrides?.status !== undefined
+              ? overrides.status
+              : selectedStatus?.value !== undefined
+                ? selectedStatus.value
+                : '',
+          status_kondisi:
+            overrides?.status_kondisi !== undefined ? overrides.status_kondisi : selectedKondisi?.value || '',
+          q: overrides?.q !== undefined ? overrides.q : searchTyped
+        })
+      )
+    },
+    [
+      dispatch,
+      page,
+      perPage,
+      selectedCabang,
+      selectedLokasi,
+      selectedPetugas,
+      selectedStatus,
+      selectedKondisi,
+      tanggalAwal,
+      tanggalAkhir,
+      searchTyped
+    ]
+  )
 
   const executeFetchRef = useRef(executeFetchData)
   useEffect(() => {
@@ -240,13 +320,10 @@ const TableTemuan = () => {
     return () => clearTimeout(timer)
   }, [filter, perPage])
 
-  const handleChangePage = useCallback(
-    (newPage: number) => {
-      setPage(newPage)
-      executeFetchRef.current({ page: newPage })
-    },
-    []
-  )
+  const handleChangePage = useCallback((newPage: number) => {
+    setPage(newPage)
+    executeFetchRef.current({ page: newPage })
+  }, [])
 
   const onExport = async () => {
     try {
@@ -258,7 +335,9 @@ const TableTemuan = () => {
           id_lokasi: selectedLokasi?.id_lokasi || '',
           id_petugas: selectedPetugas?.id_pegawai || '',
           tanggal_awal: tanggalAwal || '',
-          tanggal_akhir: tanggalAkhir || ''
+          tanggal_akhir: tanggalAkhir || '',
+          status: selectedStatus?.value !== undefined ? selectedStatus.value : '',
+          status_kondisi: selectedKondisi?.value || ''
         })
       ).unwrap()
 
@@ -306,9 +385,11 @@ const TableTemuan = () => {
     setSelectedCabang(listCabang.find(s => s.id_cabang === '') || null)
     setSelectedLokasi(listLokasi.find(k => k.id_lokasi === '') || null)
     setSelectedPetugas(listPetugas.find(p => p.id_pegawai === '') || null)
+    setSelectedStatus({ label: 'Semua', value: '' })
+    setSelectedKondisi({ label: 'Semua', value: '' })
     setSearchTyped('')
     setPage(1)
-    
+
     executeFetchData({
       page: 1,
       id_cabang: '',
@@ -316,6 +397,8 @@ const TableTemuan = () => {
       id_petugas: '',
       tanggal_awal: format(defaultTanggalAwal, 'yyyy-MM-dd'),
       tanggal_akhir: format(defaultTanggalAkhir, 'yyyy-MM-dd'),
+      status: '',
+      status_kondisi: '',
       q: ''
     })
   }
@@ -359,12 +442,12 @@ const TableTemuan = () => {
         page: page,
         fields: [
           tableColumn('OPTION', 'act-x', 'left', renderOption as any),
-          tableColumn('CABANG', 'cabang'),
           tableColumn('LOKASI', 'lokasi'),
           tableColumn('PETUGAS', 'petugas'),
           tableColumn('KATEGORI', 'kategori'),
-          tableColumn('DESKRIPSI', 'deskripsi'),
           tableColumn('TINGKAT', 'tingkat_custom'),
+          tableColumn('KONDISI', 'kondisi'),
+          tableColumn('STATUS', 'status_text'),
           tableColumn('PERLU TINDAK LANJUT', 'tindak_lanjut'),
           tableColumn('FOTO', 'foto_path', 'left', imageView as any)
         ],
@@ -373,9 +456,25 @@ const TableTemuan = () => {
             ...row,
             tingkat_custom: row.tingkat?.label ?? convertOptionTingkat().find(d => d.value === row.tingkat)?.label,
             tindak_lanjut: row.perlu_tindak_lanjut ? 'Ya' : 'Tidak',
-            cabang: row.kebersihan_inspeksi?.cabang?.nama_cabang || '-',
-            lokasi: row.kebersihan_inspeksi?.lokasi?.nama_lokasi || '-',
-            petugas: row.kebersihan_inspeksi?.pegawai?.nama_lengkap || '-',
+            kondisi: row.kebersihan_inspeksi?.status_kondisi || '-',
+            lokasi: (
+              <Box>
+                <Typography variant='body2'>{row.kebersihan_inspeksi?.lokasi?.nama_lokasi || '-'}</Typography>
+                <Typography variant='caption' color='text.disabled'>
+                  {row.kebersihan_inspeksi?.cabang?.nama_cabang || '-'}
+                </Typography>
+              </Box>
+            ),
+            status_text: (
+              <CustomChip
+                round='true'
+                size='small'
+                label={statusObj[row.status]?.value}
+                color={statusObj[row.status]?.color}
+                sx={{ textTransform: 'capitalize' }}
+              />
+            ),
+            petugas: row.kebersihan_inspeksi?.pegawai?.nama_lengkap || '-'
           }
         }),
         count: total,
@@ -449,7 +548,7 @@ const TableTemuan = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 3 }}>
+            {/* <Grid size={{ xs: 12, sm: 3 }}>
               <Autocomplete
                 size='small'
                 options={listPetugas}
@@ -474,6 +573,48 @@ const TableTemuan = () => {
                   />
                 )}
               />
+            </Grid> */}
+
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={statuss}
+                value={selectedStatus}
+                onChange={(_, newValue) => setSelectedStatus(newValue)}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label='Status'
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: <>{params.InputProps.endAdornment}</>
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={kondisis}
+                value={selectedKondisi}
+                onChange={(_, newValue) => setSelectedKondisi(newValue)}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label='Kondisi'
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: <>{params.InputProps.endAdornment}</>
+                    }}
+                  />
+                )}
+              />
             </Grid>
           </Grid>
           <Grid container spacing={4} sx={{ mb: 4 }}>
@@ -487,7 +628,7 @@ const TableTemuan = () => {
                 scrollableYearDropdown
                 maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
                 dropdownMode='select'
-                customInput={<PickersComponent label="Tanggal Awal" />}
+                customInput={<PickersComponent label='Tanggal Awal' />}
               />
             </Grid>
 
@@ -501,7 +642,7 @@ const TableTemuan = () => {
                 scrollableYearDropdown
                 maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
                 dropdownMode='select'
-                customInput={<PickersComponent label="Tanggal Akhir" />}
+                customInput={<PickersComponent label='Tanggal Akhir' />}
               />
             </Grid>
           </Grid>
@@ -554,7 +695,7 @@ const TableTemuan = () => {
           >
             <Typography sx={{ flex: '1 1 auto' }} />
             <Tooltip title='Cari...'>
-              <TextField id='outlined-basic' label='Cari...' size='small' onChange={handleFilter} />
+              <TextField id='outlined-basic' label='Cari...' size='small' value={filter} onChange={handleFilter} />
             </Tooltip>
           </Toolbar>
           <TableView model={buildTable()} changeSort={null} />

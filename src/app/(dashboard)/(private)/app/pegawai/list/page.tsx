@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import Grid from '@mui/material/Grid2'
 import Card from '@mui/material/Card'
@@ -22,13 +22,18 @@ import {
   Avatar,
   Tooltip,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Autocomplete,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material'
 
 import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { deletePegawai, fetchPegawaiPage, postExport, resetRedux } from '../slice/index'
+import { fetchJabatanAll } from '../../jabatan/slice'
 
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
@@ -92,22 +97,54 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
 
 const PegawaiList = () => {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.pegawai)
+  const storeJabatan = useAppSelector(state => state.jabatan)
 
   // Permission Hooks
   const canCreate = useCan('create')
   const canImport = useCan('import')
   const canExport = useCan('export')
 
+  // Read initial filters from URL params
+  const initialStatusPegawai = searchParams.get('status_pegawai') || 'Semua'
+  const initialIdJabatan = searchParams.get('id_jabatan') || ''
+
   const [filter, setFilter] = useState('')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
 
+  const [statusPegawai, setStatusPegawai] = useState(initialStatusPegawai)
+  const [selectedJabatan, setSelectedJabatan] = useState<any>({ label: 'Semua', value: '' })
+
+  // Fetch all jabatans on mount
+  useEffect(() => {
+    dispatch(fetchJabatanAll({}))
+  }, [dispatch])
+
+  // Resolve initial select label when jabatan list finishes loading
+  useEffect(() => {
+    if (initialIdJabatan && storeJabatan.datas.length > 0) {
+      const match = storeJabatan.datas.find(j => j.id_jabatan === initialIdJabatan)
+      if (match) {
+        setSelectedJabatan({ label: match.nama_jabatan, value: match.id_jabatan })
+      }
+    }
+  }, [initialIdJabatan, storeJabatan.datas])
+
   const fetchData = useCallback(() => {
-    dispatch(fetchPegawaiPage({ page, perPage, keyword: filter }))
-  }, [dispatch, page, perPage, filter])
+    dispatch(
+      fetchPegawaiPage({
+        page,
+        perPage,
+        keyword: filter,
+        status_pegawai: statusPegawai !== 'Semua' ? statusPegawai : undefined,
+        id_jabatan: selectedJabatan?.value || undefined
+      })
+    )
+  }, [dispatch, page, perPage, filter, statusPegawai, selectedJabatan])
 
   useEffect(() => {
     const timer = setTimeout(fetchData, 500)
@@ -134,7 +171,13 @@ const PegawaiList = () => {
   const onExport = async () => {
     try {
       setLoadingExport(true)
-      const res = await dispatch(postExport({ q: filter })).unwrap()
+      const res = await dispatch(
+        postExport({
+          q: filter,
+          status_pegawai: statusPegawai !== 'Semua' ? statusPegawai : undefined,
+          id_jabatan: selectedJabatan?.value || undefined
+        })
+      ).unwrap()
 
       if (res?.status && res?.data) {
         const url = `${process.env.NEXT_PUBLIC_API_URL}${res.data}`
@@ -286,7 +329,50 @@ const PegawaiList = () => {
     <Grid container spacing={6}>
       <Grid size={12}>
         <Card>
-          <CardHeader title='Data Pegawai' sx={{ paddingBottom: 0 }} />
+          <CardHeader title='Data Pegawai' sx={{ paddingBottom: 2 }} />
+          <Box sx={{ px: 6, pb: 4 }}>
+            <Grid container spacing={4}>
+              <Grid size={{ xs: 12, sm: 3 }}>
+                <FormControl fullWidth size='small'>
+                  <InputLabel id='status-pegawai-select-label'>Status Pegawai</InputLabel>
+                  <Select
+                    labelId='status-pegawai-select-label'
+                    id='status-pegawai-select'
+                    value={statusPegawai}
+                    label='Status Pegawai'
+                    onChange={e => setStatusPegawai(e.target.value)}
+                  >
+                    <MenuItem value='Semua'>Semua</MenuItem>
+                    <MenuItem value='guru'>Guru</MenuItem>
+                    <MenuItem value='pegawai'>Pegawai</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 3 }}>
+                <Autocomplete
+                  size='small'
+                  options={[{ label: 'Semua', value: '' }, ...storeJabatan.datas.map(r => ({
+                    label: r.nama_jabatan,
+                    value: r.id_jabatan
+                  }))]}
+                  value={selectedJabatan}
+                  onChange={(_, newValue) => setSelectedJabatan(newValue || { label: 'Semua', value: '' })}
+                  getOptionLabel={option => option.label || ''}
+                  isOptionEqualToValue={(option, value) => option.value === value?.value}
+                  renderInput={params => (
+                    <TextField
+                      {...params}
+                      label='Jabatan'
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: <>{params.InputProps.endAdornment}</>
+                      }}
+                    />
+                  )}
+                />
+              </Grid>
+            </Grid>
+          </Box>
           <Toolbar
             sx={{
               px: '1.5rem !important',
@@ -341,7 +427,7 @@ const PegawaiList = () => {
             )}
             <Typography sx={{ flex: '1 1 auto' }} />
             <Tooltip title='Cari...'>
-              <TextField id='outlined-basic' label='Cari...' size='small' onChange={handleFilter} />
+              <TextField id='outlined-basic' label='Cari...' size='small' value={filter} onChange={handleFilter} />
             </Tooltip>
           </Toolbar>
           <TableView changeSort={() => {}} model={buildTable()} />

@@ -74,6 +74,7 @@ export type CardStatsVerticalProps = {
   chipText?: string
   chipColor?: ThemeColor
   chipVariant?: ChipProps['variant']
+  href?: string
 }
 
 export type CardStatsWithAreaChartProps = {

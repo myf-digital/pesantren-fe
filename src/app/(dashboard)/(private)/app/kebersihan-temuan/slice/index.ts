@@ -16,6 +16,7 @@ export interface FetchParams {
   id_lokasi?: string
   id_petugas?: string
   status?: number | string
+  status_kondisi?: string
 }
 
 export interface InitialState {

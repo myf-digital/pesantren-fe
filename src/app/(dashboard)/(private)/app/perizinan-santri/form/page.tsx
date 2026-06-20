@@ -24,6 +24,7 @@ const FormPerizinanSantriPage = () => {
   const store = useAppSelector(state => state.perizinan_santri)
 
   const [openConfirm, setOpenConfirm] = useState<boolean>(false)
+  const [fileObject, setFileObject] = useState<File | null>(null)
 
   // Opsi Dropdown Select & Radio (Data Referensi Form Builder)
   const [opt, setOpt] = useState({
@@ -102,6 +103,12 @@ const FormPerizinanSantriPage = () => {
     }
   }, [store.crud, dispatch, router])
 
+  useEffect(() => {
+    if (!state.file_izin) {
+      setFileObject(null)
+    }
+  }, [state.file_izin])
+
   const onSubmitPreValidate = () => {
     if (
       !state.id_santri?.value ||
@@ -125,7 +132,6 @@ const FormPerizinanSantriPage = () => {
 
   const handleFinalSubmit = () => {
     setOpenConfirm(false)
-    console.log(state.sumber_pengajuan, state.jenis_izin)
     const payload = {
       id_santri: state.id_santri.value,
       id_lokasi_kamar: state.id_lokasi_kamar.value,
@@ -133,7 +139,8 @@ const FormPerizinanSantriPage = () => {
       jenis_izin: state.jenis_izin?.value || 'Izin',
       tanggal_mulai: state.tanggal_mulai,
       tanggal_selesai: state.tanggal_selesai,
-      alasan: state.alasan
+      alasan: state.alasan,
+      file_izin: fileObject
     }
 
     dispatch(postPerizinanSantri(payload))
@@ -197,6 +204,30 @@ const FormPerizinanSantriPage = () => {
       label: 'Alasan',
       placeholder: 'Jelaskan alasan pengajuan izin...',
       required: true
+    }),
+
+    field({
+      type: 'file',
+      key: 'file_izin',
+      label: 'File Izin (Opsional)',
+      required: false,
+      helperText: 'File maksimal 2MB',
+      options: {
+        onChange: (file: File) => {
+          setFileObject(file)
+          setState((prev: any) => ({
+            ...prev,
+            file_izin: file.name
+          }))
+        }
+      },
+      urlImage: fileObject
+        ? URL.createObjectURL(fileObject)
+        : state.file_izin && typeof state.file_izin === 'string'
+          ? state.file_izin.startsWith('http')
+            ? state.file_izin
+            : `${process.env.NEXT_PUBLIC_API_URL || ''}${state.file_izin.startsWith('/') ? '' : '/'}${state.file_izin}`
+          : ''
     })
   ]
 

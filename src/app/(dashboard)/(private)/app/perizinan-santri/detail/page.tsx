@@ -17,8 +17,10 @@ import {
   TextField,
   Divider,
   Dialog,
+  DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  IconButton
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 
@@ -97,6 +99,17 @@ const DetailPerizinanPage = () => {
   const [openConfirmApproveCancel, setOpenConfirmApproveCancel] = useState<boolean>(false)
   const [openConfirmRejectCancel, setOpenConfirmRejectCancel] = useState<boolean>(false)
   const [openSuratDialog, setOpenSuratDialog] = useState<boolean>(false)
+
+  // State PDF Preview Modal
+  const [openPdf, setOpenPdf] = useState<boolean>(false)
+  const [pdfUrl, setPdfUrl] = useState<string>('')
+  const [pdfTitle, setPdfTitle] = useState<string>('')
+
+  const handleViewFile = (url: string) => {
+    setPdfUrl(url)
+    setPdfTitle(`Berkas Izin ${data?.nama_santri || 'Santri'} - ${data?.jenis_izin || 'Izin'}`)
+    setOpenPdf(true)
+  }
 
   // State Form Input
   const [alasanRequestPembatalan, setAlasanRequestPembatalan] = useState<string>('')
@@ -368,6 +381,7 @@ const DetailPerizinanPage = () => {
               data={data}
               onViewSurat={() => setOpenSuratDialog(true)}
               onPrintSurat={handlePrintSuratDirect}
+              onViewFile={handleViewFile}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 5 }}>
@@ -456,6 +470,54 @@ const DetailPerizinanPage = () => {
 
         {/* DIALOG PREVIEW SURAT THERMAL */}
         <SuratIzinThermalDialog open={openSuratDialog} data={data} onClose={() => setOpenSuratDialog(false)} />
+
+        {/* PREVIEW MODAL */}
+        <Dialog
+          open={openPdf}
+          onClose={() => {
+            setOpenPdf(false)
+            setPdfUrl('')
+          }}
+          maxWidth='md'
+          fullWidth
+        >
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{pdfTitle}</span>
+            <IconButton
+              onClick={() => {
+                setOpenPdf(false)
+                setPdfUrl('')
+              }}
+            >
+              <i className='tabler-x' />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0, height: '650px' }}>
+            {pdfUrl ? (
+              <iframe src={pdfUrl} width='100%' height='100%' style={{ border: 'none' }} title='PDF Preview' />
+            ) : null}
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setOpenPdf(false)
+                setPdfUrl('')
+              }}
+              color='secondary'
+              variant='tonal'
+            >
+              Tutup
+            </Button>
+            <Button
+              onClick={() => window.open(pdfUrl, '_blank')}
+              color='primary'
+              variant='contained'
+              startIcon={<i className='tabler-external-link' />}
+            >
+              Buka di Tab Baru
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     )
   }
@@ -472,6 +534,7 @@ const DetailPerizinanPage = () => {
           onRejectCancel={handleTriggerRejectCancellation}
           submitting={submitting}
           onBack={() => router.push(redirectBackUrl)}
+          onViewFile={handleViewFile}
         />
       ) : (
         <ApprovalKedisiplinanCard
@@ -484,6 +547,7 @@ const DetailPerizinanPage = () => {
           onReject={handleTriggerReject}
           submitting={submitting}
           onBack={() => router.push(redirectBackUrl)}
+          onViewFile={handleViewFile}
         />
       )}
 
@@ -521,6 +585,54 @@ const DetailPerizinanPage = () => {
         onClose={() => setOpenConfirmRejectCancel(false)}
         onConfirm={handleExecuteRejectCancellation}
       />
+
+      {/* PDF PREVIEW MODAL */}
+      <Dialog
+        open={openPdf}
+        onClose={() => {
+          setOpenPdf(false)
+          setPdfUrl('')
+        }}
+        maxWidth='md'
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{pdfTitle}</span>
+          <IconButton
+            onClick={() => {
+              setOpenPdf(false)
+              setPdfUrl('')
+            }}
+          >
+            <i className='tabler-x' />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0, height: '650px' }}>
+          {pdfUrl ? (
+            <iframe src={pdfUrl} width='100%' height='100%' style={{ border: 'none' }} title='PDF Preview' />
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setOpenPdf(false)
+              setPdfUrl('')
+            }}
+            color='secondary'
+            variant='tonal'
+          >
+            Tutup
+          </Button>
+          <Button
+            onClick={() => window.open(pdfUrl, '_blank')}
+            color='primary'
+            variant='contained'
+            startIcon={<i className='tabler-external-link' />}
+          >
+            Buka di Tab Baru
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
@@ -684,9 +796,10 @@ interface InformasiPengajuanCardProps {
   data: any
   onViewSurat: () => void
   onPrintSurat: () => void
+  onViewFile: (url: string) => void
 }
 
-const InformasiPengajuanCard = ({ data, onViewSurat, onPrintSurat }: InformasiPengajuanCardProps) => (
+const InformasiPengajuanCard = ({ data, onViewSurat, onPrintSurat, onViewFile }: InformasiPengajuanCardProps) => (
   <Card sx={{ border: '1px solid var(--mui-palette-divider)', boxShadow: 'none' }}>
     <CardContent sx={{ p: 6 }}>
       <Typography
@@ -744,6 +857,27 @@ const InformasiPengajuanCard = ({ data, onViewSurat, onPrintSurat }: InformasiPe
             {data.sumber_pengajuan}
           </Typography>
         </Grid>
+        {data.file_izin && (
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Typography variant='body2' sx={{ color: 'text.disabled', mb: 1.5 }}>
+              Berkas Lampiran
+            </Typography>
+            <Button
+              size='small'
+              variant='tonal'
+              color='primary'
+              startIcon={<i className='tabler-file-download' />}
+              onClick={() => {
+                const fileUrl = data.file_izin.startsWith('http')
+                  ? data.file_izin
+                  : `${process.env.NEXT_PUBLIC_API_URL || ''}${data.file_izin.startsWith('/') ? '' : '/'}${data.file_izin}`
+                onViewFile(fileUrl)
+              }}
+            >
+              Lihat Berkas
+            </Button>
+          </Grid>
+        )}
         {data.surat_izin?.nomor_surat && (
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant='body2' sx={{ color: 'text.disabled' }}>
@@ -852,6 +986,7 @@ interface ApprovalCardProps {
   onReject: () => void
   submitting: boolean
   onBack: () => void
+  onViewFile: (url: string) => void
 }
 const ApprovalKedisiplinanCard = ({
   data,
@@ -862,7 +997,8 @@ const ApprovalKedisiplinanCard = ({
   onApprove,
   onReject,
   submitting,
-  onBack
+  onBack,
+  onViewFile
 }: ApprovalCardProps) => {
   const isPendingApproval = data.status_izin === 'Menunggu' && !isCanceled
   return (
@@ -924,6 +1060,31 @@ const ApprovalKedisiplinanCard = ({
                 </Typography>
                 <Typography variant='body2'>: {data.tanggal_izin || '-'}</Typography>
               </Box>
+              {data.file_izin && (
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant='body2' sx={{ width: 150, color: 'text.secondary' }}>
+                    Berkas Lampiran
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant='body2'>:</Typography>
+                    <Button
+                      size='small'
+                      variant='tonal'
+                      color='primary'
+                      startIcon={<i className='tabler-file-download' />}
+                      onClick={() => {
+                        const fileUrl = data.file_izin.startsWith('http')
+                          ? data.file_izin
+                          : `${process.env.NEXT_PUBLIC_API_URL || ''}${data.file_izin.startsWith('/') ? '' : '/'}${data.file_izin}`
+                        onViewFile(fileUrl)
+                      }}
+                      sx={{ py: 0.5, px: 2, height: 26, fontSize: '0.75rem', ml: 1 }}
+                    >
+                      Lihat Berkas
+                    </Button>
+                  </Box>
+                </Box>
+              )}
             </Box>
             <Typography variant='body2' sx={{ color: 'text.secondary', mb: 1 }}>
               Alasan
@@ -1019,6 +1180,7 @@ interface RequestCancelCardProps {
   onRejectCancel: () => void
   submitting: boolean
   onBack: () => void
+  onViewFile: (url: string) => void
 }
 const RequestCancellationApprovalCard = ({
   data,
@@ -1027,7 +1189,8 @@ const RequestCancellationApprovalCard = ({
   onApproveCancel,
   onRejectCancel,
   submitting,
-  onBack
+  onBack,
+  onViewFile
 }: RequestCancelCardProps) => {
   return (
     <Card
@@ -1117,6 +1280,28 @@ const RequestCancellationApprovalCard = ({
                 {data.tanggal_izin || '-'}
               </Typography>
             </Grid>
+            {data.file_izin && (
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
+                  Berkas Lampiran
+                </Typography>
+                <Button
+                  size='small'
+                  variant='tonal'
+                  color='primary'
+                  startIcon={<i className='tabler-file-download' />}
+                  onClick={() => {
+                    const fileUrl = data.file_izin.startsWith('http')
+                      ? data.file_izin
+                      : `${process.env.NEXT_PUBLIC_API_URL || ''}${data.file_izin.startsWith('/') ? '' : '/'}${data.file_izin}`
+                    onViewFile(fileUrl)
+                  }}
+                  sx={{ py: 0.5, px: 2, height: 26, fontSize: '0.75rem' }}
+                >
+                  Lihat Berkas
+                </Button>
+              </Grid>
+            )}
             <Grid size={12}>
               <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
                 Alasan Izin
