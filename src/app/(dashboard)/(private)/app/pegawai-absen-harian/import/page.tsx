@@ -7,7 +7,8 @@ import { toast } from 'react-toastify'
 import Button from '@mui/material/Button'
 
 import { useAppDispatch } from '@/redux-store/hook'
-import { postJamKerjaInsertBatch, postJamKerjaExport, postJamKerjaImport, resetRedux } from '../slice/index'
+import { resetRedux } from '../slice/index'
+import { postJamKerjaInsertBatch, postJamKerjaExport, postJamKerjaImport } from '../../pegawai-jam-kerja/slice/index'
 
 export interface ImportJamKerjaPayload {
   id_pegawai: string

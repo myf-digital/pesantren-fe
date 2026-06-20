@@ -9,7 +9,8 @@ import { toast } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { fetchJamKerjaById, postJamKerja, postJamKerjaUpdate, resetRedux } from '../slice/index'
+import { resetRedux } from '../slice/index'
+import { fetchJamKerjaById, postJamKerja, postJamKerjaUpdate } from '../../pegawai-jam-kerja/slice/index'
 import { fetchPegawaiPage } from '../../pegawai/slice/index'
 import { fetchLocationPage } from '../../location/slice/index'
 
