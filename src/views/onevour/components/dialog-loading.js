@@ -23,7 +23,7 @@ function LinearProgressWithLabel(props) {
   )
 }
 
-const DialogLoading = ({ ...res }) => {
+const DialogLoading = ({ loadingProgress, ...res }) => {
   return (
     <Fragment>
       <Dialog {...res} maxWidth='md' fullWidth={true} aria-labelledby='form-dialog-title'>
@@ -31,9 +31,9 @@ const DialogLoading = ({ ...res }) => {
           Please wait...
         </DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText component='div'>
             <Box sx={{ width: '100%' }}>
-              <LinearProgressWithLabel value={res.loadingProgress} />
+              <LinearProgressWithLabel value={loadingProgress} />
             </Box>
           </DialogContentText>
         </DialogContent>

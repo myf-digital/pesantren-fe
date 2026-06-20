@@ -9,16 +9,16 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContentText from '@mui/material/DialogContentText'
 
-const DialogInformation = ({ ...res }) => {
+const DialogInformation = ({ title, content, handleOk, ...res }) => {
   return (
     <Fragment>
       <Dialog {...res} maxWidth='md' fullWidth={true} aria-labelledby='form-dialog-title'>
-        <DialogTitle id='form-dialog-title'>{res.title}</DialogTitle>
+        <DialogTitle id='form-dialog-title'>{title}</DialogTitle>
         <DialogContent>
-          <DialogContentText>{res.content}</DialogContentText>
+          <DialogContentText component='div'>{content}</DialogContentText>
         </DialogContent>
         <DialogActions className='dialog-actions-dense'>
-          <Button onClick={res.handleOk} color='primary'>
+          <Button onClick={handleOk} color='primary'>
             Ok
           </Button>
         </DialogActions>
