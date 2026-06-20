@@ -2,6 +2,7 @@
 
 import React, { forwardRef, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import {
   Card,
@@ -90,7 +91,13 @@ const PickersComponent = forwardRef(({ ...props }: any, ref) => {
 
 const AbsenHarianSantriList = () => {
   const dispatch = useAppDispatch()
+  const searchParams = useSearchParams()
   const store = useAppSelector(state => state.absen_kelas_santri)
+
+  // Read initial filters from URL params
+  const initialStatus = searchParams.get('status') || 'Semua'
+  const initialTanggalMulai = searchParams.get('tanggal_mulai')
+  const initialTanggalSelesai = searchParams.get('tanggal_selesai')
 
   // Permission Hooks
   const canExport = useCan('export')
@@ -102,14 +109,18 @@ const AbsenHarianSantriList = () => {
   const [loadingLokasi, setLoadingLokasi] = useState(false)
 
   // State Filter Utama UI
-  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfWeek(new Date(), { weekStartsOn: 1 }))
-  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(new Date())
+  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(
+    initialTanggalMulai ? new Date(initialTanggalMulai) : startOfWeek(new Date(), { weekStartsOn: 1 })
+  )
+  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(
+    initialTanggalSelesai ? new Date(initialTanggalSelesai) : new Date()
+  )
   const [selectedJamPel, setSelectedJamPel] = useState<JamPelajaranOption | null>({
     id_jampel: '',
     nama_jampel: 'Semua'
   })
   const [selectedLokasi, setSelectedLokasi] = useState<LokasiOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
-  const [status, setStatus] = useState('Semua')
+  const [status, setStatus] = useState(initialStatus)
   const [searchTyped, setSearchTyped] = useState('')
 
   // State Snapshot Filter Sah (Mencegah Auto Fetch)

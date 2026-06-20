@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { toast } from 'react-toastify'
 
@@ -23,7 +23,11 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
-  Autocomplete
+  Autocomplete,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
 import Button from '@mui/material/Button'
@@ -31,7 +35,6 @@ import Typography from '@mui/material/Typography'
 import TableCell from '@mui/material/TableCell'
 import IconButton from '@mui/material/IconButton'
 import Menu from '@mui/material/Menu'
-import MenuItem from '@mui/material/MenuItem'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchSantriPage, fetchSantriById, postSantriUpdate, postExport, resetRedux } from '../slice/index'
@@ -159,11 +162,15 @@ function RowAction({ row, onView }: { row: any; onView: (row: any) => void }) {
 const TableSantri = () => {
   // ** Hooks
   const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.santri)
   const storeCabang = useAppSelector(state => state.cabang)
 
   const canExport = useCan('export')
+
+  // Read initial filters from URL params
+  const initialStatus = searchParams.get('status') || 'Semua'
 
   const [filter, setFilter] = useState('')
   const [page, setPage] = useState(1)
@@ -175,6 +182,7 @@ const TableSantri = () => {
   const [detail, setDetail] = useState<any>(null)
 
   const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>({ label: 'Semua', value: '' })
+  const [status, setStatus] = useState(initialStatus)
 
   const executeFetchData = useCallback(
     (overrides?: any) => {
@@ -183,11 +191,12 @@ const TableSantri = () => {
           page: overrides?.page !== undefined ? overrides.page : page,
           perPage: overrides?.perPage !== undefined ? overrides.perPage : perPage,
           id_cabang: overrides?.id_cabang !== undefined ? overrides.id_cabang : selectedCabang?.value || '',
+          status: overrides?.status !== undefined ? overrides.status : (status !== 'Semua' ? status : undefined),
           q: overrides?.q !== undefined ? overrides.q : filter
         })
       )
     },
-    [dispatch, page, perPage, selectedCabang, filter]
+    [dispatch, page, perPage, selectedCabang, status, filter]
   )
 
   const handleSearchSubmit = () => {
@@ -197,6 +206,7 @@ const TableSantri = () => {
 
   const handleResetFilter = () => {
     setSelectedCabang(null)
+    setStatus('Semua')
     setFilter('')
     setPage(1)
 
@@ -204,6 +214,7 @@ const TableSantri = () => {
       page: 1,
       perPage: 10,
       id_cabang: '',
+      status: undefined,
       q: ''
     })
   }
@@ -256,16 +267,30 @@ const TableSantri = () => {
     const timer = setTimeout(() => {
       setPage(1)
 
-      dispatch(fetchSantriPage({ page: 1, perPage: perPage, q: filter }))
+      dispatch(
+        fetchSantriPage({
+          page: 1,
+          perPage: perPage,
+          q: filter,
+          id_cabang: selectedCabang?.value || '',
+          status: status !== 'Semua' ? status : undefined
+        })
+      )
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [dispatch, filter, perPage])
+  }, [dispatch, filter, perPage, selectedCabang, status])
 
   const onExport = async () => {
     try {
       setLoadingExport(true)
-      const res = await dispatch(postExport({ q: filter, id_cabang: selectedCabang?.value || '' })).unwrap()
+      const res = await dispatch(
+        postExport({
+          q: filter,
+          id_cabang: selectedCabang?.value || '',
+          status: status !== 'Semua' ? status : undefined
+        })
+      ).unwrap()
 
       if (res?.status && res?.data) {
         const url = `${process.env.NEXT_PUBLIC_API_URL}${res.data}`
@@ -833,6 +858,22 @@ const TableSantri = () => {
                   />
                 )}
               />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <FormControl fullWidth size='small'>
+                <InputLabel id='status-select-label'>Status Santri</InputLabel>
+                <Select
+                  labelId='status-select-label'
+                  id='status-select'
+                  value={status}
+                  label='Status Santri'
+                  onChange={e => setStatus(e.target.value)}
+                >
+                  <MenuItem value='Semua'>Semua</MenuItem>
+                  <MenuItem value='1'>Aktif</MenuItem>
+                  <MenuItem value='0'>Nonaktif</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
 
