@@ -195,7 +195,7 @@ const JamKerjaPegawaiList = () => {
                 <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                   {row.pegawai?.nik && (
                     <Typography variant='caption' sx={{ px: 1, py: 0.2, borderRadius: 1, bgcolor: 'grey.100' }}>
-                      NIK: {row.pegawai.nik}
+                      NIK: {row.pegawai?.nik}
                     </Typography>
                   )}
                   {row.pegawai?.nip && (
@@ -203,7 +203,7 @@ const JamKerjaPegawaiList = () => {
                       variant='caption'
                       sx={{ px: 1, py: 0.2, borderRadius: 1, bgcolor: 'primary.lighter', color: 'primary.main' }}
                     >
-                      NIP: {row.pegawai.nip}
+                      NIP: {row.pegawai?.nip}
                     </Typography>
                   )}
                 </Box>
@@ -227,7 +227,7 @@ const JamKerjaPegawaiList = () => {
             </Typography>
             {row.lokasiKerja?.jenis_lokasi && (
               <Typography variant='caption' color='text.disabled'>
-                Type: {row.lokasiKerja.jenis_lokasi}
+                Type: {row.lokasiKerja?.jenis_lokasi}
               </Typography>
             )}
           </Box>

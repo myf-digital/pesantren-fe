@@ -424,11 +424,11 @@ const TableTemuan = () => {
             tindak_lanjut: row.perlu_tindak_lanjut ? 'Ya' : 'Tidak',
             inspeksi: (
               <Fragment>
-                <p>{`${row.kebersihan_inspeksi?.cabang?.nama_cabang}`}</p>
-                <p>{`${row.kebersihan_inspeksi?.lokasi?.nama_lokasi}`}</p>
-                <p>{`${tanggalArr[2]}/${tanggalArr[1]}/${tanggalArr[0]}`}</p>
-                <p>{`${row.kebersihan_inspeksi?.waktu.slice(0, -3)}`}</p>
-                <p>{`${row.kebersihan_inspeksi?.pegawai?.nama_lengkap}`}</p>
+                <p>{`${row.kebersihan_inspeksi?.cabang?.nama_cabang || '-'}`}</p>
+                <p>{`${row.kebersihan_inspeksi?.lokasi?.nama_lokasi || '-'}`}</p>
+                <p>{tanggalArr ? `${tanggalArr[2]}/${tanggalArr[1]}/${tanggalArr[0]}` : '-'}</p>
+                <p>{row.kebersihan_inspeksi?.waktu ? `${row.kebersihan_inspeksi.waktu.slice(0, -3)}` : '-'}</p>
+                <p>{`${row.kebersihan_inspeksi?.pegawai?.nama_lengkap || '-'}`}</p>
               </Fragment>
             ),
             status_text: (

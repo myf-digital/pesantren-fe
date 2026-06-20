@@ -171,7 +171,7 @@ function RowAction(data: any) {
       </Menu>
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -333,10 +333,10 @@ const Table = () => {
         values: values?.map((row: any) => {
           return {
             ...row,
-            lembaga: row.lembaga.nama_lembaga,
-            tahun_ajaran: row.tahun_ajaran.tahun_ajaran,
-            tingkat: row.tingkat.tingkat,
-            wali_kelas: row.pegawai.nama_lengkap,
+            lembaga: row.lembaga?.nama_lembaga || '',
+            tahun_ajaran: row.tahun_ajaran?.tahun_ajaran || '',
+            tingkat: row.tingkat?.tingkat || '',
+            wali_kelas: row.pegawai?.nama_lengkap || '',
             status_custom: (
               <CustomChip
                 round='true'

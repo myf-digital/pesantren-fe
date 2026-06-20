@@ -199,7 +199,7 @@ const JenisPenilaianList = () => {
         ),
         status_display: (
           <Chip
-            label={row.status.toUpperCase()}
+            label={row.status ? row.status.toUpperCase() : ''}
             size='small'
             color={row.status === 'active' ? 'success' : 'error'}
             variant='tonal'

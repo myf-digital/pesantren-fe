@@ -279,7 +279,7 @@ const TablePenempatanKamarSantri = () => {
                       wordBreak: 'break-all',
                     }}
                   >
-                    {row.santri.fullname}
+                    {row.santri?.fullname || '-'}
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <Typography
@@ -293,7 +293,7 @@ const TablePenempatanKamarSantri = () => {
                         fontWeight: 500
                       }}
                     >
-                      NIK: {row.santri.nik || '-'}
+                      NIK: {row.santri?.nik || '-'}
                     </Typography>
 
                     <Typography
@@ -307,7 +307,7 @@ const TablePenempatanKamarSantri = () => {
                         fontWeight: 500
                       }}
                     >
-                      NIS: {row.santri.nis || '-'}
+                      NIS: {row.santri?.nis || '-'}
                     </Typography>
                   </Box>
                 </Box>

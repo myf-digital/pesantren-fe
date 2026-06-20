@@ -374,12 +374,13 @@ const Table = () => {
         values: values?.map((row: any) => {
           return {
             ...row,
-            cabang: row.cabang.nama_cabang,
+            cabang: row.cabang?.nama_cabang || '',
             hari_custom: harisObj.find(r => r.value === row.hari)?.label,
-            slot: row.master_slot_waktu.kode_slot,
-            jam:
-              row.master_slot_waktu.jam_mulai?.slice(0, -3) + ' - ' + row.master_slot_waktu.jam_selesai?.slice(0, -3),
-            petugas: row.pegawai.nama_lengkap,
+            slot: row.master_slot_waktu?.kode_slot || '',
+            jam: row.master_slot_waktu
+              ? `${row.master_slot_waktu.jam_mulai?.slice(0, -3) || ''} - ${row.master_slot_waktu.jam_selesai?.slice(0, -3) || ''}`
+              : '',
+            petugas: row.pegawai?.nama_lengkap || '',
             status_custom: (
               <CustomChip
                 round='true'

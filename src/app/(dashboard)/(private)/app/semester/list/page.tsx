@@ -327,7 +327,7 @@ const Table = () => {
         values: values?.map((row: any) => {
           return {
             ...row,
-            tahun_ajaran: row.tahun_ajaran.tahun_ajaran,
+            tahun_ajaran: row.tahun_ajaran?.tahun_ajaran || '',
             status_custom: (
               <CustomChip
                 round='true'

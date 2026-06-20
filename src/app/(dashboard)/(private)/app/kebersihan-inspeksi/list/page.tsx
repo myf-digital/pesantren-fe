@@ -440,7 +440,7 @@ const TableInspeksi = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {row.row.temuans.map((data: any, index: number) => (
+                    {row.row.temuans?.map((data: any, index: number) => (
                       <TableRow key={index} sx={{ '&:last-of-type .MuiTableCell-root ': { border: 0 } }}>
                         <TableCell>
                           <CustomChip

@@ -224,7 +224,7 @@ const OrganizationUnitList = () => {
             </Typography>
             {row.lembaga?.nama_lembaga && (
               <Typography variant='caption' sx={{ display: 'block', color: 'primary.main' }}>
-                {`[${row.lembaga_type}] ${row.lembaga.nama_lembaga}`}
+                {`[${row.lembaga_type}] ${row.lembaga?.nama_lembaga}`}
               </Typography>
             )}
           </Box>
