@@ -7,13 +7,7 @@ import { toast } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import {
-  fetchOrgUnitById,
-  fetchOrgUnitPage,
-  postOrgUnit,
-  postOrgUnitUpdate,
-  resetRedux
-} from '../slice/index'
+import { fetchOrgUnitById, fetchOrgUnitPage, postOrgUnit, postOrgUnitUpdate, resetRedux } from '../slice/index'
 import { fetchCabangPage } from '../../cabang/slice/index'
 import { fetchLembagaFormalAll } from '../../lembaga-formal/slice/index'
 import { fetchLembagaAll as fetchLembagaKepesantrenanAll } from '../../lembaga-kepesantrenan/slice/index'
@@ -52,7 +46,12 @@ const OrganizationUnitForm = () => {
     keterangan: ''
   })
 
-  const { control, handleSubmit, formState: { errors }, reset } = useForm({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset
+  } = useForm({
     values: state
   })
 
@@ -72,8 +71,10 @@ const OrganizationUnitForm = () => {
         .filter((item: any) => item.id_orgunit !== id)
         .map((item: any) => ({ label: item.nama_orgunit, value: item.id_orgunit }))
 
-      const cabangOptions = (resCabang?.data?.values || [])
-        .map((item: any) => ({ label: item.nama_cabang, value: item.id_cabang }))
+      const cabangOptions = (resCabang?.data?.values || []).map((item: any) => ({
+        label: item.nama_cabang,
+        value: item.id_cabang
+      }))
 
       const lembagaOptions = [
         ...(resFormal?.data || []).map((item: any) => ({
@@ -105,22 +106,23 @@ const OrganizationUnitForm = () => {
             // Mapping Parent ID dari parent_nama BE
             parent_id: d.parent_id ? { label: d.parent_nama, value: d.parent_id } : null,
             // Mapping Lembaga dari json_build_object BE
-            id_lembaga: d.lembaga?.id_lembaga ? {
-              label: `[${d.lembaga_type}] ${d.lembaga.nama_lembaga}`,
-              value: d.lembaga.id_lembaga,
-              type: d.lembaga_type,
-              id_cabang: d.id_cabang
-            } : null,
+            id_lembaga: d.lembaga?.id_lembaga
+              ? {
+                  label: `[${d.lembaga_type}] ${d.lembaga.nama_lembaga}`,
+                  value: d.lembaga.id_lembaga,
+                  type: d.lembaga_type,
+                  id_cabang: d.id_cabang
+                }
+              : null
           }
           setState(formatted)
           reset(formatted)
         }
       }
     } catch (err) {
-      toast.error("Gagal memuat referensi data")
+      toast.error('Gagal memuat referensi data')
     }
   }, [id, dispatch, reset])
-
 
   // State untuk menyimpan daftar lembaga yang sudah terfilter
   const [filteredLembaga, setFilteredLembaga] = useState<any[]>([])
@@ -151,7 +153,7 @@ const OrganizationUnitForm = () => {
     if (store.crud?.status) {
       toast.success(store.crud?.message || 'Berhasil disimpan')
       dispatch(resetRedux())
-      router.replace('/app/org-unit/list')
+      router.replace('/app/organisasi/list')
     }
   }, [store.crud, dispatch, router])
 
@@ -162,7 +164,7 @@ const OrganizationUnitForm = () => {
       parent_id: state.parent_id?.value || null,
       id_cabang: state.id_cabang?.value || null,
       id_lembaga: state.id_lembaga?.value || null,
-      lembaga_type: state.id_lembaga?.type || null, // Diambil dari tipe opsi lembaga yang dipilih
+      lembaga_type: state.id_lembaga?.type || null // Diambil dari tipe opsi lembaga yang dipilih
     }
 
     if (id) {
