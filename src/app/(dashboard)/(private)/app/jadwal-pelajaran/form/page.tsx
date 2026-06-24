@@ -158,8 +158,6 @@ const FormValidationBasic = () => {
   }, [dispatch, router])
 
   useEffect(() => {
-    dispatch(fetchJamPelajaranAll({}))
-
     dispatch(
       fetchTahunAjaranAll({
         status: 'Aktif'
@@ -230,6 +228,8 @@ const FormValidationBasic = () => {
               })
             )
           }
+
+          dispatch(fetchJamPelajaranAll({ lembaga_type: datas.id_gmapel.lembaga_type }))
 
           setState(datas)
           reset(datas)
@@ -316,6 +316,49 @@ const FormValidationBasic = () => {
       }),
       field({
         type: 'select',
+        key: 'id_gmapel',
+        label: 'Guru Mapel',
+        placeholder: 'Pilih Guru Mapel',
+        required: true,
+        options: {
+          values: storeGuru.datas.map(r => {
+            return {
+              lembaga_type: r.lembaga_type,
+              id_tingkat: r.id_tingkat,
+              label: `${r.pegawai?.nama_lengkap} - ${r.mata_pelajaran?.nama_mapel}`,
+              value: r.id_jenisguru
+            }
+          }),
+          onChange: async (e: any) => {
+            if (!e) return
+
+            setValue('id_kelas', null)
+            setValue('id_jam_pelajaran', null)
+            setState(state => ({ ...state, id_kelas: null, id_jam_pelajaran: null }))
+
+            dispatch(fetchJamPelajaranAll({ lembaga_type: e.lembaga_type }))
+
+            if (e.lembaga_type == 'FORMAL') {
+              dispatch(
+                fetchKelasFormalAll({
+                  status: 'Aktif',
+                  id_tingkat: e.id_tingkat
+                })
+              )
+            } else {
+              dispatch(
+                fetchKelasMdaAll({
+                  status: 'Aktif',
+                  id_tingkat: e.id_tingkat
+                })
+              )
+            }
+          }
+        },
+        readOnly: Boolean(view)
+      }),
+      field({
+        type: 'select',
         key: 'hari',
         label: 'Hari',
         placeholder: 'Pilih Hari',
@@ -336,46 +379,6 @@ const FormValidationBasic = () => {
               value: r.id_jampel
             }
           })
-        },
-        readOnly: Boolean(view)
-      }),
-      field({
-        type: 'select',
-        key: 'id_gmapel',
-        label: 'Guru Mapel',
-        placeholder: 'Pilih Guru Mapel',
-        required: true,
-        options: {
-          values: storeGuru.datas.map(r => {
-            return {
-              lembaga_type: r.lembaga_type,
-              id_tingkat: r.id_tingkat,
-              label: `${r.pegawai?.nama_lengkap} - ${r.mata_pelajaran?.nama_mapel}`,
-              value: r.id_jenisguru
-            }
-          }),
-          onChange: async (value: any) => {
-            if (!value.value) return
-
-            setValue('id_kelas', null)
-            setState(state => ({ ...state, id_kelas: null }))
-
-            if (value.lembaga_type == 'FORMAL') {
-              dispatch(
-                fetchKelasFormalAll({
-                  status: 'Aktif',
-                  id_tingkat: value.id_tingkat
-                })
-              )
-            } else {
-              dispatch(
-                fetchKelasMdaAll({
-                  status: 'Aktif',
-                  id_tingkat: value.id_tingkat
-                })
-              )
-            }
-          }
         },
         readOnly: Boolean(view)
       }),

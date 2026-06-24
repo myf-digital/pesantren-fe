@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 // ** React Imports
 import React, { useCallback, useEffect, useState } from 'react'
@@ -15,7 +15,14 @@ import { toast } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
-import { fetchLembagaAll, fetchJamPelajaranById, postJamPelajaran, postJamPelajaranUpdate, resetRedux } from '../slice/index'
+import {
+  fetchLembagaAll,
+  fetchLembagaKepesantrenanAll,
+  fetchJamPelajaranById,
+  postJamPelajaran,
+  postJamPelajaranUpdate,
+  resetRedux
+} from '../slice/index'
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchJenisJamPelajaranAll } from '../../jenis-jam-pelajaran/slice'
 
@@ -32,18 +39,16 @@ const statusOption = {
   ]
 }
 
-const typeOption = {
-  values: [
-    {
-      label: 'Formal',
-      value: 'FORMAL'
-    },
-    {
-      label: 'Pesantren',
-      value: 'PESANTREN'
-    }
-  ]
-}
+const typeOption = [
+  {
+    label: 'Formal',
+    value: 'FORMAL'
+  },
+  {
+    label: 'Pesantren',
+    value: 'PESANTREN'
+  }
+]
 
 const FormValidationBasic = () => {
   const router = useRouter()
@@ -65,19 +70,19 @@ const FormValidationBasic = () => {
     status: {
       value: string
       label: string
-    },
+    }
     lembaga_type: {
       value: string
       label: string
-    },
+    } | null
     id_lembaga: {
       value: string
       label: string
-    },
+    } | null
     id_jenisjam: {
       value: string
       label: string
-    },
+    } | null
   }
 
   const defaultValues = {
@@ -90,18 +95,9 @@ const FormValidationBasic = () => {
       value: 'A',
       label: 'Aktif'
     },
-    lembaga_type: {
-      value: '',
-      label: ''
-    },
-    id_lembaga: {
-      value: '',
-      label: ''
-    },
-    id_jenisjam: {
-      value: '',
-      label: ''
-    },
+    lembaga_type: null,
+    id_lembaga: null,
+    id_jenisjam: null
   }
 
   const [state, setState] = useState<FormData>(defaultValues)
@@ -110,9 +106,10 @@ const FormValidationBasic = () => {
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
     reset
-  } = useForm({defaultValues})
+  } = useForm({ defaultValues })
 
   const onCancel = useCallback(() => {
     dispatch(resetRedux())
@@ -125,7 +122,7 @@ const FormValidationBasic = () => {
     const [hour, minute] = time.split(':').map(Number)
 
     const date = new Date()
-    
+
     date.setHours(hour, minute, 0, 0)
 
     return date
@@ -140,20 +137,38 @@ const FormValidationBasic = () => {
         const datas = { ...res?.payload?.data }
 
         if (datas) {
-          datas.lembaga_type = typeOption.values.find(r => r.value === datas.lembaga_type)
+          datas.lembaga_type = typeOption.find(r => r.value === datas.lembaga_type)
           datas.status = statusOption.values.find(r => r.value === datas.status)
-          datas.id_lembaga = {
-            ...datas.lembaga_formal,
-            label: datas?.lembaga_formal?.nama_lembaga,
-            value: datas?.lembaga_formal?.id_lembaga,
+
+          if (datas.lembaga_formal) {
+            datas.id_lembaga = {
+              ...datas.lembaga_formal,
+              label: datas?.lembaga_formal?.nama_lembaga,
+              value: datas?.lembaga_formal?.id_lembaga
+            }
           }
+
+          if (datas.lembaga_kepesantrenan) {
+            datas.id_lembaga = {
+              ...datas.lembaga_kepesantrenan,
+              label: datas?.lembaga_kepesantrenan?.nama_lembaga,
+              value: datas?.lembaga_kepesantrenan?.id_lembaga
+            }
+          }
+
           datas.id_jenisjam = {
             ...datas.jenis_jam_pelajaran,
-            label: datas?.jenis_jam_pelajaran?.nama_kelpelajaran,
-            value: datas?.jenis_jam_pelajaran?.id_jenisjam,
+            label: datas?.jenis_jam_pelajaran?.nama_jenis_jam,
+            value: datas?.jenis_jam_pelajaran?.id_jenisjam
           }
           datas.mulai = datas.mulai ? timeToDate(datas.mulai) : null
           datas.selesai = datas.selesai ? timeToDate(datas.selesai) : null
+
+          if (datas.lembaga_type.value == 'FORMAL') {
+            dispatch(fetchLembagaAll({}))
+          } else {
+            dispatch(fetchLembagaKepesantrenanAll({}))
+          }
 
           setState(datas)
           reset(datas)
@@ -178,7 +193,8 @@ const FormValidationBasic = () => {
   const dateToTime = (date: any) => {
     const newDate = new Date(date)
 
-    return newDate.toLocaleString('id-ID', {
+    return newDate
+      .toLocaleString('id-ID', {
         timeZone: 'Asia/Jakarta',
         hour: '2-digit',
         minute: '2-digit',
@@ -202,7 +218,7 @@ const FormValidationBasic = () => {
             status: state.status.value,
             lembaga_type: state.lembaga_type.value,
             mulai: state.mulai ? dateToTime(state.mulai) : null,
-            selesai: state.selesai ? dateToTime(state.selesai) : null,
+            selesai: state.selesai ? dateToTime(state.selesai) : null
           }
         })
       )
@@ -213,7 +229,7 @@ const FormValidationBasic = () => {
           status: state.status.value,
           lembaga_type: state.lembaga_type.value,
           mulai: state.mulai ? dateToTime(state.mulai) : null,
-          selesai: state.selesai ? dateToTime(state.selesai) : null,
+          selesai: state.selesai ? dateToTime(state.selesai) : null
         })
       )
     }
@@ -241,7 +257,7 @@ const FormValidationBasic = () => {
               label: m.nama_jenis_jam,
               value: m.id_jenisjam
             }
-          }),
+          })
         },
         readOnly: Boolean(view)
       }),
@@ -251,7 +267,21 @@ const FormValidationBasic = () => {
         label: 'Tipe',
         placeholder: 'Pilih Tipe',
         required: true,
-        options: typeOption,
+        options: {
+          values: typeOption,
+          onChange: (e: any) => {
+            if (!e) return
+
+            setValue('id_lembaga', null)
+            setState(state => ({ ...state, id_lembaga: null }))
+
+            if (e.value == 'FORMAL') {
+              dispatch(fetchLembagaAll({}))
+            } else {
+              dispatch(fetchLembagaKepesantrenanAll({}))
+            }
+          }
+        },
         readOnly: Boolean(view)
       }),
       field({
@@ -261,12 +291,20 @@ const FormValidationBasic = () => {
         placeholder: 'Pilih Lembaga',
         required: true,
         options: {
-          values: store.lembaga.map(m => {
-            return {
-              label: m.nama_lembaga,
-              value: m.id_lembaga
-            }
-          }),
+          values:
+            state.lembaga_type?.value == 'FORMAL'
+              ? store.lembaga.map(m => {
+                  return {
+                    label: m.nama_lembaga,
+                    value: m.id_lembaga
+                  }
+                })
+              : store.lembaga_kepesantrenan.map(m => {
+                  return {
+                    label: m.nama_lembaga,
+                    value: m.id_lembaga
+                  }
+                })
         },
         readOnly: Boolean(view)
       }),
@@ -277,7 +315,7 @@ const FormValidationBasic = () => {
         placeholder: 'Input Waktu Mulai',
         required: true,
         interval: 15,
-        readOnly: Boolean(view),
+        readOnly: Boolean(view)
       }),
       field({
         type: 'time',

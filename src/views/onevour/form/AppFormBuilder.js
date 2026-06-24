@@ -1594,6 +1594,9 @@ const selectDate = form => {
             disabled={props.readOnly}
             portalId={props.portalId}
             minDate={props.minDate}
+            showYearDropdown // Enables the year dropdown menu
+            showMonthDropdown // Enables the month dropdown menu
+            dropdownMode='select' // Changes navigation arrows to a select dropdown
             customInput={
               <TextField
                 fullWidth
