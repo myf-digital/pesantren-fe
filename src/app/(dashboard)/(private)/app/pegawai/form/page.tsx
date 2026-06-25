@@ -221,7 +221,13 @@ const PegawaiForm = () => {
       readOnly: !!view
     }),
     field({ type: 'text', key: 'tempat_lahir', label: 'Tempat Lahir', readOnly: !!view }), // <-- Tambah Tempat Lahir
-    field({ type: 'date_custom', key: 'tanggal_lahir', label: 'Tanggal Lahir', readOnly: !!view }),
+    field({
+      type: 'date_custom',
+      key: 'tanggal_lahir',
+      label: 'Tanggal Lahir',
+      readOnly: !!view,
+      options: { gridMode: true }
+    }),
     field({ type: 'numeral', key: 'umur', label: 'Umur (Otomatis)', readOnly: true }),
 
     { section: 'Pendidikan & Keahlian' }, // <-- Tambah Section Baru
@@ -312,7 +318,13 @@ const PegawaiForm = () => {
       options: { values: opt.status },
       readOnly: !!view
     }),
-    field({ type: 'date_custom', key: 'tmt', label: 'TMT (Terhitung Mulai Tanggal)', readOnly: !!view }),
+    field({
+      type: 'date_custom',
+      key: 'tmt',
+      label: 'TMT (Terhitung Mulai Tanggal)',
+      readOnly: !!view,
+      options: { gridMode: true }
+    }),
 
     // Input Image untuk Foto Pegawai
     field({

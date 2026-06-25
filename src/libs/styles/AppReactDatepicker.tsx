@@ -1,6 +1,7 @@
 'use client'
 
 // React Imports
+import { useState } from 'react'
 import type { ComponentProps } from 'react'
 
 // MUI imports
@@ -21,8 +22,12 @@ type Props = ComponentProps<typeof ReactDatePickerComponent> & {
 // Styled Components
 const StyledReactDatePicker = styled(Box)<BoxProps>(({ theme }) => {
   return {
+    '&:has(.react-datepicker-popper)': {
+      position: 'relative',
+      zIndex: 9999
+    },
     '& .react-datepicker-popper': {
-      zIndex: 20,
+      zIndex: '9999 !important',
       paddingTop: `${theme.spacing(0.5)} !important`
     },
     '& .react-datepicker-wrapper': {
@@ -513,12 +518,173 @@ const StyledReactDatePicker = styled(Box)<BoxProps>(({ theme }) => {
 }) as typeof Box
 
 const AppReactDatepicker = (props: Props) => {
-  // Props
   const { boxProps, ...rest } = props
+
+  const isFixedMode = rest.showMonthYearPicker || rest.showYearPicker
+  const [viewMode, setViewMode] = useState<'day' | 'month' | 'year'>('day')
+
+  if (isFixedMode) {
+    return (
+      <StyledReactDatePicker {...boxProps}>
+        <ReactDatePickerComponent popperPlacement='bottom-start' {...rest} />
+      </StyledReactDatePicker>
+    )
+  }
+
+  const handleOnChange = (date: any, event: any) => {
+    if (viewMode === 'year') {
+      const selectedYear = Array.isArray(date)
+        ? (date[0] ? date[0].getFullYear() : new Date().getFullYear())
+        : (date ? date.getFullYear() : new Date().getFullYear())
+
+      const newDate = rest.selected ? new Date(rest.selected as any) : new Date()
+
+      newDate.setFullYear(selectedYear)
+      
+      if (rest.onChange) {
+        rest.onChange(newDate as any, event)
+      }
+
+      setViewMode('month')
+      
+return
+    }
+
+    if (viewMode === 'month') {
+      const selectedMonth = Array.isArray(date)
+        ? (date[0] ? date[0].getMonth() : new Date().getMonth())
+        : (date ? date.getMonth() : new Date().getMonth())
+
+      const selectedYear = Array.isArray(date)
+        ? (date[0] ? date[0].getFullYear() : new Date().getFullYear())
+        : (date ? date.getFullYear() : new Date().getFullYear())
+
+      const newDate = rest.selected ? new Date(rest.selected as any) : new Date()
+
+      newDate.setMonth(selectedMonth)
+      newDate.setFullYear(selectedYear)
+
+      if (rest.onChange) {
+        rest.onChange(newDate as any, event)
+      }
+
+      setViewMode('day')
+      
+return
+    }
+
+    if (rest.onChange) {
+      rest.onChange(date, event)
+    }
+  }
 
   return (
     <StyledReactDatePicker {...boxProps}>
-      <ReactDatePickerComponent popperPlacement='bottom-start' {...rest} />
+      <ReactDatePickerComponent
+        popperPlacement='bottom-start'
+        {...rest}
+        showMonthYearPicker={viewMode === 'month'}
+        showYearPicker={viewMode === 'year'}
+        shouldCloseOnSelect={viewMode === 'day'}
+        onCalendarClose={() => {
+          setViewMode('day')
+
+          if (rest.onCalendarClose) {
+            rest.onCalendarClose()
+          }
+        }}
+        onChange={handleOnChange}
+        renderCustomHeader={({ date, decreaseMonth, increaseMonth, changeYear }) => {
+          const yearValue = date.getFullYear()
+          const monthName = date.toLocaleString('en-US', { month: 'long' })
+          const startDecade = Math.floor(yearValue / 10) * 10
+          const endDecade = startDecade + 9
+
+          const handlePrev = (e: React.MouseEvent) => {
+            e.preventDefault()
+            e.stopPropagation()
+
+            if (viewMode === 'year') {
+              changeYear(yearValue - 10)
+            } else if (viewMode === 'month') {
+              changeYear(yearValue - 1)
+            } else {
+              decreaseMonth()
+            }
+          }
+
+          const handleNext = (e: React.MouseEvent) => {
+            e.preventDefault()
+            e.stopPropagation()
+
+            if (viewMode === 'year') {
+              changeYear(yearValue + 10)
+            } else if (viewMode === 'month') {
+              changeYear(yearValue + 1)
+            } else {
+              increaseMonth()
+            }
+          }
+
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px' }}>
+              <button
+                type='button'
+                onClick={handlePrev}
+                style={{
+                  width: 30,
+                  height: 30,
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--mui-palette-action-selected)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  outline: 'none'
+                }}
+              >
+                <i className='tabler-chevron-left' style={{ fontSize: '1.25rem', color: 'var(--mui-palette-text-secondary)' }} />
+              </button>
+              <span
+                style={{ fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', userSelect: 'none' }}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+
+                  if (viewMode === 'day') {
+                    setViewMode('month')
+                  } else if (viewMode === 'month') {
+                    setViewMode('year')
+                  }
+                }}
+              >
+                {viewMode === 'day' && `${monthName} ${yearValue}`}
+                {viewMode === 'month' && `${yearValue}`}
+                {viewMode === 'year' && `${startDecade}-${endDecade}`}
+              </span>
+              <button
+                type='button'
+                onClick={handleNext}
+                style={{
+                  width: 30,
+                  height: 30,
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--mui-palette-action-selected)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  outline: 'none'
+                }}
+              >
+                <i className='tabler-chevron-right' style={{ fontSize: '1.25rem', color: 'var(--mui-palette-text-secondary)' }} />
+              </button>
+            </div>
+          )
+        }}
+      />
     </StyledReactDatePicker>
   )
 }

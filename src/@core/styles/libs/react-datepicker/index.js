@@ -19,8 +19,12 @@ const DatePickerWrapper = styled(Box)(({ theme }) => {
   const bgColors = useBgColor()
 
   return {
+    '&:has(.react-datepicker-popper)': {
+      position: 'relative',
+      zIndex: 9999
+    },
     '& .react-datepicker-popper': {
-      zIndex: 20
+      zIndex: '9999 !important'
     },
     '& .react-datepicker-wrapper': {
       width: '100%'

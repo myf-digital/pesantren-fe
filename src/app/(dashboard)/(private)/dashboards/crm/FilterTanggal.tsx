@@ -1,9 +1,12 @@
 'use client'
 
 import { forwardRef, useState, useEffect } from 'react'
+
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+
 import TextField from '@mui/material/TextField'
 import { format } from 'date-fns'
+
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
 const PickersComponent = forwardRef(({ ...props }: any, ref) => {
@@ -31,6 +34,7 @@ export default function FilterTanggal({
 
   const handleDateChange = (dates: [Date | null, Date | null]) => {
     const [start, end] = dates
+
     setStartDate(start)
     setEndDate(end)
 
@@ -38,6 +42,7 @@ export default function FilterTanggal({
       const formattedStart = format(start, 'yyyy-MM-dd')
       const formattedEnd = format(end, 'yyyy-MM-dd')
       const params = new URLSearchParams(searchParams.toString())
+
       params.set('tanggal_mulai', formattedStart)
       params.set('tanggal_selesai', formattedEnd)
       params.delete('tanggal')
@@ -54,10 +59,6 @@ export default function FilterTanggal({
       onChange={handleDateChange}
       placeholderText='Pilih Rentang Tanggal'
       dateFormat='dd/MM/yyyy'
-      showMonthDropdown
-      showYearDropdown
-      scrollableYearDropdown
-      dropdownMode='select'
       customInput={<PickersComponent label='Rentang Tanggal' />}
     />
   )

@@ -34,6 +34,7 @@ api.interceptors.request.use(async config => {
   if (showLoading) {
     loading.start()
     loading.progress(10)
+    config.loadingStarted = true
   }
 
   return config
@@ -43,7 +44,8 @@ api.interceptors.response.use(
   res => {
     const showLoading = res?.config.showLoading ?? api.defaults.showLoading
 
-    if (showLoading) {
+    if (showLoading && res.config.loadingStarted) {
+      res.config.loadingStarted = false
       loading.progress(100)
       setTimeout(() => {
         loading.stop()
@@ -57,7 +59,8 @@ api.interceptors.response.use(
     const originalRequest = err?.config
     const showLoading = originalRequest?.showLoading ?? api.defaults.showLoading
 
-    if (showLoading) {
+    if (showLoading && originalRequest?.loadingStarted) {
+      originalRequest.loadingStarted = false
       loading.stop()
       loading.progress(0)
     }

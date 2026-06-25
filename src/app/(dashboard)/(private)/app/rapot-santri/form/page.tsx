@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
+
 import { useSearchParams, useRouter } from 'next/navigation'
 
 import Card from '@mui/material/Card'
@@ -15,7 +16,9 @@ import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppForm
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 
 import { fetchSantriAll } from '../../santri/slice'
-import { fetchRapotSantriById, postRapotSantri, postRapotSantriUpdate, resetRedux } from '../slice'
+import { fetchRaporSantriById, postRaporSantri, postRaporSantriUpdate, resetRedux } from '../slice'
+import { fetchTahunAjaranAll } from '../../tahun-ajaran/slice'
+import { fetchSemesterAll } from '../../semester/slice'
 
 const statusOption = {
   values: [
@@ -55,7 +58,7 @@ const defaultValues = {
   }
 }
 
-const RapotSantriForm = () => {
+const RaporSantriForm = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const id = searchParams.get('id')
@@ -65,6 +68,8 @@ const RapotSantriForm = () => {
 
   const store = useAppSelector(state => state.rapot_santri)
   const storeSantri = useAppSelector(state => state.santri)
+  const storeTahunAjaran = useAppSelector(state => state.tahun_ajaran)
+  const storeSemester = useAppSelector(state => state.semester)
 
   const [state, setState] = useState<any>(defaultValues)
   const [fileObject, setFileObject] = useState<File | null>(null)
@@ -87,7 +92,9 @@ const RapotSantriForm = () => {
     dispatch(fetchSantriAll({ status: '1' }))
 
     if (id) {
-      dispatch(fetchRapotSantriById(id)).then(res => {
+      dispatch(fetchTahunAjaranAll({ status: 'Aktif' }))
+      dispatch(fetchSemesterAll({ status: 'Aktif' }))
+      dispatch(fetchRaporSantriById(id)).then((res: any) => {
         const datas = { ...res?.payload?.data }
 
         if (datas) {
@@ -101,6 +108,7 @@ const RapotSantriForm = () => {
           }
 
           const semester = semesterOption.values.find(s => s.value == datas.semester)
+
           if (semester) {
             datas.semester = semester
           } else {
@@ -110,6 +118,40 @@ const RapotSantriForm = () => {
             }
           }
 
+          setState(datas)
+          reset(datas)
+        }
+      })
+    } else {
+      Promise.all([
+        dispatch(fetchTahunAjaranAll({ status: 'Aktif' })).unwrap(),
+        dispatch(fetchSemesterAll({ status: 'Aktif' })).unwrap()
+      ]).then(([tahunAjaranRes, semesterRes]: any[]) => {
+        const activeTahun = (tahunAjaranRes?.data || []).find((t: any) => t.status === 'Aktif')
+        const activeSemester = (semesterRes?.data || []).find((s: any) => s.status === 'Aktif')
+
+        const datas: any = { ...defaultValues }
+        let updated = false
+
+        if (activeTahun) {
+          datas.tahun_ajaran = activeTahun.tahun_ajaran
+          updated = true
+        }
+
+        if (activeSemester) {
+          const matchingOption = semesterOption.values.find(
+            opt =>
+              opt.value?.toUpperCase() == activeSemester.nama_semester?.toUpperCase() ||
+              opt.label?.toUpperCase() == activeSemester.nama_semester?.toUpperCase()
+          )
+
+          if (matchingOption) {
+            datas.semester = matchingOption
+            updated = true
+          }
+        }
+
+        if (updated) {
           setState(datas)
           reset(datas)
         }
@@ -133,10 +175,10 @@ const RapotSantriForm = () => {
     if (!store.crud) return
 
     if (store.crud.status) {
-      toast.success('Rapot Santri berhasil disimpan')
+      toast.success('Rapor Santri berhasil disimpan')
       onCancel()
     } else {
-      toast.error('Gagal menyimpan Rapot Santri: ' + (store.crud.message || 'Error'))
+      toast.error('Gagal menyimpan Rapor Santri: ' + (store.crud.message || 'Error'))
       setLoading(false)
     }
   }, [onCancel, store.crud])
@@ -148,21 +190,28 @@ const RapotSantriForm = () => {
     if (!state.id_santri?.value) {
       toast.error('Santri wajib dipilih')
       setLoading(false)
+
       return
     }
+
     if (!state.tahun_ajaran) {
       toast.error('Tahun Ajaran wajib dipilih')
       setLoading(false)
+
       return
     }
+
     if (!state.semester?.value) {
       toast.error('Semester wajib dipilih')
       setLoading(false)
+
       return
     }
+
     if (!id && !fileObject) {
-      toast.error('File Rapot wajib diunggah')
+      toast.error('File Rapor wajib diunggah')
       setLoading(false)
+
       return
     }
 
@@ -177,13 +226,13 @@ const RapotSantriForm = () => {
 
     if (id) {
       dispatch(
-        postRapotSantriUpdate({
+        postRaporSantriUpdate({
           id,
           params: payload
         })
       )
     } else {
-      dispatch(postRapotSantri(payload))
+      dispatch(postRaporSantri(payload))
     }
   }
 
@@ -232,7 +281,7 @@ const RapotSantriForm = () => {
       field({
         type: 'file',
         key: 'file_rapot',
-        label: 'Rapot Kelas Formal (PDF)',
+        label: 'Rapor Kelas Formal (PDF)',
         required: !id,
         readOnly: Boolean(view),
         accept: 'application/pdf',
@@ -257,7 +306,7 @@ const RapotSantriForm = () => {
       field({
         type: 'file',
         key: 'file_rapot_mda',
-        label: 'Rapot Kelas MDA (PDF)',
+        label: 'Rapor Kelas MDA (PDF)',
         required: !id,
         readOnly: Boolean(view),
         accept: 'application/pdf',
@@ -280,6 +329,7 @@ const RapotSantriForm = () => {
             : ''
       })
     ]
+
     list.push(fieldBuildSubmit({ onCancel, loading, disabled: Boolean(view) }))
 
     return list
@@ -287,9 +337,10 @@ const RapotSantriForm = () => {
 
   const getTitle = () => {
     if (id) {
-      return view ? 'Detail Rapot Santri' : 'Ubah Rapot Santri'
+      return view ? 'Detail Rapor Santri' : 'Ubah Rapor Santri'
     }
-    return 'Tambah Rapot Santri'
+
+    return 'Tambah Rapor Santri'
   }
 
   return (
@@ -312,4 +363,4 @@ const RapotSantriForm = () => {
   )
 }
 
-export default RapotSantriForm
+export default RaporSantriForm

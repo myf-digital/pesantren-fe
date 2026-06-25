@@ -28,7 +28,7 @@ import {
 import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { deleteRapotSantri, fetchRapotSantriPage, resetRedux } from '../slice/index'
+import { deleteRaporSantri, fetchRaporSantriPage, resetRedux } from '../slice/index'
 import { useCan } from '@/hooks/useCan'
 
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
@@ -64,7 +64,7 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       </Menu>
 
       <DialogDelete
-        id={`Rapot ${row.santri?.fullname || 'Santri'}`}
+        id={`Rapor ${row.santri?.fullname || 'Santri'}`}
         open={openConfirm}
         onClose={() => setOpenConfirm(false)}
         handleOk={() => {
@@ -100,7 +100,7 @@ const formatDate = (date: string) => {
   }
 }
 
-const RapotSantriList = () => {
+const RaporSantriList = () => {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.rapot_santri)
@@ -116,7 +116,7 @@ const RapotSantriList = () => {
   const [pdfTitle, setPdfTitle] = useState('')
 
   const fetchData = useCallback(() => {
-    dispatch(fetchRapotSantriPage({ page, perPage, keyword: filter }))
+    dispatch(fetchRaporSantriPage({ page, perPage, keyword: filter }))
   }, [dispatch, page, perPage, filter])
 
   useEffect(() => {
@@ -127,14 +127,14 @@ const RapotSantriList = () => {
 
   useEffect(() => {
     if (store.delete) {
-      toast.success('Rapot Santri berhasil dihapus')
+      toast.success('Rapor Santri berhasil dihapus')
       fetchData()
       dispatch(resetRedux())
     }
   }, [store.delete, dispatch, fetchData])
 
   const renderOption = (row: any) => {
-    return <RowAction row={row} onDeleteSuccess={id => dispatch(deleteRapotSantri(id))} />
+    return <RowAction row={row} onDeleteSuccess={id => dispatch(deleteRaporSantri(id))} />
   }
 
   const onAddForm = () => {
@@ -152,8 +152,8 @@ const RapotSantriList = () => {
         tableColumn('TAHUN AJARAN', 'tahun_ajaran'),
         tableColumn('SEMESTER', 'semester'),
         tableColumn('STATUS', 'status_chip'),
-        tableColumn('RAPOT FORMAL', 'file_rapot_link'),
-        tableColumn('RAPOT MDA', 'file_rapot_mda_link'),
+        tableColumn('RAPOR FORMAL', 'file_rapot_link'),
+        tableColumn('RAPOR MDA', 'file_rapot_mda_link'),
         tableColumn('TERAKHIR DIUBAH', 'updated_date')
       ],
       values: (dataPage?.values || []).map((row: any) => {
@@ -187,15 +187,15 @@ const RapotSantriList = () => {
               startIcon={<i className='tabler-file-download' />}
               onClick={() => {
                 setPdfUrl(fileUrl)
-                setPdfTitle(`Rapot ${row.santri?.fullname || 'Santri'} - ${row.tahun_ajaran}`)
+                setPdfTitle(`Rapor ${row.santri?.fullname || 'Santri'} - ${row.tahun_ajaran}`)
                 setOpenPdf(true)
               }}
             >
-              Rapot Formal
+              Rapor Formal
             </Button>
           ) : (
             <Typography variant='caption' color='text.disabled'>
-              Belum ada Rapot Formal
+              Belum ada Rapor Formal
             </Typography>
           ),
           file_rapot_mda_link: fileUrlMda ? (
@@ -206,15 +206,15 @@ const RapotSantriList = () => {
               startIcon={<i className='tabler-file-download' />}
               onClick={() => {
                 setPdfUrl(fileUrlMda)
-                setPdfTitle(`Rapot MDA ${row.santri?.fullname || 'Santri'} - ${row.tahun_ajaran}`)
+                setPdfTitle(`Rapor MDA ${row.santri?.fullname || 'Santri'} - ${row.tahun_ajaran}`)
                 setOpenPdf(true)
               }}
             >
-              Rapot MDA
+              Rapor MDA
             </Button>
           ) : (
             <Typography variant='caption' color='text.disabled'>
-              Belum ada Rapot MDA
+              Belum ada Rapor MDA
             </Typography>
           ),
           status_chip: (
@@ -246,7 +246,7 @@ const RapotSantriList = () => {
     <Grid container spacing={6}>
       <Grid size={12}>
         <Card>
-          <CardHeader title='Rapot Santri' subheader='Manajemen rapot santri' />
+          <CardHeader title='Rapor Santri' subheader='Manajemen rapot santri' />
           <Toolbar sx={{ gap: 2, mb: 4, px: '1.5rem !important' }}>
             {canCreate && (
               <Tooltip title='Tambah'>
@@ -325,4 +325,4 @@ const RapotSantriList = () => {
   )
 }
 
-export default RapotSantriList
+export default RaporSantriList
