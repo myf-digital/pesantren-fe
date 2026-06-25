@@ -99,7 +99,7 @@ const DashboardCRM = async (props: {
   return (
     <Grid container spacing={6}>
       <Grid size={12}>
-        <Card sx={{ p: 5 }}>
+        <Card sx={{ p: 5, overflow: 'visible' }}>
           <Box
             sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}
           >
