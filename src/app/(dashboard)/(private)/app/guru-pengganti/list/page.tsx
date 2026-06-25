@@ -1,18 +1,16 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-
-import { toast } from 'react-toastify'
 
 // ** MUI Imports
 import Grid from '@mui/material/Grid2'
 import Card from '@mui/material/Card'
 
 import CardHeader from '@mui/material/CardHeader'
-import { TextField, Toolbar, useMediaQuery, useTheme, Box } from '@mui/material'
+import { Autocomplete, Box, TextField, Toolbar, useMediaQuery, useTheme } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
@@ -21,38 +19,50 @@ import IconButton from '@mui/material/IconButton'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 
+import { toast } from 'react-toastify'
+
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { deleteJamPelajaran, fetchJamPelajaranPage, postExport, resetRedux } from '../slice/index'
+import { deleteGuruPengganti, fetchGuruPenggantiPage, postExport, resetRedux } from '../slice/index'
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
+import CustomChip from '@core/components/mui/Chip'
 import DialogDelete from '@views/onevour/components/dialog-delete'
 
 // Generated Icon CSS Imports
 import '@assets/iconify-icons/generated-icons.css'
 import { useCan } from '@/hooks/useCan'
-import CustomChip from '@/@core/components/mui/Chip'
+import { fetchLocationAll } from '../../location/slice'
 
 const statusObj: Record<string, { color: any; value: string }> = {
-  A: {
-    color: 'success',
-    value: 'Aktif'
-  },
-  N: {
+  Menunggu: {
     color: 'secondary',
-    value: 'Nonaktif'
+    value: 'Menunggu'
+  },
+  Disetujui: {
+    color: 'success',
+    value: 'Disetujui'
+  },
+  Ditolak: {
+    color: 'error',
+    value: 'Ditolak'
   }
 }
 
-const typeObj: Record<string, { color: any; value: string }> = {
-  FORMAL: {
-    color: 'info',
-    value: 'FORMAL'
+const statuss = [
+  { label: 'Semua', value: '' },
+  {
+    label: 'Menunggu',
+    value: 'Menunggu'
   },
-  PESANTREN: {
-    color: 'primary',
-    value: 'PESANTREN'
+  {
+    label: 'Disetujui',
+    value: 'Disetujui'
+  },
+  {
+    label: 'Ditolak',
+    value: 'Ditolak'
   }
-}
+]
 
 function RowAction(data: any) {
   const [anchorEl, setAnchorEl] = useState(null)
@@ -79,7 +89,7 @@ function RowAction(data: any) {
   }
 
   const handleDelete = (id: string) => {
-    dispatch(deleteJamPelajaran(id))
+    dispatch(deleteGuruPengganti(id))
     optionsOnClose()
   }
 
@@ -102,50 +112,49 @@ function RowAction(data: any) {
         <MenuItem
           component={Link}
           sx={{ '& svg': { mr: 2 } }}
-          href={`/app/jam-pelajaran/form?id=${data.row.id_jampel}&view=true`}
+          href={`/app/guru-pengganti/form?id=${data.row.id_pengganti}&view=true`}
           onClick={handleView}
         >
           <i className='tabler-eye' />
           View
         </MenuItem>
 
-        {canEdit && (
+        {canEdit && [
           <MenuItem
             key='edit'
             component={Link}
             sx={{ '& svg': { mr: 2 } }}
-            href={`/app/jam-pelajaran/form?id=${data.row.id_jampel}`}
+            href={`/app/guru-pengganti/form?id=${data.row.id_pengganti}`}
             onClick={handleView}
           >
             <i className='tabler-edit' />
             Edit
           </MenuItem>
-        )}
+        ]}
 
-        {canDelete && [
-          <MenuItem key='delete' onClick={() => setOpenConfirm(true)} sx={{ '& svg': { mr: 2 }, color: 'error.main' }}>
+        {canDelete && (
+          <MenuItem onClick={() => setOpenConfirm(true)} sx={{ '& svg': { mr: 2 }, color: 'error.main' }}>
             <i className='tabler-trash' />
             Delete
-          </MenuItem>,
-          <DialogDelete
-            key='dialog-delete'
-            id={data.row.nama_mapel}
-            open={openConfirm}
-            onClose={(event: any, reason: any) => {
-              if (reason !== 'backdropClick') {
-                setOpenConfirm(false)
-              }
-            }}
-            handleOk={() => {
-              handleDelete(data.row.id_jampel)
+          </MenuItem>
+        )}
+        <DialogDelete
+          id={`${data.row?.jadwal_pelajaran?.hari} / ${data.row?.jadwal_pelajaran?.jam_pelajaran?.mulai?.slice(0, -3)} - ${data.row?.jadwal_pelajaran?.jam_pelajaran?.selesai?.slice(0, -3)} / ${data.row?.jadwal_pelajaran?.kelas_formal ? data.row?.jadwal_pelajaran?.kelas_formal?.nama_kelas : data.row?.jadwal_pelajaran?.kelas_mda?.nama_kelas_mda} (${data.row?.jadwal_pelajaran?.kelas_formal ? data.row?.jadwal_pelajaran?.kelas_formal?.lembaga?.nama_lembaga : data.row?.jadwal_pelajaran?.kelas_mda?.lembaga?.nama_lembaga})`}
+          open={openConfirm}
+          onClose={(event: any, reason: any) => {
+            if (reason !== 'backdropClick') {
               setOpenConfirm(false)
-            }}
-            handleClose={() => {
-              setOpenConfirm(false)
-            }}
-            disableEscapeKeyDown={true}
-          />
-        ]}
+            }
+          }}
+          handleOk={() => {
+            handleDelete(data.row.id_pengganti)
+            setOpenConfirm(false)
+          }}
+          handleClose={() => {
+            setOpenConfirm(false)
+          }}
+          disableEscapeKeyDown={true}
+        />
       </Menu>
     </>
   )
@@ -161,11 +170,17 @@ function RowAction(data: any) {
   )
 }
 
+interface StatusOption {
+  label: string
+  value: string
+}
+
 const Table = () => {
   // ** Hooks
   const router = useRouter()
   const dispatch = useAppDispatch()
-  const store = useAppSelector(state => state.jam_pelajaran)
+  const store = useAppSelector(state => state.guru_pengganti)
+
   const canCreate = useCan('create')
   const canImport = useCan('import')
   const canExport = useCan('export')
@@ -174,31 +189,73 @@ const Table = () => {
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
+  const [selectedStatus, setSelectedStatus] = useState<StatusOption | null>({ label: 'Semua', value: '' })
 
   useEffect(() => {
     if (store.delete) {
-      dispatch(fetchJamPelajaranPage({ page: 1, perPage: perPage, q: filter }))
-
+      dispatch(
+        fetchGuruPenggantiPage({
+          page: 1,
+          perPage: perPage,
+          q: filter,
+          status: selectedStatus?.value
+        })
+      )
       dispatch(resetRedux())
     }
+
+    dispatch(fetchLocationAll({}))
   }, [dispatch, filter, perPage, store.delete])
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1)
-
-      dispatch(fetchJamPelajaranPage({ page: 1, perPage: perPage, q: filter }))
+      dispatch(
+        fetchGuruPenggantiPage({
+          page: 1,
+          perPage: perPage,
+          q: filter,
+          status: selectedStatus?.value
+        })
+      )
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [dispatch, filter, perPage])
+  }, [dispatch, filter, perPage, selectedStatus])
+
+  const handleChangePage = useCallback(
+    (newPage: number) => {
+      setPage(newPage)
+      dispatch(
+        fetchGuruPenggantiPage({
+          page: newPage,
+          perPage: perPage,
+          q: filter,
+          status: selectedStatus?.value
+        })
+      )
+    },
+    [dispatch, perPage, filter]
+  )
+
+  useEffect(() => {
+    if (!store.crud) return
+
+    if (store.crud.status) {
+      toast.success('Success saved')
+      handleChangePage(page)
+      dispatch(resetRedux())
+    } else {
+      toast.error('Error saved: ' + store.crud.message)
+    }
+  }, [dispatch, handleChangePage, page, store.crud])
 
   const onAddForm = () => {
-    router.replace('/app/jam-pelajaran/form')
+    router.replace('/app/guru-pengganti/form')
   }
 
   const onImport = () => {
-    router.replace('/app/jam-pelajaran/import')
+    router.replace('/app/guru-pengganti/import')
   }
 
   const onExport = async () => {
@@ -227,17 +284,19 @@ const Table = () => {
     setFilter(event.target.value)
   }
 
-  const handleChangePage = (newPage: number) => {
-    setPage(newPage)
-    dispatch(fetchJamPelajaranPage({ page: newPage, perPage: perPage, q: filter }))
-  }
-
   const handleChangePerPage = (event: any) => {
     const newPerPage = parseInt(event.target.value, 10)
 
     setPage(1)
     setPerPage(newPerPage)
-    dispatch(fetchJamPelajaranPage({ page: 1, perPage: newPerPage, q: filter }))
+    dispatch(
+      fetchGuruPenggantiPage({
+        page: 1,
+        perPage: newPerPage,
+        q: filter,
+        status: selectedStatus?.value
+      })
+    )
   }
 
   const renderOption = (row: any) => {
@@ -254,41 +313,32 @@ const Table = () => {
         page: page,
         fields: [
           tableColumn('OPTION', 'act-x', 'left', renderOption as any),
-          tableColumn('NAMA', 'nama_jampel'),
-          tableColumn('JENIS', 'jenis_jam_pelajaran'),
-          tableColumn('LEMBAGA', 'lembaga'),
-          tableColumn('MULAI', 'mulai'),
-          tableColumn('SELESAI', 'selesai'),
-          tableColumn('JUMLAH', 'jumlah_jampel'),
-          tableColumn('KETERANGAN', 'keterangan'),
-          tableColumn('TIPE', 'lembaga_type'),
-          tableColumn('STATUS', 'status'),
+          tableColumn('JADWAL', 'jadwal'),
+          tableColumn('Tanggal', 'tanggal_custom'),
+          tableColumn('GURU ASLI', 'guru_asli'),
+          tableColumn('GURU PENGGANTI', 'guru_pengganti'),
+          tableColumn('STATUS APPROVAL', 'status_custom'),
+          tableColumn('ALASAN', 'alasan'),
           tableColumn('TERAKHIR DIUBAH', 'updated_at')
         ],
         values: values?.map((row: any) => {
+          const tanggalArr = row.tanggal?.split('-')
+
           return {
             ...row,
-            lembaga_type: (
+            jadwal: `${row?.jadwal_pelajaran?.hari} / ${row?.jadwal_pelajaran?.jam_pelajaran?.mulai?.slice(0, -3)} - ${row?.jadwal_pelajaran?.jam_pelajaran?.selesai?.slice(0, -3)} / ${row?.jadwal_pelajaran?.kelas_formal ? row?.jadwal_pelajaran?.kelas_formal?.nama_kelas : row?.jadwal_pelajaran?.kelas_mda?.nama_kelas_mda} (${row?.jadwal_pelajaran?.kelas_formal ? row?.jadwal_pelajaran?.kelas_formal?.lembaga?.nama_lembaga : row?.jadwal_pelajaran?.kelas_mda?.lembaga?.nama_lembaga})`,
+            guru_asli: row.guru_asli?.nama_lengkap,
+            guru_pengganti: row.guru_pengganti?.nama_lengkap,
+            tanggal_custom: row.tanggal ? `${tanggalArr[2]}/${tanggalArr[1]}/${tanggalArr[0]}` : '-',
+            status_custom: (
               <CustomChip
                 round='true'
                 size='small'
-                label={typeObj[row.lembaga_type]?.value}
-                color={typeObj[row.lembaga_type]?.color}
+                label={statusObj[row.status_approval]?.value}
+                color={statusObj[row.status_approval]?.color}
                 sx={{ textTransform: 'capitalize' }}
               />
-            ),
-            status: (
-              <CustomChip
-                round='true'
-                size='small'
-                label={statusObj[row.status]?.value}
-                color={statusObj[row.status]?.color}
-                sx={{ textTransform: 'capitalize' }}
-              />
-            ),
-            lembaga: row?.lembaga_formal ? row?.lembaga_formal?.nama_lembaga : row?.lembaga_kepesantrenan?.nama_lembaga,
-            jenis_jam_pelajaran: row?.jenis_jam_pelajaran?.nama_jenis_jam,
-            jumlah_jampel: row?.jumlah_jampel ? `${row?.jumlah_jampel} jam` : ''
+            )
           }
         }),
         count: total,
@@ -306,8 +356,34 @@ const Table = () => {
   return (
     <Grid container spacing={6} sx={{ width: '100%' }}>
       <Grid size={12}>
+        <Card sx={{ p: 5 }}>
+          <Grid container spacing={4}>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={statuss}
+                value={selectedStatus}
+                onChange={(_, newValue) => setSelectedStatus(newValue)}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label='Status'
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: <>{params.InputProps.endAdornment}</>
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+          </Grid>
+        </Card>
+      </Grid>
+      <Grid size={12}>
         <Card>
-          <CardHeader title='Jam Pelajaran' sx={{ paddingBottom: 0 }} />
+          <CardHeader title='Guru Pengganti' sx={{ paddingBottom: 0 }} />
           <Toolbar
             sx={{
               px: '1.5rem !important',

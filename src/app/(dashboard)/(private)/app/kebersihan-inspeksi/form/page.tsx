@@ -18,6 +18,7 @@ import { useForm } from 'react-hook-form'
 
 // ** Styled Component
 import { formatDate } from 'date-fns/format'
+import { getDay } from 'date-fns'
 
 import { Button } from '@mui/material'
 
@@ -265,7 +266,7 @@ const FormValidationBasic = () => {
           if (datas.jadwal_inspeksi_kebersihan) {
             datas.id_jadwal = {
               value: datas.jadwal_inspeksi_kebersihan?.id_jadwal,
-              label: `${haris.find(d => d.value === datas.jadwal_inspeksi_kebersihan?.hari)?.label}`
+              label: `${haris.find(d => d.value === datas.jadwal_inspeksi_kebersihan?.hari)?.label?.toUpperCase()} ${datas.jadwal_inspeksi_kebersihan?.kode_slot}`
             }
           }
 
@@ -329,7 +330,7 @@ const FormValidationBasic = () => {
   }, [onCancel, store])
 
   useEffect(() => {
-    if (storeCabang.datas.length > 0) {
+    if (storeCabang.datas.length > 0 && !Boolean(id)) {
       if (currentUser?.pegawai) {
         const findCabang = storeCabang.datas.find(
           cabang => cabang.id_cabang === currentUser?.pegawai?.organizationUnit?.cabang?.id_cabang
@@ -355,7 +356,7 @@ const FormValidationBasic = () => {
   }, [storeCabang.datas])
 
   useEffect(() => {
-    if (storePegawai.pegawai.length > 0) {
+    if (storePegawai.pegawai.length > 0 && !Boolean(id)) {
       if (currentUser?.pegawai) {
         const findPegawai = storePegawai.pegawai.find(
           pegawai => pegawai.id_pegawai === currentUser?.pegawai?.id_pegawai
@@ -385,7 +386,7 @@ const FormValidationBasic = () => {
   }, [storePegawai.pegawai])
 
   useEffect(() => {
-    if (storeSlot.datas.length > 0) {
+    if (storeSlot.datas.length > 0 && !Boolean(id)) {
       const timeNow = formatDate(state.waktu, 'HH:mm')
 
       const findSlot = storeSlot.datas.find(slot => timeNow >= slot.jam_mulai && timeNow < slot.jam_selesai)
@@ -490,7 +491,39 @@ const FormValidationBasic = () => {
       ...prevState,
       id_jadwal: null
     }))
-    dispatch(fetchJadwalInspeksiKebersihanAll({ is_active: 'true', id_petugas: e.value }))
+    dispatch(fetchJadwalInspeksiKebersihanAll({ is_active: 'true', id_petugas: e.value })).then(res => {
+      const {
+        payload: { data }
+      } = res
+
+      if (data && data.length > 0) {
+        const day = getDay(state.tanggal) != 0 ? getDay(state.tanggal) : 7
+        const timeNow = formatDate(state.waktu, 'HH:mm')
+
+        const findSlot = data.find(
+          (slot: any) =>
+            day == slot?.hari &&
+            timeNow >= slot?.master_slot_waktu?.jam_mulai &&
+            timeNow < slot?.master_slot_waktu?.jam_selesai
+        )
+
+        if (findSlot) {
+          setValue('id_jadwal', {
+            value: findSlot.id_jadwal,
+            label: `${haris.find(d => d.value === findSlot.hari)?.label?.toUpperCase()} ${findSlot.kode_slot}`
+          } as any)
+          setState(prevState => {
+            return {
+              ...prevState,
+              id_jadwal: {
+                value: findSlot.id_jadwal,
+                label: `${haris.find(d => d.value === findSlot.hari)?.label?.toUpperCase()} ${findSlot.kode_slot}`
+              }
+            }
+          })
+        }
+      }
+    })
   }
 
   const fields = () => {
@@ -525,7 +558,7 @@ const FormValidationBasic = () => {
             }
           })
         },
-        readOnly: Boolean(view) || foundLocationQrCode || foundLocation
+        readOnly: Boolean(view) || foundLocationQrCode || foundLocation || Boolean(id)
       }),
       field({
         type: 'select',
@@ -553,7 +586,7 @@ const FormValidationBasic = () => {
         options: {
           values: storeJadwal.datas.map(r => {
             return {
-              label: `${haris.find(d => d.value === r.hari)?.label}`,
+              label: `${haris.find(d => d.value === r.hari)?.label?.toUpperCase()} ${r.kode_slot}`,
               value: r.id_jadwal
             }
           })

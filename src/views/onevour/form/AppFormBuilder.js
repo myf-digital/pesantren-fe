@@ -29,7 +29,6 @@ import Cleave from 'cleave.js/react'
 import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
 
-import DatePicker from 'react-datepicker'
 
 import Box from '@mui/material/Box'
 
@@ -654,7 +653,7 @@ export function formColumnDetailField(form) {
     return (
       <Grid size={{ xs: 12, sm: props?.options?.grid | 6 }} key={index}>
         <FormControl fullWidth size='small'>
-          {selectDateCustom(form)}
+          <SelectDateCustomComponent form={form} />
         </FormControl>
       </Grid>
     )
@@ -1577,12 +1576,12 @@ const selectDate = form => {
         const dateValue = value ? new Date(value) : null
 
         return (
-          <DatePicker
-            selected={dateValue} // Menggunakan value murni hasil deteksi Controller
+          <AppReactDatepicker
+            selected={dateValue}
             id='basic-input'
             popperPlacement={popperPlacement}
             onChange={date => {
-              onChange(date) // Memicu react-hook-form untuk mendeteksi perubahan & menjalankan validasi
+              onChange(date)
               updateValueDate(session, props, date)
 
               if (typeof props?.options?.onChange === 'function') {
@@ -1598,8 +1597,8 @@ const selectDate = form => {
               <TextField
                 fullWidth
                 size='small'
-                error={Boolean(errors[props.key])} // Menampilkan outline merah jika error validasi terpicu
-                helperText={errors[props.key]?.message} // Menampilkan pesan error di bawah input text
+                error={Boolean(errors[props.key])}
+                helperText={errors[props.key]?.message}
                 label={
                   props.required ? (
                     <span>
@@ -1631,15 +1630,12 @@ const selectDate = form => {
   )
 }
 
-const selectDateCustom = form => {
+const SelectDateCustomComponent = ({ form }) => {
   const { control, errors, session, props } = form
 
   const currentYear = new Date().getFullYear()
-  const minDate = new Date(currentYear - 10, 0, 1)
-  const maxDate = new Date(currentYear + 10, 11, 31)
-
-  if (!props.minDate) props.minDate = minDate
-  if (!props.maxDate) props.maxDate = maxDate
+  const minDate = props.minDate || new Date(currentYear - 100, 0, 1)
+  const maxDate = props.maxDate || new Date(currentYear + 20, 11, 31)
 
   return (
     <Controller
@@ -1655,7 +1651,6 @@ const selectDateCustom = form => {
         }
       }}
       render={({ field: { value, onChange } }) => {
-        // Pastikan value adalah objek Date. Jika string (dari API), konversi ke Date.
         const currentValue = value || session.state[props.key] || null
         const dateValue = currentValue ? new Date(currentValue) : null
 
@@ -1665,13 +1660,9 @@ const selectDateCustom = form => {
             id={`date-picker-${props.key}`}
             popperPlacement={props.popperPlacement || 'bottom-start'}
             onChange={date => {
-              // 1. Update React Hook Form
               onChange(date)
-
-              // 2. Update Vuexy Session State
               updateValueDate(session, props, date)
 
-              // 3. Custom Callback
               if (typeof props?.options?.onChange === 'function') {
                 props.options.onChange(date)
               }
@@ -1679,17 +1670,11 @@ const selectDateCustom = form => {
             placeholderText={props.placeholder || 'Select Date'}
             disabled={props.readOnly}
             portalId={props.portalId}
-            minDate={props.minDate}
-            maxDate={props.maxDate}
-            dateFormat={props.dateFormat || 'dd/MM/yyyy'} // Format tampilan
+            minDate={minDate}
+            maxDate={maxDate}
+            dateFormat={props.dateFormat || 'dd/MM/yyyy'}
             className='w-100'
             wrapperClassName='w-100'
-            showMonthDropdown
-            showYearDropdown
-            scrollableYearDropdown
-            yearDropdownItemNumber={21}
-            dropdownMode='select'
-            // Menggunakan CustomTextField agar styling MUI konsisten
             customInput={
               <CustomTextField
                 fullWidth
@@ -1698,7 +1683,7 @@ const selectDateCustom = form => {
                 error={Boolean(errors[props.key])}
                 {...(errors[props.key] && { helperText: errors[props.key].message })}
                 InputProps={{
-                  readOnly: true // User harus pilih lewat kalender, tidak bisa ketik manual
+                  readOnly: true
                 }}
               />
             }

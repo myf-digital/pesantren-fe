@@ -11,6 +11,7 @@ export interface FetchParams {
   perPage?: number
   q?: string
   parent?: string
+  lembaga_type?: string
 }
 
 export interface InitialState {
@@ -25,6 +26,7 @@ export interface InitialState {
   import: any
   export: any
   lembaga: any[]
+  lembaga_kepesantrenan: any[]
 }
 
 /* --------------------------
@@ -43,6 +45,7 @@ const initialState: InitialState = {
   import: null,
   export: null,
   lembaga: [],
+  lembaga_kepesantrenan: []
 }
 
 /* --------------------------
@@ -52,7 +55,6 @@ const initialState: InitialState = {
 export const fetchJamPelajaranAll = createAsyncThunk<any, FetchParams>(
   'jam_pelajaran/fetchAll',
   async (params, thunkAPI) => {
-
     try {
       const response = await api.get(`/app/jam-pelajaran/all-data`, { params })
 
@@ -66,7 +68,6 @@ export const fetchJamPelajaranAll = createAsyncThunk<any, FetchParams>(
 export const fetchJamPelajaranPage = createAsyncThunk<any, FetchParams>(
   'jam_pelajaran/fetchPage',
   async (params, thunkAPI) => {
-
     try {
       const response = await api.get(`/app/jam-pelajaran`, { params })
 
@@ -77,38 +78,29 @@ export const fetchJamPelajaranPage = createAsyncThunk<any, FetchParams>(
   }
 )
 
-export const fetchJamPelajaranById = createAsyncThunk<any, string>(
-  'jam_pelajaran/fetchById',
-  async (id, thunkAPI) => {
+export const fetchJamPelajaranById = createAsyncThunk<any, string>('jam_pelajaran/fetchById', async (id, thunkAPI) => {
+  try {
+    const response = await api.get(`/app/jam-pelajaran/${id}`)
 
-    try {
-      const response = await api.get(`/app/jam-pelajaran/${id}`)
-
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
-export const postJamPelajaran = createAsyncThunk<any, any>(
-  'jam_pelajaran/create',
-  async (params, thunkAPI) => {
+export const postJamPelajaran = createAsyncThunk<any, any>('jam_pelajaran/create', async (params, thunkAPI) => {
+  try {
+    const response = await api.post(`/app/jam-pelajaran`, params)
 
-    try {
-      const response = await api.post(`/app/jam-pelajaran`, params)
-
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
 export const postJamPelajaranUpdate = createAsyncThunk<any, { id: string; params: any }>(
   'jam_pelajaran/update',
   async ({ id, params }, thunkAPI) => {
-
     try {
       const response = await api.put(`/app/jam-pelajaran/${id}`, params)
 
@@ -119,67 +111,59 @@ export const postJamPelajaranUpdate = createAsyncThunk<any, { id: string; params
   }
 )
 
-export const deleteJamPelajaran = createAsyncThunk<any, string>(
-  'jam_pelajaran/delete',
-  async (id, thunkAPI) => {
+export const deleteJamPelajaran = createAsyncThunk<any, string>('jam_pelajaran/delete', async (id, thunkAPI) => {
+  try {
+    const response = await api.delete(`/app/jam-pelajaran/${id}`)
 
-    try {
-      const response = await api.delete(`/app/jam-pelajaran/${id}`)
-
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
-export const postBatch = createAsyncThunk<any, any>(
-  'jam_pelajaran/insert',
-  async (params, thunkAPI) => {
+export const postBatch = createAsyncThunk<any, any>('jam_pelajaran/insert', async (params, thunkAPI) => {
+  try {
+    const response = await api.post(`/app/jam-pelajaran/insert`, params)
 
-    try {
-      const response = await api.post(`/app/jam-pelajaran/insert`, params)
-
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
-export const postImport = createAsyncThunk<any, any>(
-  'jam_pelajaran/import',
-  async (params, thunkAPI) => {
+export const postImport = createAsyncThunk<any, any>('jam_pelajaran/import', async (params, thunkAPI) => {
+  try {
+    const response = await api.post(`/app/jam-pelajaran/import`, params)
 
-    try {
-      const response = await api.post(`/app/jam-pelajaran/import`, params)
-
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
-export const postExport = createAsyncThunk<any, any>(
-  'jam_pelajaran/export',
-  async (params, thunkAPI) => {
+export const postExport = createAsyncThunk<any, any>('jam_pelajaran/export', async (params, thunkAPI) => {
+  try {
+    const response = await api.post(`/app/jam-pelajaran/export`, params)
 
-    try {
-      const response = await api.post(`/app/jam-pelajaran/export`, params)
-
-      return response.data;
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
-export const fetchLembagaAll = createAsyncThunk<any, FetchParams>(
-  'lembaga/fetchAll',
-  async (params, thunkAPI) => {
+})
+export const fetchLembagaAll = createAsyncThunk<any, FetchParams>('lembaga/fetchAll', async (params, thunkAPI) => {
+  try {
+    const response = await api.get(`/app/lembaga-formal/all-data`, { params })
 
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
+  }
+})
+export const fetchLembagaKepesantrenanAll = createAsyncThunk<any, FetchParams>(
+  'lembaga_kepesantrenan/fetchAll',
+  async (params, thunkAPI) => {
     try {
-      const response = await api.get(`/app/lembaga-formal/all-data`, { params })
+      const response = await api.get(`/app/lembaga-kepesantrenan/all-data`, { params })
 
       return response.data
     } catch (e: any) {
@@ -196,7 +180,7 @@ export const slice = createSlice({
   name: 'jam_pelajaran',
   initialState,
   reducers: {
-    resetRedux: () => initialState,
+    resetRedux: () => initialState
   },
   extraReducers: builder => {
     builder.addCase(fetchJamPelajaranAll.fulfilled, (state, action) => {
@@ -241,7 +225,11 @@ export const slice = createSlice({
     builder.addCase(fetchLembagaAll.fulfilled, (state, action) => {
       state.lembaga = action.payload.data || []
     })
-  },
+
+    builder.addCase(fetchLembagaKepesantrenanAll.fulfilled, (state, action) => {
+      state.lembaga_kepesantrenan = action.payload.data || []
+    })
+  }
 })
 
 export const { resetRedux } = slice.actions

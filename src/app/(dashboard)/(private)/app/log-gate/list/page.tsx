@@ -333,7 +333,7 @@ const LogGateSantriList = () => {
 
       {/* 2. SEKSI FILTER PANEL BAR */}
       <Grid size={12}>
-        <Card sx={{ p: 5, mb: 4 }}>
+        <Card sx={{ p: 5, mb: 4, overflow: 'visible' }}>
           <Grid container spacing={4} sx={{ mb: 4 }}>
             {/* Filter Tanggal Sirkulasi Gerbang */}
             <Grid size={{ xs: 12, sm: 4, md: 3 }}>

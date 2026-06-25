@@ -36,7 +36,7 @@ const initialState: InitialState = {
 /* --------------------------
    3. Async Thunks
 --------------------------- */
-export const fetchRapotSantriPage = createAsyncThunk('rapot_santri/fetchPage', async (params: any, thunkAPI) => {
+export const fetchRaporSantriPage = createAsyncThunk('rapot_santri/fetchPage', async (params: any, thunkAPI) => {
   try {
     const response = await api.get('/app/rapot-santri', { params })
 
@@ -46,7 +46,7 @@ export const fetchRapotSantriPage = createAsyncThunk('rapot_santri/fetchPage', a
   }
 })
 
-export const fetchRapotSantriById = createAsyncThunk('rapot_santri/fetchById', async (id: string, thunkAPI) => {
+export const fetchRaporSantriById = createAsyncThunk('rapot_santri/fetchById', async (id: string, thunkAPI) => {
   try {
     const response = await api.get(`/app/rapot-santri/${id}`)
 
@@ -56,7 +56,7 @@ export const fetchRapotSantriById = createAsyncThunk('rapot_santri/fetchById', a
   }
 })
 
-export const postRapotSantri = createAsyncThunk('rapot_santri/post', async (params: any, thunkAPI) => {
+export const postRaporSantri = createAsyncThunk('rapot_santri/post', async (params: any, thunkAPI) => {
   try {
     const formData = new FormData()
     for (const key in params) {
@@ -82,7 +82,7 @@ export const postRapotSantri = createAsyncThunk('rapot_santri/post', async (para
   }
 })
 
-export const postRapotSantriUpdate = createAsyncThunk('rapot_santri/update', async ({ id, params }: any, thunkAPI) => {
+export const postRaporSantriUpdate = createAsyncThunk('rapot_santri/update', async ({ id, params }: any, thunkAPI) => {
   try {
     const formData = new FormData()
     for (const key in params) {
@@ -108,7 +108,7 @@ export const postRapotSantriUpdate = createAsyncThunk('rapot_santri/update', asy
   }
 })
 
-export const deleteRapotSantri = createAsyncThunk('rapot_santri/delete', async (id: string, thunkAPI) => {
+export const deleteRaporSantri = createAsyncThunk('rapot_santri/delete', async (id: string, thunkAPI) => {
   try {
     const response = await api.delete(`/app/rapot-santri/${id}`)
 
@@ -131,28 +131,28 @@ export const rapotSantriSlice = createSlice({
     }
   },
   extraReducers: builder => {
-    builder.addCase(fetchRapotSantriPage.fulfilled, (state, action) => {
+    builder.addCase(fetchRaporSantriPage.fulfilled, (state, action) => {
       state.dataPage = {
         values: action.payload.data?.values || [],
         total: action.payload.data?.total || 0
       }
     })
-    builder.addCase(fetchRapotSantriById.fulfilled, (state, action) => {
+    builder.addCase(fetchRaporSantriById.fulfilled, (state, action) => {
       state.data = action.payload.data
     })
-    builder.addCase(postRapotSantri.fulfilled, (state, action) => {
+    builder.addCase(postRaporSantri.fulfilled, (state, action) => {
       state.crud = action.payload
     })
-    builder.addCase(postRapotSantri.rejected, (state, action: any) => {
+    builder.addCase(postRaporSantri.rejected, (state, action: any) => {
       state.crud = action.payload
     })
-    builder.addCase(postRapotSantriUpdate.fulfilled, (state, action) => {
+    builder.addCase(postRaporSantriUpdate.fulfilled, (state, action) => {
       state.crud = action.payload
     })
-    builder.addCase(postRapotSantriUpdate.rejected, (state, action: any) => {
+    builder.addCase(postRaporSantriUpdate.rejected, (state, action: any) => {
       state.crud = action.payload
     })
-    builder.addCase(deleteRapotSantri.fulfilled, (state, action) => {
+    builder.addCase(deleteRaporSantri.fulfilled, (state, action) => {
       state.delete = action.payload.message || 'success'
     })
   }

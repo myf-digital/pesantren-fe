@@ -52,6 +52,7 @@ import rapot_santri from '@/app/(dashboard)/(private)/app/rapot-santri/slice/ind
 import penempatan_kelas_santri from '@/app/(dashboard)/(private)/app/penempatan-kelas-santri/slice/index'
 import jam_kerja_pegawai from '@/app/(dashboard)/(private)/app/pegawai-jam-kerja/slice/index'
 import absen_harian_pegawai from '@/app/(dashboard)/(private)/app/pegawai-absen-harian/slice/index'
+import guru_pengganti from '@/app/(dashboard)/(private)/app/guru-pengganti/slice/index'
 
 export const store = configureStore({
   reducer: {
@@ -103,7 +104,8 @@ export const store = configureStore({
     rapot_santri,
     penempatan_kelas_santri,
     jam_kerja_pegawai,
-    absen_harian_pegawai
+    absen_harian_pegawai,
+    guru_pengganti
   },
   middleware: getDefaultMiddleware => getDefaultMiddleware({ serializableCheck: false })
 })
