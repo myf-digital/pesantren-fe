@@ -34,7 +34,7 @@ import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import {
-  fetchPerizinanSantriPage,
+  fetchPerizinanSantriPage, // Menggunakan slice terpadu yang telah mendukung backend pegawai
   postPerizinanApprove,
   postPerizinanCancel,
   postPerizinanExport,
@@ -62,9 +62,9 @@ const RowAction = ({
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
-  // Aturan Visibilitas Tombol Berdasarkan Spesifikasi Role & Status
-  const isParentOrWali = ['orang_tua_wali', 'wali_asuh', 'administrator'].includes(currentUserRole)
-  const isKedisiplinan = ['pegawai_kedisiplinan', 'administrator'].includes(currentUserRole)
+  // Aturan Visibilitas Tombol Berdasarkan Spesifikasi Role & Status Pegawai
+  const isPegawaiOrAdmin = ['pegawai', 'administrator'].includes(currentUserRole)
+  const isKedisiplinan = ['petugas_kedisiplinan', 'administrator'].includes(currentUserRole)
   const isStatusMenunggu = row.status_approval === 'Menunggu' && !row.is_canceled
   const isStatusRequestCanceled = row.is_request_canceled && !row.is_canceled
 
@@ -74,23 +74,23 @@ const RowAction = ({
         <i className='tabler-dots-vertical' />
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        {/* Tombol Detail: Selalu muncul untuk Akses Guru/Wali, atau kondisi kondisional */}
-        {isParentOrWali && (
-          <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}&view=true`}>
+        {/* Tombol Detail: Dapat diakses oleh manajemen internal terkait */}
+        {(isPegawaiOrAdmin || isKedisiplinan) && (
+          <MenuItem component={Link} href={`/app/perizinan-pegawai/detail?id=${row.id_izin}&view=true`}>
             <i className='tabler-eye' style={{ marginRight: 8 }} /> Detail
           </MenuItem>
         )}
 
-        {/* Tombol Proses Pengajuan: Hanya aktif untuk divisi kedisiplinan pada status pending */}
+        {/* Tombol Proses Pengajuan: Aktif untuk divisi kedisiplinan/administrator pada status pending */}
         {isKedisiplinan && (isStatusMenunggu || isStatusRequestCanceled) && (
-          <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}`}>
+          <MenuItem component={Link} href={`/app/perizinan-pegawai/detail?id=${row.id_izin}`}>
             <i className='tabler-gavel' style={{ marginRight: 8 }} /> Proses Izin
           </MenuItem>
         )}
 
-        {/* Cadangan fallback view reguler jika role diluar spesifikasi diatas */}
-        {!isParentOrWali && !isKedisiplinan && (
-          <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}&view=true`}>
+        {/* Cadangan fallback view reguler jika role diluar spesifikasi di atas */}
+        {!isPegawaiOrAdmin && !isKedisiplinan && (
+          <MenuItem component={Link} href={`/app/perizinan-pegawai/detail?id=${row.id_izin}&view=true`}>
             <i className='tabler-eye' style={{ marginRight: 8 }} /> View Detail
           </MenuItem>
         )}
@@ -103,7 +103,7 @@ const PickersComponent = forwardRef(({ ...props }: any, ref) => {
   return <TextField inputRef={ref} fullWidth size='small' {...props} />
 })
 
-const PerizinanSantriList = () => {
+const PerizinanPegawaiList = () => {
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.perizinan_santri)
 
@@ -113,14 +113,13 @@ const PerizinanSantriList = () => {
 
   const userRole = currentUser?.role_name || 'pegawai_kedisiplinan' // Default fallback
 
-  // Hooks Otorisasi Multi-Aksi Konten Vuexy
+  // Hooks Otorisasi Multi-Aksi Konten Vuexy khusus pegawai
   const canImport = useCan('import')
   const canExport = useCan('export')
 
   // Deteksi Breakpoint Media Screen untuk layouting Responsif (Mobile & Tablet)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
 
   // State Utama Filter Range Date & Kategori Data
   const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfMonth(new Date()))
@@ -129,13 +128,14 @@ const PerizinanSantriList = () => {
   const [jenisIzin, setJenisIzin] = useState('Semua')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // State Snapshot Sinkronisasi Fetcher
+  // State Snapshot Sinkronisasi Fetcher dengan bendera is_pegawai
   const [currentFilters, setCurrentFilters] = useState<any>({
     startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
     statusApproval: 'Semua',
     jenisIzin: 'Semua',
-    searchQuery: ''
+    searchQuery: '',
+    is_pegawai: true
   })
   const [isFilterApplied, setIsFilterApplied] = useState(true)
 
@@ -152,14 +152,13 @@ const PerizinanSantriList = () => {
 
   // State Detail Perizinan
   const [openDetailModal, setOpenDetailModal] = useState(false)
-  const [selectedDetailRow, setSelectedDetailRow] = useState<any>(null)
 
   // State PDF Preview Modal
   const [openPdf, setOpenPdf] = useState(false)
   const [pdfUrl, setPdfUrl] = useState('')
   const [pdfTitle, setPdfTitle] = useState('')
 
-  // Core API Caller Page Fetcher
+  // Core API Caller Page Fetcher (Ditambahkan is_pegawai: true agar backend memfilter data pegawai)
   const executeFetchData = useCallback(
     (currentPage: number, currentPerPage: number, filters: any) => {
       if (!filters) return
@@ -171,14 +170,15 @@ const PerizinanSantriList = () => {
           end_date: filters.endDate || undefined,
           status_approval: filters.statusApproval !== 'Semua' ? filters.statusApproval : undefined,
           jenis_izin: filters.jenisIzin !== 'Semua' ? filters.jenisIzin : undefined,
-          q: filters.searchQuery || undefined
+          q: filters.searchQuery || undefined,
+          is_pegawai: true
         })
       )
     },
     [dispatch]
   )
 
-  // Trigger Fetching Data Awal (Default Hari Ini) & Setiap Perubahan Halaman Table
+  // Trigger Fetching Data Awal & Setiap Perubahan Halaman Table
   useEffect(() => {
     if (isFilterApplied && currentFilters) {
       executeFetchData(page, perPage, currentFilters)
@@ -188,7 +188,7 @@ const PerizinanSantriList = () => {
   // Reset State Monitor Hub setelah CRUD / Approval Selesai diproses
   useEffect(() => {
     if (store.crud?.status) {
-      toast.success(store.crud.message || 'Aksi status perizinan berhasil diproses')
+      toast.success(store.crud.message || 'Aksi status perizinan pegawai berhasil diproses')
       setOpenApproveModal(false)
       setSelectedIzinRow(null)
       setAlasanTolakText('')
@@ -209,7 +209,8 @@ const PerizinanSantriList = () => {
       endDate: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : '',
       statusApproval,
       jenisIzin,
-      searchQuery
+      searchQuery,
+      is_pegawai: true
     }
     setPage(1)
     setIsFilterApplied(true)
@@ -234,7 +235,8 @@ const PerizinanSantriList = () => {
       endDate: format(defaultEnd, 'yyyy-MM-dd'),
       statusApproval: 'Semua',
       jenisIzin: 'Semua',
-      searchQuery: ''
+      searchQuery: '',
+      is_pegawai: true
     }
     setCurrentFilters(baseFilters)
     executeFetchData(1, perPage, baseFilters)
@@ -267,7 +269,7 @@ const PerizinanSantriList = () => {
     )
   }
 
-  // Core Excel Exporter Feature Client
+  // Core Excel Exporter Feature Client (Meneruskan parameter is_pegawai)
   const onExport = async () => {
     if (!isFilterApplied || !currentFilters) {
       toast.warning('Silakan lakukan pencarian data log secara terstruktur terlebih dahulu')
@@ -281,7 +283,8 @@ const PerizinanSantriList = () => {
           end_date: currentFilters.endDate,
           status_approval: currentFilters.statusApproval !== 'Semua' ? currentFilters.statusApproval : undefined,
           jenis_izin: currentFilters.jenisIzin !== 'Semua' ? currentFilters.jenisIzin : undefined,
-          q: currentFilters.searchQuery || undefined
+          q: currentFilters.searchQuery || undefined,
+          is_pegawai: true
         })
       ).unwrap()
 
@@ -290,7 +293,7 @@ const PerizinanSantriList = () => {
         const link = document.createElement('a')
         link.href = url
         link.click()
-        toast.success('File perizinan berhasil diexport')
+        toast.success('File perizinan pegawai berhasil diexport')
       }
     } catch {
       toast.error('Gagal memproses data export file excel')
@@ -324,7 +327,6 @@ const PerizinanSantriList = () => {
 
   const renderStatusApproval = (row: any) => {
     const isCanceled = row.is_canceled === true || row.is_canceled === 'true'
-
     let label = row.status_approval
 
     if (isCanceled) {
@@ -355,9 +357,7 @@ const PerizinanSantriList = () => {
   }
 
   const renderKondisi = (row: any) => {
-    if (!row.kondisi) {
-      return '-'
-    }
+    if (!row.kondisi) return '-'
 
     return (
       <Chip
@@ -368,7 +368,7 @@ const PerizinanSantriList = () => {
     )
   }
 
-  // Fungsi Komparasi Komponen Builder Struktur Kolom untuk TableView Komponen
+  // Fungsi Komparasi Komponen Builder Struktur Kolom untuk TableView Komponen Pegawai
   const buildTable = () => {
     let { dataPage } = store
 
@@ -384,8 +384,8 @@ const PerizinanSantriList = () => {
       fields: [
         tableColumn('AKSI', 'act-x', 'center', renderOption as any),
         tableColumn('NO', 'no', 'center'),
-        tableColumn('NAMA SANTRI', 'santri.fullname'),
-        tableColumn('KAMAR', 'lokasiKamar.nama_lokasi'),
+        tableColumn('NAMA PEGAWAI', 'pegawai.nama_lengkap'), // Mapping ke relasi objek pegawai
+        tableColumn('LOKASI KERJA', 'lokasiKerja.nama_lokasi'), // Mapping ke lokasi kerja pegawai
         tableColumn('JENIS', 'jenis_izin'),
         tableColumn('TGL IZIN', 'tanggal_izin_range', 'left', renderTanggalIzin as any),
         tableColumn('STATUS', 'status_approval_display', 'center', renderStatusApproval as any),
@@ -411,7 +411,7 @@ const PerizinanSantriList = () => {
                   startIcon={<i className='tabler-file-download' />}
                   onClick={() => {
                     setPdfUrl(fileUrl)
-                    setPdfTitle(`Berkas Izin ${row.santri?.fullname || 'Santri'} - ${row.jenis_izin}`)
+                    setPdfTitle(`Berkas Izin ${row.pegawai?.nama_lengkap || 'Pegawai'} - ${row.jenis_izin}`)
                     setOpenPdf(true)
                   }}
                   sx={{ py: 0.5, px: 2, height: 26, fontSize: '0.7rem' }}
@@ -433,34 +433,16 @@ const PerizinanSantriList = () => {
     }
   }
 
-  // Open Detail Perizinan
   const handleOpenDetailModal = (row: any) => {
-    setSelectedDetailRow(row)
+    setSelectedIzinRow(row)
     setOpenDetailModal(true)
-  }
-
-  const handlePembatalan = async (idIzin: string) => {
-    // Tampilkan konfirmasi native window opsional demi keamanan user klik
-    const konfirmasi = window.confirm('Apakah Anda yakin ingin membatalkan pengajuan izin ini?')
-    if (!konfirmasi) return
-
-    try {
-      // Eksekusi thunk pembatalan ke backend
-      await dispatch(postPerizinanCancel({ id: idIzin })).unwrap()
-
-      // Tutup modal setelah berhasil
-      setOpenDetailModal(false)
-      setSelectedDetailRow(null)
-    } catch (err: any) {
-      toast.error(err || 'Gagal memproses pembatalan izin')
-    }
   }
 
   return (
     <Grid container spacing={6}>
       <Grid size={12}>
         <Card sx={{ p: 5, mb: 4 }}>
-          {/* LAYOUT GRID RESPONSIF: Menyesuaikan kolom berdasarkan ukuran perangkat */}
+          {/* LAYOUT GRID RESPONSIF FILTER */}
           <Grid container spacing={4} sx={{ mb: 4 }}>
             <Grid size={{ xs: 12, sm: 2.4 }}>
               <AppReactDatepicker
@@ -490,7 +472,6 @@ const PerizinanSantriList = () => {
               />
             </Grid>
 
-            {/* Dropdown Filter Status Approval */}
             <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Status Approval</InputLabel>
@@ -507,7 +488,6 @@ const PerizinanSantriList = () => {
               </FormControl>
             </Grid>
 
-            {/* Dropdown Filter Jenis Perizinan */}
             <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Jenis Perizinan</InputLabel>
@@ -519,13 +499,12 @@ const PerizinanSantriList = () => {
               </FormControl>
             </Grid>
 
-            {/* Multi Filter Free Text input */}
             <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 fullWidth
-                label='Pencarian Nama/NIS/kamar'
+                label='Pencarian Nama/NIP/Lokasi'
                 size='small'
-                placeholder='Ketik nama santri, NIS, atau kamar...'
+                placeholder='Ketik nama pegawai, NIP, atau lokasi kerja...'
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
@@ -533,7 +512,6 @@ const PerizinanSantriList = () => {
             </Grid>
           </Grid>
 
-          {/* UTILITY BUTTONS BAR: Menggunakan Flex Wrap demi menjaga kerapihan tampilan Mobile */}
           {/* BARIS UTILITY BUTTONS */}
           <Toolbar
             sx={{
@@ -567,7 +545,7 @@ const PerizinanSantriList = () => {
 
             <Button
               component={Link}
-              href={`/app/perizinan-santri/form`}
+              href={`/app/perizinan-pegawai/form`}
               variant='contained'
               color='primary'
               startIcon={<i className='tabler-file-plus' />}
@@ -575,7 +553,6 @@ const PerizinanSantriList = () => {
               Ajukan Izin
             </Button>
 
-            {/* Spacer murni untuk mendorong button export/import ke sisi kanan pada layar desktop */}
             {!isMobile && <Box sx={{ flexGrow: 1 }} />}
 
             {canExport && (
@@ -591,26 +568,24 @@ const PerizinanSantriList = () => {
               </Button>
             )}
 
-            {/* {canImport && (
+            {canImport && (
               <Button
                 color='secondary'
                 variant='contained'
                 fullWidth={isMobile}
                 startIcon={<i className='tabler-file-import' />}
                 component={Link}
-                href='/app/perizinan-santri/import?ub=kewaliasuhan'
+                href='/app/perizinan-pegawai/import?is_pegawai=true'
               >
                 Import Excel
               </Button>
-            )} */}
+            )}
           </Toolbar>
         </Card>
 
         {/* LOG DATA UTAMA RENDERING */}
         <Card sx={{ overflowX: 'auto' }}>
-          <CardHeader title='Daftar Riwayat Perizinan Santri' />
-
-          {/* TableView Vuexy menangani scroll internal otomatis secara murni */}
+          <CardHeader title='Daftar Riwayat Perizinan Pegawai' />
           <TableView changeSort={() => {}} model={buildTable()} />
         </Card>
       </Grid>
@@ -622,7 +597,7 @@ const PerizinanSantriList = () => {
           sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}
         >
           <Typography variant='h6' sx={{ fontWeight: 700 }}>
-            Form Evaluasi Persetujuan Izin Santri
+            Form Evaluasi Persetujuan Izin Pegawai
           </Typography>
           <IconButton onClick={() => setOpenApproveModal(false)} size='small'>
             <i className='tabler-x' />
@@ -636,10 +611,10 @@ const PerizinanSantriList = () => {
                 INFORMASI PENGAJUAN
               </Typography>
               <Typography variant='body2'>
-                <b>Nama Santri:</b> {selectedIzinRow.santri?.fullname} ({selectedIzinRow.santri?.nis || '-'})
+                <b>Nama Pegawai:</b> {selectedIzinRow.pegawai?.nama_lengkap} ({selectedIzinRow.pegawai?.nip || '-'})
               </Typography>
               <Typography variant='body2'>
-                <b>Kamar / Lokasi:</b> {selectedIzinRow.lokasiKamar?.nama_lokasi || '-'}
+                <b>Lokasi Kerja:</b> {selectedIzinRow.lokasiKerja?.nama_lokasi || '-'}
               </Typography>
               <Typography variant='body2'>
                 <b>Alasan Keperluan:</b> {selectedIzinRow.alasan || '-'}
@@ -649,7 +624,7 @@ const PerizinanSantriList = () => {
 
           <FormControl component='fieldset' fullWidth sx={{ mb: 4 }}>
             <Typography variant='body2' sx={{ fontWeight: 600, mb: 2 }}>
-              Keputusan Otoritas Kedisiplinan:
+              Keputusan Otoritas Kerja:
             </Typography>
             <RadioGroup row value={actionApprovalStatus} onChange={e => setActionApprovalStatus(e.target.value)}>
               <FormControlLabel value='Disetujui' control={<Radio color='success' />} label='Setujui Pengajuan' />
@@ -663,7 +638,7 @@ const PerizinanSantriList = () => {
               multiline
               rows={3}
               label='Alasan Penolakan Berkas'
-              placeholder='Tuliskan catatan mengapa pengajuan ini ditolak oleh pihak kedisiplinan...'
+              placeholder='Tuliskan catatan mengapa pengajuan ini ditolak oleh pihak berwenang...'
               value={alasanTolakText}
               onChange={e => setAlasanTolakText(e.target.value)}
               variant='outlined'
@@ -737,4 +712,4 @@ const PerizinanSantriList = () => {
   )
 }
 
-export default PerizinanSantriList
+export default PerizinanPegawaiList

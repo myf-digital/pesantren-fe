@@ -444,8 +444,8 @@ const PerizinanSantriTabsList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-              <FormControl fullWidth size='small' disabled={activeTab === 1}>
+            {/* <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+              <FormControl fullWidth size='small' disabled={true}>
                 <InputLabel>Status Approval</InputLabel>
                 <Select
                   label='Status Approval'
@@ -458,7 +458,7 @@ const PerizinanSantriTabsList = () => {
                   <MenuItem value='Ditolak'>Ditolak</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
+            </Grid> */}
 
             <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <FormControl fullWidth size='small'>

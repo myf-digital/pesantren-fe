@@ -31,6 +31,10 @@ export async function middleware(req: NextRequest) {
     allowed =
       can(permissions, '/app/perizinan-santri/kewaliasuhan', 'view') ||
       can(permissions, '/app/perizinan-santri/kedisiplinan', 'view')
+  } else if (resource === '/app/perizinan-pegawai') {
+    allowed =
+      can(permissions, '/app/perizinan-pegawai/kewaliasuhan', 'view') ||
+      can(permissions, '/app/perizinan-pegawai/kedisiplinan', 'view')
   } else {
     allowed = can(permissions, resource, 'view')
   }

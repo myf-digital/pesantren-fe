@@ -19,27 +19,20 @@ import {
   FormControl,
   InputLabel,
   Select,
+  useTheme,
+  useMediaQuery,
+  Tabs,
+  Tab,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  useTheme,
-  useMediaQuery
+  DialogActions
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import {
-  fetchPerizinanSantriPage,
-  postPerizinanApprove,
-  postPerizinanCancel,
-  postPerizinanExport,
-  resetRedux
-} from '../slice'
+import { fetchPerizinanSantriPage, postPerizinanExport, resetRedux } from '../slice'
 
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
@@ -48,23 +41,15 @@ import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { useSession } from 'next-auth/react'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
-// Komponen Aksi Baris Tabel Dinamis Berdasarkan Struktur Akses & State Dokumen
-const RowAction = ({
-  row,
-  currentUserRole,
-  onApproveClick,
-  onDetailClick
-}: {
-  row: any
-  currentUserRole: string
-  onApproveClick: (data: any) => void
-  onDetailClick: (data: any) => void
-}) => {
+// ==========================================
+// KOMPONEN AKSI BARIS TABEL (ROW ACTION)
+// ==========================================
+const RowAction = ({ row, currentUserRole }: { row: any; currentUserRole: string }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
-  // Aturan Visibilitas Tombol Berdasarkan Spesifikasi Role & Status
-  const isParentOrWali = ['orang_tua_wali', 'wali_asuh', 'administrator'].includes(currentUserRole)
-  const isKedisiplinan = ['pegawai_kedisiplinan', 'administrator'].includes(currentUserRole)
+  // Aturan Visibilitas Tombol Berdasarkan Spesifikasi Role & Status Kepegawaian
+  const isManajemenAtasan = ['atasan_langsung', 'direksi', 'administrator', 'manajemen_hrd'].includes(currentUserRole)
+  const isHrdStaff = ['staff_hrd', 'manajemen_hrd', 'administrator'].includes(currentUserRole)
   const isStatusMenunggu = row.status_approval === 'Menunggu' && !row.is_canceled
   const isStatusRequestCanceled = row.is_request_canceled && !row.is_canceled
 
@@ -74,23 +59,29 @@ const RowAction = ({
         <i className='tabler-dots-vertical' />
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        {/* Tombol Detail: Selalu muncul untuk Akses Guru/Wali, atau kondisi kondisional */}
-        {isParentOrWali && (
-          <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}&view=true`}>
-            <i className='tabler-eye' style={{ marginRight: 8 }} /> Detail
+        {/* Tombol Detail: Muncul untuk atasan, manajemen hrd, atau administrator */}
+        {isManajemenAtasan && (
+          <MenuItem
+            component={Link}
+            href={`/app/perizinan-pegawai/detail?id=${row.id_izin}&view=true&from=manajemen-hrd`}
+          >
+            <i className='tabler-eye' style={{ marginRight: 8 }} /> Detail Pegawai
           </MenuItem>
         )}
 
-        {/* Tombol Proses Pengajuan: Hanya aktif untuk divisi kedisiplinan pada status pending */}
-        {isKedisiplinan && (isStatusMenunggu || isStatusRequestCanceled) && (
-          <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}`}>
+        {/* Tombol Proses Pengajuan: Aktif untuk divisi kepegawaian atau hrd pada status pending */}
+        {isHrdStaff && (isStatusMenunggu || isStatusRequestCanceled) && (
+          <MenuItem component={Link} href={`/app/perizinan-pegawai/detail?id=${row.id_izin}&from=manajemen-hrd`}>
             <i className='tabler-gavel' style={{ marginRight: 8 }} /> Proses Izin
           </MenuItem>
         )}
 
         {/* Cadangan fallback view reguler jika role diluar spesifikasi diatas */}
-        {!isParentOrWali && !isKedisiplinan && (
-          <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}&view=true`}>
+        {!isManajemenAtasan && !isHrdStaff && (
+          <MenuItem
+            component={Link}
+            href={`/app/perizinan-pegawai/detail?id=${row.id_izin}&view=true&from=manajemen-hrd`}
+          >
             <i className='tabler-eye' style={{ marginRight: 8 }} /> View Detail
           </MenuItem>
         )}
@@ -103,33 +94,34 @@ const PickersComponent = forwardRef(({ ...props }: any, ref) => {
   return <TextField inputRef={ref} fullWidth size='small' {...props} />
 })
 
-const PerizinanSantriList = () => {
+// ==========================================
+// KOMPONEN UTAMA
+// ==========================================
+const PerizinanPegawaiTabsList = () => {
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.perizinan_santri)
 
-  // Ambil data profile / user metadata ter-autentikasi untuk mendeteksi Role pengguna saat ini
   const { data: session } = useSession()
   const currentUser: any = session?.userdata
+  const userRole = currentUser?.role_name || 'pegawai_biasa'
 
-  const userRole = currentUser?.role_name || 'pegawai_kedisiplinan' // Default fallback
-
-  // Hooks Otorisasi Multi-Aksi Konten Vuexy
   const canImport = useCan('import')
   const canExport = useCan('export')
 
-  // Deteksi Breakpoint Media Screen untuk layouting Responsif (Mobile & Tablet)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
 
-  // State Utama Filter Range Date & Kategori Data
+  // State Managing 2 Tab: 0 = Perizinan Pegawai, 1 = Request Pembatalan Izin
+  const [activeTab, setActiveTab] = useState<number>(0)
+
+  // State Filter Utama
   const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfMonth(new Date()))
   const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(endOfMonth(new Date()))
   const [statusApproval, setStatusApproval] = useState('Semua')
   const [jenisIzin, setJenisIzin] = useState('Semua')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // State Snapshot Sinkronisasi Fetcher
+  // Snapshot filter state
   const [currentFilters, setCurrentFilters] = useState<any>({
     startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
@@ -137,70 +129,65 @@ const PerizinanSantriList = () => {
     jenisIzin: 'Semua',
     searchQuery: ''
   })
-  const [isFilterApplied, setIsFilterApplied] = useState(true)
 
-  // State Pagination Tabel Utama
+  const [isFilterApplied, setIsFilterApplied] = useState(true)
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
 
-  // State Manajemen Approval Modal Dialog internal
-  const [openApproveModal, setOpenApproveModal] = useState(false)
-  const [selectedIzinRow, setSelectedIzinRow] = useState<any>(null)
-  const [actionApprovalStatus, setActionApprovalStatus] = useState('Disetujui')
-  const [alasanTolakText, setAlasanTolakText] = useState('')
-
-  // State Detail Perizinan
-  const [openDetailModal, setOpenDetailModal] = useState(false)
-  const [selectedDetailRow, setSelectedDetailRow] = useState<any>(null)
-
-  // State PDF Preview Modal
+  // State PDF Preview Modal Dokumen Surat
   const [openPdf, setOpenPdf] = useState(false)
   const [pdfUrl, setPdfUrl] = useState('')
   const [pdfTitle, setPdfTitle] = useState('')
 
-  // Core API Caller Page Fetcher
+  // Core Kepegawaian API Fetcher
   const executeFetchData = useCallback(
-    (currentPage: number, currentPerPage: number, filters: any) => {
+    (currentPage: number, currentPerPage: number, filters: any, tabIndex: number) => {
       if (!filters) return
+
       dispatch(
         fetchPerizinanSantriPage({
           page: currentPage,
           perPage: currentPerPage,
           start_date: filters.startDate || undefined,
           end_date: filters.endDate || undefined,
-          status_approval: filters.statusApproval !== 'Semua' ? filters.statusApproval : undefined,
+          status_approval: tabIndex === 1 ? 'Disetujui' : 'Menunggu',
           jenis_izin: filters.jenisIzin !== 'Semua' ? filters.jenisIzin : undefined,
-          q: filters.searchQuery || undefined
+          q: filters.searchQuery || undefined,
+          is_request_canceled: tabIndex === 1 ? true : false,
+          is_canceled: false,
+          is_pegawai: true
         })
       )
     },
     [dispatch]
   )
 
-  // Trigger Fetching Data Awal (Default Hari Ini) & Setiap Perubahan Halaman Table
+  // Trigger Fetching Data saat Halaman, Filter, atau Tab berubah
   useEffect(() => {
     if (isFilterApplied && currentFilters) {
-      executeFetchData(page, perPage, currentFilters)
+      executeFetchData(page, perPage, currentFilters, activeTab)
     }
-  }, [page, perPage, isFilterApplied, currentFilters, executeFetchData])
+  }, [page, perPage, isFilterApplied, currentFilters, activeTab, executeFetchData])
 
-  // Reset State Monitor Hub setelah CRUD / Approval Selesai diproses
+  // Reset State Monitor Hub setelah CRUD Berhasil
   useEffect(() => {
     if (store.crud?.status) {
-      toast.success(store.crud.message || 'Aksi status perizinan berhasil diproses')
-      setOpenApproveModal(false)
-      setSelectedIzinRow(null)
-      setAlasanTolakText('')
-      if (isFilterApplied && currentFilters) executeFetchData(page, perPage, currentFilters)
+      toast.success(store.crud.message || 'Data perizinan berhasil diproses')
+      if (isFilterApplied && currentFilters) executeFetchData(page, perPage, currentFilters, activeTab)
       dispatch(resetRedux())
     }
-  }, [store.crud, dispatch, page, perPage, isFilterApplied, currentFilters, executeFetchData])
+  }, [store.crud, dispatch, page, perPage, isFilterApplied, currentFilters, activeTab, executeFetchData])
 
-  // Handler Submit Filter Manual
+  // Handler Ganti Tab Kategori Pengajuan
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue)
+    setPage(1)
+  }
+
   const handleSearchSubmit = () => {
     if (tanggalAwal && tanggalAkhir && tanggalAwal > tanggalAkhir) {
-      toast.error('Tanggal awal tidak boleh melebihi batas tanggal akhir pencarian')
+      toast.error('Tanggal awal tidak boleh melebihi batas rentang tanggal akhir pencarian')
       return
     }
 
@@ -214,10 +201,9 @@ const PerizinanSantriList = () => {
     setPage(1)
     setIsFilterApplied(true)
     setCurrentFilters(filters)
-    executeFetchData(1, perPage, filters)
+    executeFetchData(1, perPage, filters, activeTab)
   }
 
-  // Handler Reset Form Filter Pencarian Kembali ke Kondisi Semula
   const handleResetFilter = () => {
     const defaultStart = startOfMonth(new Date())
     const defaultEnd = endOfMonth(new Date())
@@ -237,40 +223,12 @@ const PerizinanSantriList = () => {
       searchQuery: ''
     }
     setCurrentFilters(baseFilters)
-    executeFetchData(1, perPage, baseFilters)
+    executeFetchData(1, perPage, baseFilters, activeTab)
   }
 
-  // Handler Trigger Approval Dialog Launcher
-  const handleOpenApprovalDialog = (row: any) => {
-    setSelectedIzinRow(row)
-    setActionApprovalStatus('Disetujui')
-    setOpenApproveModal(true)
-  }
-
-  // Submit Data Keputusan Modal ke Backend Service via Thunk Redux
-  const handleSubmitDecision = () => {
-    if (!selectedIzinRow) return
-
-    if (actionApprovalStatus === 'Ditolak' && !alasanTolakText.trim()) {
-      toast.warning('Silakan isi alasan penolakan berkas perizinan terlebih dahulu')
-      return
-    }
-
-    dispatch(
-      postPerizinanApprove({
-        id: selectedIzinRow.id_izin,
-        payload: {
-          status_approval: actionApprovalStatus,
-          alasan_reject: actionApprovalStatus === 'Ditolak' ? alasanTolakText : undefined
-        }
-      })
-    )
-  }
-
-  // Core Excel Exporter Feature Client
   const onExport = async () => {
     if (!isFilterApplied || !currentFilters) {
-      toast.warning('Silakan lakukan pencarian data log secara terstruktur terlebih dahulu')
+      toast.warning('Silakan lakukan pencarian data pegawai secara terstruktur terlebih dahulu')
       return
     }
     try {
@@ -281,7 +239,8 @@ const PerizinanSantriList = () => {
           end_date: currentFilters.endDate,
           status_approval: currentFilters.statusApproval !== 'Semua' ? currentFilters.statusApproval : undefined,
           jenis_izin: currentFilters.jenisIzin !== 'Semua' ? currentFilters.jenisIzin : undefined,
-          q: currentFilters.searchQuery || undefined
+          q: currentFilters.searchQuery || undefined,
+          is_request_canceled: activeTab === 1 ? true : undefined
         })
       ).unwrap()
 
@@ -290,26 +249,17 @@ const PerizinanSantriList = () => {
         const link = document.createElement('a')
         link.href = url
         link.click()
-        toast.success('File perizinan berhasil diexport')
+        toast.success('Berkas log perizinan pegawai berhasil diexport')
       }
     } catch {
-      toast.error('Gagal memproses data export file excel')
+      toast.error('Gagal memproses ekspor berkas data pegawai')
     } finally {
       setLoadingExport(false)
     }
   }
 
-  // Render Kolom Opsi Dinamis Terhadap Baris Record Tabel Utama
-  const renderOption = (row: any) => {
-    return (
-      <RowAction
-        row={row}
-        currentUserRole={userRole}
-        onApproveClick={handleOpenApprovalDialog}
-        onDetailClick={handleOpenDetailModal}
-      />
-    )
-  }
+  // Column Renderers
+  const renderOption = (row: any) => <RowAction row={row} currentUserRole={userRole} />
 
   const renderTanggalIzin = (row: any) => (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -317,22 +267,21 @@ const PerizinanSantriList = () => {
         {row.tanggal_mulai ? format(new Date(row.tanggal_mulai), 'dd MMM yyyy') : '-'}
       </Typography>
       <Typography variant='caption' color='text.secondary'>
-        s/d {row.tanggal_selesai ? format(new Date(row.tanggal_selesai), 'dd MMM yyyy') : '-'}
+        sampai dengan {row.tanggal_selesai ? format(new Date(row.tanggal_selesai), 'dd MMM yyyy') : '-'}
       </Typography>
     </Box>
   )
 
   const renderStatusApproval = (row: any) => {
     const isCanceled = row.is_canceled === true || row.is_canceled === 'true'
-
     let label = row.status_approval
 
     if (isCanceled) {
       label = 'Dibatalkan'
     } else if (label === 'Disetujui') {
-      label = row.is_request_canceled ? 'Menunggu Permintaan Pembatalan' : 'Disetujui'
+      label = row.is_request_canceled ? 'Menunggu Pembatalan' : 'Disetujui'
     } else if (label === 'Menunggu') {
-      label = row.is_request_canceled ? 'Menunggu Permintaan Pembatalan' : 'Menunggu Approval'
+      label = row.is_request_canceled ? 'Menunggu Pembatalan' : 'Menunggu Approval'
     }
 
     const color = isCanceled
@@ -355,74 +304,95 @@ const PerizinanSantriList = () => {
   }
 
   const renderKondisi = (row: any) => {
-    if (!row.kondisi) {
-      return '-'
-    }
-
+    if (!row.kondisi) return '-'
     return (
       <Chip
-        label={row.kondisi || '-'}
+        label={row.kondisi}
         size='small'
         color={row.kondisi === 'Overdue' ? 'error' : row.kondisi === 'Closed' ? 'secondary' : 'primary'}
       />
     )
   }
 
-  // Fungsi Komparasi Komponen Builder Struktur Kolom untuk TableView Komponen
+  // ==========================================
+  // BUILD DATA STRUKTUR TABEL (KONDISIONAL TAB)
+  // ==========================================
   const buildTable = () => {
-    let { dataPage } = store
+    const { dataPage } = store
+    let tableValues = (dataPage?.values || []).map((item: any, index: number) => {
+      const fileUrl = item.file_izin
+        ? item.file_izin.startsWith('http')
+          ? item.file_izin
+          : `${process.env.NEXT_PUBLIC_API_URL || ''}${item.file_izin.startsWith('/') ? '' : '/'}${item.file_izin}`
+        : ''
 
-    let tableValues = dataPage?.values || []
-    tableValues = (dataPage?.values || []).map((item: any, index: number) => ({
-      ...item,
-      no: (page - 1) * perPage + index + 1
-    }))
+      return {
+        ...item,
+        no: (page - 1) * perPage + index + 1,
+        jenis_izin: (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start' }}>
+            <Typography variant='body2'>{item.jenis_izin}</Typography>
+            {fileUrl && (
+              <Button
+                size='small'
+                color='primary'
+                variant='tonal'
+                startIcon={<i className='tabler-file-download' />}
+                onClick={() => {
+                  setPdfUrl(fileUrl)
+                  setPdfTitle(`Surat Keterangan Resmi ${item.pegawai?.full_name || 'Pegawai'} - ${item.jenis_izin}`)
+                  setOpenPdf(true)
+                }}
+                sx={{ py: 0.5, px: 2, height: 26, fontSize: '0.7rem' }}
+              >
+                Lihat Berkas Dokumen
+              </Button>
+            )}
+          </Box>
+        )
+      }
+    })
     const tableCount = dataPage?.total || 0
 
+    // TAB 2: Request Pembatalan Log List Kepegawaian
+    if (activeTab === 1) {
+      return {
+        page: page,
+        fields: [
+          tableColumn('AKSI', 'act-x', 'center', renderOption as any),
+          tableColumn('NO', 'no', 'center'),
+          tableColumn('NAMA PEGAWAI', 'pegawai.nama_lengkap'),
+          tableColumn('LOKASI KERJA', 'lokasiKerja.nama_lokasi'),
+          tableColumn('KATEGORI JENIS', 'jenis_izin'),
+          tableColumn('TANGGAL IZIN', 'tanggal_izin_range', 'left', renderTanggalIzin as any),
+          tableColumn('PEMOHON DATA', 'creator.full_name'),
+          tableColumn('STATUS KEPUTUSAN', 'status_approval_display', 'center', renderStatusApproval as any)
+        ],
+        values: tableValues,
+        count: tableCount,
+        perPage: perPage,
+        changePage: (_: any, n: number) => setPage(n + 1),
+        changePerPage: (e: any) => {
+          setPerPage(parseInt(e.target.value, 10))
+          setPage(1)
+        }
+      }
+    }
+
+    // TAB 1: Perizinan Pegawai List (Default View)
     return {
       page: page,
       fields: [
         tableColumn('AKSI', 'act-x', 'center', renderOption as any),
         tableColumn('NO', 'no', 'center'),
-        tableColumn('NAMA SANTRI', 'santri.fullname'),
-        tableColumn('KAMAR', 'lokasiKamar.nama_lokasi'),
-        tableColumn('JENIS', 'jenis_izin'),
-        tableColumn('TGL IZIN', 'tanggal_izin_range', 'left', renderTanggalIzin as any),
-        tableColumn('STATUS', 'status_approval_display', 'center', renderStatusApproval as any),
-        tableColumn('KONDISI', 'kondisi_display', 'center', renderKondisi as any)
+        tableColumn('NAMA PEGAWAI', 'pegawai.nama_lengkap'),
+        tableColumn('LOKASI KERJA', 'lokasiKerja.nama_lokasi'),
+        tableColumn('KATEGORI JENIS', 'jenis_izin'),
+        tableColumn('TANGGAL IZIN', 'tanggal_izin_range', 'left', renderTanggalIzin as any),
+        tableColumn('STATUS KEPUTUSAN', 'status_approval_display', 'center', renderStatusApproval as any),
+        tableColumn('KONDISI ABSEN', 'kondisi_display', 'center', renderKondisi as any)
       ],
-      values: tableValues.map((row: any) => {
-        const fileUrl = row.file_izin
-          ? row.file_izin.startsWith('http')
-            ? row.file_izin
-            : `${process.env.NEXT_PUBLIC_API_URL || ''}${row.file_izin.startsWith('/') ? '' : '/'}${row.file_izin}`
-          : ''
-
-        return {
-          ...row,
-          jenis_izin: (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start' }}>
-              <Typography variant='body2'>{row.jenis_izin}</Typography>
-              {fileUrl && (
-                <Button
-                  size='small'
-                  color='primary'
-                  variant='tonal'
-                  startIcon={<i className='tabler-file-download' />}
-                  onClick={() => {
-                    setPdfUrl(fileUrl)
-                    setPdfTitle(`Berkas Izin ${row.santri?.fullname || 'Santri'} - ${row.jenis_izin}`)
-                    setOpenPdf(true)
-                  }}
-                  sx={{ py: 0.5, px: 2, height: 26, fontSize: '0.7rem' }}
-                >
-                  Lihat Berkas
-                </Button>
-              )}
-            </Box>
-          )
-        }
-      }),
+      values: tableValues,
       count: tableCount,
       perPage: perPage,
       changePage: (_: any, n: number) => setPage(n + 1),
@@ -433,34 +403,19 @@ const PerizinanSantriList = () => {
     }
   }
 
-  // Open Detail Perizinan
-  const handleOpenDetailModal = (row: any) => {
-    setSelectedDetailRow(row)
-    setOpenDetailModal(true)
-  }
-
-  const handlePembatalan = async (idIzin: string) => {
-    // Tampilkan konfirmasi native window opsional demi keamanan user klik
-    const konfirmasi = window.confirm('Apakah Anda yakin ingin membatalkan pengajuan izin ini?')
-    if (!konfirmasi) return
-
-    try {
-      // Eksekusi thunk pembatalan ke backend
-      await dispatch(postPerizinanCancel({ id: idIzin })).unwrap()
-
-      // Tutup modal setelah berhasil
-      setOpenDetailModal(false)
-      setSelectedDetailRow(null)
-    } catch (err: any) {
-      toast.error(err || 'Gagal memproses pembatalan izin')
-    }
-  }
-
   return (
     <Grid container spacing={6}>
       <Grid size={12}>
+        {/* IMPLEMENTASI TABS NAVIGATION CONTROLLER UTAMA */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
+          <Tabs value={activeTab} onChange={handleTabChange} aria-label='Perizinan Pegawai Tabs'>
+            <Tab label='Pengajuan Izin Pegawai' id='tab-perizinan-pegawai' />
+            <Tab label='Request Pembatalan Izin' id='tab-pembatalan-pegawai' />
+          </Tabs>
+        </Box>
+
+        {/* CONTAINER PANEL FILTER UTAMA */}
         <Card sx={{ p: 5, mb: 4 }}>
-          {/* LAYOUT GRID RESPONSIF: Menyesuaikan kolom berdasarkan ukuran perangkat */}
           <Grid container spacing={4} sx={{ mb: 4 }}>
             <Grid size={{ xs: 12, sm: 2.4 }}>
               <AppReactDatepicker
@@ -490,13 +445,12 @@ const PerizinanSantriList = () => {
               />
             </Grid>
 
-            {/* Dropdown Filter Status Approval */}
-            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-              <FormControl fullWidth size='small'>
+            {/* <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+              <FormControl fullWidth size='small' disabled={activeTab === 1}>
                 <InputLabel>Status Approval</InputLabel>
                 <Select
                   label='Status Approval'
-                  value={statusApproval}
+                  value={activeTab === 1 ? 'Menunggu' : statusApproval}
                   onChange={e => setStatusApproval(e.target.value)}
                 >
                   <MenuItem value='Semua'>Semua Status</MenuItem>
@@ -505,27 +459,25 @@ const PerizinanSantriList = () => {
                   <MenuItem value='Ditolak'>Ditolak</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
+            </Grid> */}
 
-            {/* Dropdown Filter Jenis Perizinan */}
             <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Jenis Perizinan</InputLabel>
                 <Select label='Jenis Perizinan' value={jenisIzin} onChange={e => setJenisIzin(e.target.value)}>
                   <MenuItem value='Semua'>Semua Jenis</MenuItem>
-                  <MenuItem value='Izin'>Izin (Keluar)</MenuItem>
-                  <MenuItem value='Sakit'>Sakit</MenuItem>
+                  <MenuItem value='Izin'>Izin Keluar Kantor</MenuItem>
+                  <MenuItem value='Sakit'>Sakit Pendukung Surat Dokter</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
 
-            {/* Multi Filter Free Text input */}
             <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 fullWidth
-                label='Pencarian Nama/NIS/kamar'
+                label='Pencarian Nama NIP Unit Kerja'
                 size='small'
-                placeholder='Ketik nama santri, NIS, atau kamar...'
+                placeholder='Ketik nama pegawai, NIP, atau unit kerja...'
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
@@ -533,8 +485,7 @@ const PerizinanSantriList = () => {
             </Grid>
           </Grid>
 
-          {/* UTILITY BUTTONS BAR: Menggunakan Flex Wrap demi menjaga kerapihan tampilan Mobile */}
-          {/* BARIS UTILITY BUTTONS */}
+          {/* TOOLBAR ACTION UTILITY */}
           <Toolbar
             sx={{
               px: '0px !important',
@@ -552,7 +503,7 @@ const PerizinanSantriList = () => {
               startIcon={<i className='tabler-search' />}
               onClick={handleSearchSubmit}
             >
-              Cari
+              Cari Data
             </Button>
 
             <Button
@@ -565,17 +516,6 @@ const PerizinanSantriList = () => {
               Reset Filter
             </Button>
 
-            <Button
-              component={Link}
-              href={`/app/perizinan-santri/form`}
-              variant='contained'
-              color='primary'
-              startIcon={<i className='tabler-file-plus' />}
-            >
-              Ajukan Izin
-            </Button>
-
-            {/* Spacer murni untuk mendorong button export/import ke sisi kanan pada layar desktop */}
             {!isMobile && <Box sx={{ flexGrow: 1 }} />}
 
             {canExport && (
@@ -598,7 +538,7 @@ const PerizinanSantriList = () => {
                 fullWidth={isMobile}
                 startIcon={<i className='tabler-file-import' />}
                 component={Link}
-                href='/app/perizinan-santri/import?ub=kewaliasuhan'
+                href='/app/perizinan-pegawai/import?ub=manajemen-hrd'
               >
                 Import Excel
               </Button>
@@ -606,87 +546,18 @@ const PerizinanSantriList = () => {
           </Toolbar>
         </Card>
 
-        {/* LOG DATA UTAMA RENDERING */}
+        {/* LOG DATA TABLE RENDERING */}
         <Card sx={{ overflowX: 'auto' }}>
-          <CardHeader title='Daftar Riwayat Perizinan Santri' />
-
-          {/* TableView Vuexy menangani scroll internal otomatis secara murni */}
+          <CardHeader
+            title={
+              activeTab === 0 ? 'Daftar Riwayat Perizinan Kerja Pegawai' : 'Daftar Permintaan Pembatalan Izin Absensi'
+            }
+          />
           <TableView changeSort={() => {}} model={buildTable()} />
         </Card>
       </Grid>
 
-      {/* POPUP MODAL DIALOG EVALUASI KEPUTUSAN APPROVAL */}
-      <Dialog open={openApproveModal} onClose={() => setOpenApproveModal(false)} maxWidth='sm' fullWidth scroll='body'>
-        <DialogTitle
-          component='div'
-          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}
-        >
-          <Typography variant='h6' sx={{ fontWeight: 700 }}>
-            Form Evaluasi Persetujuan Izin Santri
-          </Typography>
-          <IconButton onClick={() => setOpenApproveModal(false)} size='small'>
-            <i className='tabler-x' />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent dividers sx={{ p: 5 }}>
-          {selectedIzinRow && (
-            <Box sx={{ mb: 4, bgcolor: 'action.hover', p: 3, borderRadius: 1 }}>
-              <Typography variant='subtitle2' color='primary' sx={{ fontWeight: 600, mb: 1 }}>
-                INFORMASI PENGAJUAN
-              </Typography>
-              <Typography variant='body2'>
-                <b>Nama Santri:</b> {selectedIzinRow.santri?.fullname} ({selectedIzinRow.santri?.nis || '-'})
-              </Typography>
-              <Typography variant='body2'>
-                <b>Kamar / Lokasi:</b> {selectedIzinRow.lokasiKamar?.nama_lokasi || '-'}
-              </Typography>
-              <Typography variant='body2'>
-                <b>Alasan Keperluan:</b> {selectedIzinRow.alasan || '-'}
-              </Typography>
-            </Box>
-          )}
-
-          <FormControl component='fieldset' fullWidth sx={{ mb: 4 }}>
-            <Typography variant='body2' sx={{ fontWeight: 600, mb: 2 }}>
-              Keputusan Otoritas Kedisiplinan:
-            </Typography>
-            <RadioGroup row value={actionApprovalStatus} onChange={e => setActionApprovalStatus(e.target.value)}>
-              <FormControlLabel value='Disetujui' control={<Radio color='success' />} label='Setujui Pengajuan' />
-              <FormControlLabel value='Ditolak' control={<Radio color='error' />} label='Tolak Pengajuan' />
-            </RadioGroup>
-          </FormControl>
-
-          {actionApprovalStatus === 'Ditolak' && (
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label='Alasan Penolakan Berkas'
-              placeholder='Tuliskan catatan mengapa pengajuan ini ditolak oleh pihak kedisiplinan...'
-              value={alasanTolakText}
-              onChange={e => setAlasanTolakText(e.target.value)}
-              variant='outlined'
-              size='small'
-            />
-          )}
-        </DialogContent>
-
-        <DialogActions sx={{ p: 3, gap: 1 }}>
-          <Button onClick={() => setOpenApproveModal(false)} variant='outlined' color='secondary'>
-            Kembali
-          </Button>
-          <Button
-            onClick={handleSubmitDecision}
-            variant='contained'
-            color={actionApprovalStatus === 'Disetujui' ? 'success' : 'error'}
-          >
-            Eksekusi Keputusan
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* PREVIEW MODAL */}
+      {/* PREVIEW MODAL SURAT */}
       <Dialog
         open={openPdf}
         onClose={() => {
@@ -721,7 +592,7 @@ const PerizinanSantriList = () => {
             color='secondary'
             variant='tonal'
           >
-            Tutup
+            Tutup Panel
           </Button>
           <Button
             onClick={() => window.open(pdfUrl, '_blank')}
@@ -737,4 +608,4 @@ const PerizinanSantriList = () => {
   )
 }
 
-export default PerizinanSantriList
+export default PerizinanPegawaiTabsList
