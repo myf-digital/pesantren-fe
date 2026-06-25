@@ -216,7 +216,7 @@ const FormValidationBasic = () => {
           params: {
             ...state,
             status: state.status.value,
-            lembaga_type: state.lembaga_type.value,
+            lembaga_type: state?.lembaga_type?.value || null,
             mulai: state.mulai ? dateToTime(state.mulai) : null,
             selesai: state.selesai ? dateToTime(state.selesai) : null
           }
@@ -227,7 +227,7 @@ const FormValidationBasic = () => {
         postJamPelajaran({
           ...state,
           status: state.status.value,
-          lembaga_type: state.lembaga_type.value,
+          lembaga_type: state?.lembaga_type?.value || null,
           mulai: state.mulai ? dateToTime(state.mulai) : null,
           selesai: state.selesai ? dateToTime(state.selesai) : null
         })
