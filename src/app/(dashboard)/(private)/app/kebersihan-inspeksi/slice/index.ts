@@ -13,6 +13,8 @@ export interface FetchParams {
   id_cabang?: string
   id_lokasi?: string
   status?: string
+  tanggal_awal?: string
+  tanggal_akhir?: string
 }
 
 export interface InitialState {
@@ -30,6 +32,11 @@ export interface InitialState {
   location_latlong: any[]
   loading: boolean
   loadingProgress: number
+  dataPagePetugas: {
+    values: any[]
+    total: number
+  }
+  exportPetugas: any
 }
 
 /* --------------------------
@@ -50,7 +57,12 @@ const initialState: InitialState = {
   location_qrcode: null,
   location_latlong: [],
   loading: false,
-  loadingProgress: 0
+  loadingProgress: 0,
+  dataPagePetugas: {
+    values: [],
+    total: 0
+  },
+  exportPetugas: null
 }
 
 /* --------------------------
@@ -208,6 +220,32 @@ export const locationLatLongKebersihanInspeksi = createAsyncThunk<any, any>(
   }
 )
 
+export const fetchKebersihanPetugasPage = createAsyncThunk<any, FetchParams>(
+  'kebersihan-inspeksi-petugas/fetchPage',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.get(`/app/kebersihan-inspeksi-petugas`, { params })
+
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
+
+export const postExportPetugas = createAsyncThunk<any, any>(
+  'kebersihan-inspeksi-petugas/export',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.post(`/app/kebersihan-inspeksi-petugas/export`, params)
+
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
+
 /* --------------------------
    4. Slice + Reducers
 --------------------------- */
@@ -291,6 +329,17 @@ export const slice = createSlice({
 
     builder.addCase(locationLatLongKebersihanInspeksi.fulfilled, (state, action) => {
       state.location_latlong = action.payload.data
+    })
+
+    builder.addCase(fetchKebersihanPetugasPage.fulfilled, (state, action) => {
+      state.dataPagePetugas = {
+        values: action.payload.data?.values || [],
+        total: action.payload.data?.total || 0
+      }
+    })
+
+    builder.addCase(postExportPetugas.fulfilled, (state, action) => {
+      state.exportPetugas = action.payload
     })
   }
 })
