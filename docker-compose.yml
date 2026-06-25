@@ -1,4 +1,5 @@
-version: "3.9"
+version: '3.9'
+name: pesantren-fe
 
 services:
   app:
@@ -10,5 +11,5 @@ services:
       - PORT=${PORT}
       - API_URL=${API_URL}
     ports:
-      - "127.0.0.1:${PORT}:${PORT}"
+      - '127.0.0.1:${PORT}:${PORT}'
     restart: always

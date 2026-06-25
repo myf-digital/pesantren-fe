@@ -23,6 +23,10 @@ jobs:
         with:
           fetch-depth: 0
           submodules: true
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Get Config
         run: |
           echo "${{ env.CONFIG_ENV }}" > .env
@@ -55,15 +59,6 @@ jobs:
           key: ${{ env.SSH_KEY }}
           source: app-image.tar.gz
           target: /home/apps/${{ github.event.repository.name }}
-      - name: Copy env to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ env.SSH_HOST }}
-          port: ${{ env.SSH_PORT }}
-          username: ${{ env.SSH_USER }}
-          key: ${{ env.SSH_KEY }}
-          source: .env
-          target: /home/apps/${{ github.event.repository.name }}
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -78,10 +73,14 @@ jobs:
             DEPLOY_DIR="/home/apps/$APP_NAME"
             mkdir -p "$DEPLOY_DIR"
             cd "$DEPLOY_DIR"
+
+            # Create file .env on server
             echo "${{ env.CONFIG_ENV }}" > .env
             echo "PORT=${{ env.PORT }}" >> .env
             IMAGE_TAG="${{ github.sha }}"
             echo "IMAGE_TAG=$IMAGE_TAG" >> .env
+
+            # Load Docker Image
             if [ -f "app-image.tar.gz" ]; then
               gunzip -c app-image.tar.gz | docker load
               rm app-image.tar.gz
@@ -89,10 +88,18 @@ jobs:
               echo "Error: app-image.tar.gz not found!"
               exit 1
             fi
+
             export PORT=${{ env.PORT }}
             export IMAGE_TAG=$IMAGE_TAG
             DCMD="docker compose"
+
+            # Force remove any conflicting container with the name 'pesantren-fe' (e.g. from the old project name)
+            docker rm -f pesantren-fe || true
+
+            $DCMD down
             $DCMD up -d --no-build
+
+            # Health check
             ok=0
             for i in $(seq 1 30); do
               if curl -sSf "http://127.0.0.1:${{ env.PORT }}/" > /dev/null; then
@@ -101,7 +108,12 @@ jobs:
               fi
               sleep 5
             done
+
             if [ "$ok" -ne 1 ]; then
+              echo "Deployment gagal pada saat health check."
               $DCMD logs --tail 50 || true
               exit 1
+            else
+              echo "Deployment Frontend Berhasil!"
+              docker image prune -f
             fi
