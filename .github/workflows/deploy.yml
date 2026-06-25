@@ -93,6 +93,9 @@ jobs:
             export IMAGE_TAG=$IMAGE_TAG
             DCMD="docker compose"
 
+            # Force remove any conflicting container with the name 'pesantren-fe' (e.g. from the old project name)
+            docker rm -f pesantren-fe || true
+
             $DCMD down
             $DCMD up -d --no-build
 
