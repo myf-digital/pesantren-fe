@@ -82,7 +82,7 @@ interface InformasiPengajuanPegawaiCardProps {
   onViewFile: (url: string) => void
 }
 
-export const InformasiPengajuanPegawaiCard = ({ data, onViewFile }: InformasiPengajuanPegawaiCardProps) => (
+const InformasiPengajuanPegawaiCard = ({ data, onViewFile }: InformasiPengajuanPegawaiCardProps) => (
   <Card sx={{ border: '1px solid var(--mui-palette-divider)', boxShadow: 'none' }}>
     <CardContent sx={{ p: 6 }}>
       <Typography
@@ -195,7 +195,7 @@ export const InformasiPengajuanPegawaiCard = ({ data, onViewFile }: InformasiPen
 // =========================================================================
 // COMPONENT: STATUS PROSES PEGAWAI CARD
 // =========================================================================
-export const StatusProsesPegawaiCard = ({
+const StatusProsesPegawaiCard = ({
   data,
   isCanceled,
   isRequestCanceled
@@ -284,7 +284,7 @@ interface ApprovalKepegawaianCardProps {
   onViewFile: (url: string) => void
 }
 
-export const ApprovalKepegawaianCard = ({
+const ApprovalKepegawaianCard = ({
   data,
   isCanceled,
   isRequestCanceled,
@@ -479,7 +479,7 @@ interface RequestCancellationApprovalPegawaiCardProps {
   onViewFile: (url: string) => void
 }
 
-export const RequestCancellationApprovalPegawaiCard = ({
+const RequestCancellationApprovalPegawaiCard = ({
   data,
   catatanKedisiplinan,
   setCatatanKedisiplinan,
