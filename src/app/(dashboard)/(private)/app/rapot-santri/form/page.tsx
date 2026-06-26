@@ -75,6 +75,8 @@ const RaporSantriForm = () => {
   const [fileObject, setFileObject] = useState<File | null>(null)
   const [fileObjectMda, setFileObjectMda] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [initialFileRapot, setInitialFileRapot] = useState<string>('')
+  const [initialFileRapotMda, setInitialFileRapotMda] = useState<string>('')
 
   const {
     control,
@@ -118,6 +120,8 @@ const RaporSantriForm = () => {
             }
           }
 
+          setInitialFileRapot(datas.file_rapot || '')
+          setInitialFileRapotMda(datas.file_rapot_mda || '')
           setState(datas)
           reset(datas)
         }
@@ -167,7 +171,7 @@ const RaporSantriForm = () => {
 
   useEffect(() => {
     if (!state.file_rapot_mda) {
-      setFileObject(null)
+      setFileObjectMda(null)
     }
   }, [state.file_rapot_mda])
 
@@ -215,13 +219,27 @@ const RaporSantriForm = () => {
       return
     }
 
-    const payload = {
+    const file_delete: string[] = []
+    if (id) {
+      if (initialFileRapot && !state.file_rapot && !fileObject) {
+        file_delete.push('file_rapot')
+      }
+      if (initialFileRapotMda && !state.file_rapot_mda && !fileObjectMda) {
+        file_delete.push('file_rapot_mda')
+      }
+    }
+
+    const payload: any = {
       id_santri: state.id_santri.value,
       tahun_ajaran: state.tahun_ajaran,
       semester: state.semester.value,
       status: state.status.value,
       file_rapot: fileObject,
       file_rapot_mda: fileObjectMda
+    }
+
+    if (file_delete.length > 0) {
+      payload.file_delete = JSON.stringify(file_delete)
     }
 
     if (id) {
@@ -282,7 +300,7 @@ const RaporSantriForm = () => {
         type: 'file',
         key: 'file_rapot',
         label: 'Rapor Kelas Formal (PDF)',
-        required: !id,
+        required: false,
         readOnly: Boolean(view),
         accept: 'application/pdf',
         helperText: 'Hanya mendukung file PDF (maks. 10MB)',
@@ -307,7 +325,7 @@ const RaporSantriForm = () => {
         type: 'file',
         key: 'file_rapot_mda',
         label: 'Rapor Kelas MDA (PDF)',
-        required: !id,
+        required: false,
         readOnly: Boolean(view),
         accept: 'application/pdf',
         helperText: 'Hanya mendukung file PDF (maks. 10MB)',
