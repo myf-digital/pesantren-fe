@@ -441,7 +441,7 @@ const PerizinanPegawaiList = () => {
   return (
     <Grid container spacing={6}>
       <Grid size={12}>
-        <Card sx={{ p: 5, mb: 4 }}>
+        <Card sx={{ p: 5, mb: 4, overflow: 'visible' }}>
           {/* LAYOUT GRID RESPONSIF FILTER */}
           <Grid container spacing={4} sx={{ mb: 4 }}>
             <Grid size={{ xs: 12, sm: 2.4 }}>

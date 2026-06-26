@@ -100,48 +100,94 @@ const FormValidationBasic = () => {
     reset
   } = useForm({defaultValues})
 
-  const permissionMap = useMemo(() => {
-    const map: PermissionMapAccess = {}
+  const leafMenuIds = useMemo(() => {
+    const ids = new Set<string>()
+    const walk = (items: MenuItem[]) => {
+      items.forEach(item => {
+        if (!item.children || item.children.length === 0) {
+          ids.add(item.menu_id)
+        } else {
+          walk(item.children)
+        }
+      })
+    }
+    walk(navigation)
+    return ids
+  }, [navigation])
 
-    state.menu.forEach(p => {
-      map[p.menu_id] = p
+  const leafMenus = useMemo(() => {
+    return state.menu.filter(m => leafMenuIds.has(m.menu_id))
+  }, [state.menu, leafMenuIds])
+
+  const getDescendantIds = useCallback((menuId: string, items: MenuItem[]): string[] => {
+    const ids: string[] = []
+    const findAndAdd = (nodes: MenuItem[], found = false) => {
+      nodes.forEach(node => {
+        const isCurrent = node.menu_id === menuId
+        if (found || isCurrent) {
+          if (!isCurrent) ids.push(node.menu_id)
+          if (node.children) {
+            findAndAdd(node.children, true)
+          }
+        } else if (node.children) {
+          findAndAdd(node.children, false)
+        }
+      })
+    }
+    findAndAdd(items)
+    return ids
+  }, [])
+
+  const adjustParentPermissions = useCallback((menuList: MenuPermission[], nav: MenuItem[]): MenuPermission[] => {
+    const parentMap: Record<string, string> = {}
+    const allParentMenuIds = new Set<string>()
+
+    const walk = (items: MenuItem[], parentId?: string) => {
+      items.forEach(item => {
+        if (parentId) {
+          parentMap[item.menu_id] = parentId
+        }
+        if (item.children && item.children.length > 0) {
+          allParentMenuIds.add(item.menu_id)
+          walk(item.children, item.menu_id)
+        }
+      })
+    }
+    walk(nav)
+
+    const activeMenuIds = new Set<string>()
+    menuList.forEach(m => {
+      if (actions.some(act => m[act] === 1)) {
+        activeMenuIds.add(m.menu_id)
+      }
     })
-    
-    return map
-  }, [state.menu])
 
-  const roleMenusSafe = useMemo(
-    () => Array.isArray(roleMenus) ? roleMenus : [],
-    [roleMenus]
-  )
+    const parentIdsToActivate = new Set<string>()
+    activeMenuIds.forEach(id => {
+      let currentId = id
+      while (parentMap[currentId]) {
+        const parentId = parentMap[currentId]
+        parentIdsToActivate.add(parentId)
+        currentId = parentId
+      }
+    })
 
-  const buildDefaultPermissions = (items: MenuItem[]) => {
-    const result: MenuPermission[] = []
-
-    const walk = (menus: MenuItem[]) => {
-      menus.forEach(menu => {
-        result.push({
-          menu_id: menu.menu_id,
-          module_name: menu.module_name,
-          view: 0,
+    return menuList.map(m => {
+      if (allParentMenuIds.has(m.menu_id)) {
+        const shouldBeActive = parentIdsToActivate.has(m.menu_id)
+        return {
+          ...m,
+          view: shouldBeActive ? 1 : 0,
           create: 0,
           edit: 0,
           delete: 0,
           import: 0,
-          export: 0,
-          status: 1
-        })
-
-        if (Array.isArray(menu.children)) {
-          walk(menu.children)
+          export: 0
         }
-      })
-    }
-
-    walk(items)
-    
-    return result
-  }
+      }
+      return m
+    })
+  }, [])
 
   useEffect(() => {
     dispatch(fetchMenuAll({})).then(res => {
@@ -216,6 +262,49 @@ const FormValidationBasic = () => {
     }
   }, [onCancel, setPermissions, store.crud, update])
 
+  const permissionMap = useMemo(() => {
+    const map: PermissionMapAccess = {}
+
+    state.menu.forEach(p => {
+      map[p.menu_id] = p
+    })
+    
+    return map
+  }, [state.menu])
+
+  const roleMenusSafe = useMemo(
+    () => Array.isArray(roleMenus) ? roleMenus : [],
+    [roleMenus]
+  )
+
+  const buildDefaultPermissions = (items: MenuItem[]) => {
+    const result: MenuPermission[] = []
+
+    const walk = (menus: MenuItem[]) => {
+      menus.forEach(menu => {
+        result.push({
+          menu_id: menu.menu_id,
+          module_name: menu.module_name,
+          view: 0,
+          create: 0,
+          edit: 0,
+          delete: 0,
+          import: 0,
+          export: 0,
+          status: 1
+        })
+
+        if (Array.isArray(menu.children)) {
+          walk(menu.children)
+        }
+      })
+    }
+
+    walk(items)
+    
+    return result
+  }
+
   const mergePermissions = (
     defaults: MenuPermission[],
     roleMenus: MenuPermission[]
@@ -239,54 +328,39 @@ const FormValidationBasic = () => {
       roleMenusSafe
     )
 
+    const adjusted = adjustParentPermissions(merged, navigation)
+
     setState(prev => ({
       ...prev,
-      menu: merged
+      menu: adjusted
     }))
-  }, [navigation, roleMenusSafe])
-
-  const hasAnyChecked = (
-    menu: MenuItem,
-    action: ActionType,
-    map: PermissionMapAccess
-  ): boolean => {
-    if (!menu.children?.length) {
-      return map[menu.menu_id]?.[action] === 1
-    }
-
-    return menu.children.some(child =>
-      hasAnyChecked(child, action, map)
-    )
-  }
-
-  const setAllChildren = (
-    menu: MenuPermission,
-    action: keyof MenuPermission,
-    value: boolean
-  ): MenuPermission => ({
-    ...menu,
-    [action]: value,
-    children: menu.children?.map(child =>
-      setAllChildren(child, action, value)
-    )
-  })
+  }, [navigation, roleMenusSafe, adjustParentPermissions])
 
   const isAllChecked = (action: ActionType) =>
-    state.menu.length > 0 &&
-    state.menu.every(menu => menu[action] === 1)
+    leafMenus.length > 0 &&
+    leafMenus.every(menu => menu[action] === 1)
 
   const isSomeChecked = (action: ActionType) =>
-    state.menu.some(menu => menu[action] === 1) &&
+    leafMenus.some(menu => menu[action] === 1) &&
     !isAllChecked(action)
 
   const onCheckAll = (action: ActionType, value: boolean) => {
-    setState(prev => ({
-      ...prev,
-      menu: prev.menu.map(m => ({
-        ...m,
-        [action]: value ? 1 : 0
-      }))
-    }))
+    setState(prev => {
+      const updatedMenu = prev.menu.map(m => {
+        const isLeaf = leafMenuIds.has(m.menu_id)
+        if (isLeaf) {
+          return {
+            ...m,
+            [action]: value ? 1 : 0
+          }
+        }
+        return m
+      })
+      return {
+        ...prev,
+        menu: adjustParentPermissions(updatedMenu, navigation)
+      }
+    })
   }
 
   const resetActionsExceptView = (menu: MenuPermission): MenuPermission => ({
@@ -304,32 +378,62 @@ const FormValidationBasic = () => {
     action: ActionType,
     checked: boolean
   ) => {
-    setState(prev => ({
-      ...prev,
-      menu: prev.menu.map(menu => {
-        if (menu.menu_id !== menuId) return menu
+    const descendantIds = getDescendantIds(menuId, navigation)
+    const isParent = descendantIds.length > 0
 
-        if (action === 'view' && !checked) {
-          return {
-            ...resetActionsExceptView(menu),
-            view: 0
+    setState(prev => {
+      const updatedMenu = prev.menu.map(menu => {
+        if (isParent && descendantIds.includes(menu.menu_id)) {
+          if (action === 'view') {
+            if (checked) {
+              return {
+                ...menu,
+                view: 1
+              }
+            } else {
+              return {
+                ...menu,
+                view: 0,
+                create: 0,
+                edit: 0,
+                delete: 0,
+                import: 0,
+                export: 0
+              }
+            }
           }
         }
 
-        if (action !== 'view' && checked) {
+        if (menu.menu_id === menuId) {
+          if (action === 'view' && !checked) {
+            return {
+              ...resetActionsExceptView(menu),
+              view: 0
+            }
+          }
+
+          if (action !== 'view' && checked) {
+            return {
+              ...menu,
+              view: 1,
+              [action]: 1
+            }
+          }
+
           return {
             ...menu,
-            view: 1,
-            [action]: 1
+            [action]: checked ? 1 : 0
           }
         }
 
-        return {
-          ...menu,
-          [action]: checked ? 1 : 0
-        }
+        return menu
       })
-    }))
+
+      return {
+        ...prev,
+        menu: adjustParentPermissions(updatedMenu, navigation)
+      }
+    })
   }
 
   const renderMenu = (items: MenuItem[], level = 0) =>
@@ -348,22 +452,30 @@ const FormValidationBasic = () => {
           </div>
         </td>
 
-        {actions.map(action => (
-          <td key={action} className="px-3 py-2 text-center">
-            <input
-              type="checkbox"
-              className="w-4 h-4"
-              checked={
-                permissionMap[item.menu_id]?.[action] === 1 ||
-                hasAnyChecked(item, action, permissionMap)
-              }
-              disabled={action !== 'view' && permissionMap[item.menu_id]?.view === 0}
-              onChange={e =>
-                togglePermission(item.menu_id, action, e.target.checked)
-              }
-            />
-          </td>
-        ))}
+        {actions.map(action => {
+          const isParent = Array.isArray(item.children) && item.children.length > 0
+          const checked = isParent
+            ? (action === 'view' && permissionMap[item.menu_id]?.view === 1)
+            : (permissionMap[item.menu_id]?.[action] === 1)
+
+          const disabled = isParent
+            ? (action !== 'view')
+            : (action !== 'view' && permissionMap[item.menu_id]?.view === 0)
+
+          return (
+            <td key={action} className="px-3 py-2 text-center">
+              <input
+                type="checkbox"
+                className="w-4 h-4"
+                checked={checked}
+                disabled={disabled}
+                onChange={e =>
+                  togglePermission(item.menu_id, action, e.target.checked)
+                }
+              />
+            </td>
+          )
+        })}
       </tr>
 
       {Array.isArray(item.children) &&
@@ -387,13 +499,14 @@ const FormValidationBasic = () => {
 
       <div className="grid grid-cols-2 gap-2">
         {actions.map(action => {
-          const checked =
-            permissionMap[item.menu_id]?.[action] === 1 ||
-            hasAnyChecked(item, action, permissionMap)
+          const isParent = Array.isArray(item.children) && item.children.length > 0
+          const checked = isParent
+            ? (action === 'view' && permissionMap[item.menu_id]?.view === 1)
+            : (permissionMap[item.menu_id]?.[action] === 1)
 
-          const disabled =
-            action !== 'view' &&
-            permissionMap[item.menu_id]?.view === 0
+          const disabled = isParent
+            ? (action !== 'view')
+            : (action !== 'view' && permissionMap[item.menu_id]?.view === 0)
 
           return (
             <label
