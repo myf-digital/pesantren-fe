@@ -95,7 +95,7 @@ export const postLocationUpdate = createAsyncThunk(
   'location/update',
   async ({ id, params }: { id: string, params: any }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/app/location/${id}`, params)
+      const response = await api.put(`/app/location/${id}`, params)
       if (response.data && response.data.status === false) return rejectWithValue(response.data)
       return response.data
     } catch (e: any) {
