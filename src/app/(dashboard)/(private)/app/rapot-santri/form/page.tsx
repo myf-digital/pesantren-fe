@@ -338,8 +338,8 @@ const RaporSantriForm = () => {
             }))
           }
         },
-        urlImage: fileObject
-          ? URL.createObjectURL(fileObject)
+        urlImage: fileObjectMda
+          ? URL.createObjectURL(fileObjectMda)
           : state.file_rapot_mda && typeof state.file_rapot_mda === 'string'
             ? state.file_rapot_mda.startsWith('http')
               ? state.file_rapot_mda
