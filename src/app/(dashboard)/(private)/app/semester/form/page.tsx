@@ -116,8 +116,6 @@ const FormValidationBasic = () => {
             label: datas.tahun_ajaran.tahun_ajaran
           }
 
-          //console.log('prament', datas)
-
           setState(datas)
           reset(datas)
         }

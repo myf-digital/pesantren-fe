@@ -60,10 +60,6 @@ const RowAction = ({ data, onRowUpdate, onRowDeleted }) => {
 
   const rowOptionsOpen = Boolean(anchorEl)
 
-  useState(() => {
-    console.log('row is', data)
-  })
-
   const setOpen = event => {
     setAnchorEl(event.currentTarget)
   }
@@ -169,12 +165,10 @@ const ItemForm = ({ temuanDetailsSelected, onAddTemuanDetail, onDeleteTemuanDeta
   }
 
   const onButtonSubmit = () => {
-    console.log('on submit')
     handleSubmit(onSubmit)()
   }
 
   const onSubmit = () => {
-    console.log('add item', state, temuanDetailsSelected)
     const cost = { ...state, temuan_id: state.temuan_id ? state.temuan_id : new Date().getTime() }
 
     // add temp

@@ -22,7 +22,11 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Tooltip
+  Tooltip,
+  Autocomplete,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material'
 
 import { toast } from 'react-toastify'
@@ -30,8 +34,32 @@ import { toast } from 'react-toastify'
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { deleteRaporSantri, fetchRaporSantriPage, resetRedux } from '../slice/index'
 import { useCan } from '@/hooks/useCan'
+import { fetchCabangAll } from '../../cabang/slice'
+import { fetchTahunAjaranAll } from '../../tahun-ajaran/slice'
+import { fetchKelasFormalAll } from '../../kelas-formal/slice'
+import { fetchKelasMdaAll } from '../../kelas-mda/slice'
 
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
+
+interface CabangOption {
+  label: string
+  value: string
+}
+
+interface TahunAjaranOption {
+  label: string
+  value: string
+}
+
+interface KelasOption {
+  label: string
+  value: string
+}
+
+interface TahunAjaranOption {
+  label: string
+  value: string
+}
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
 
@@ -104,6 +132,10 @@ const RaporSantriList = () => {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.rapot_santri)
+  const storeCabang = useAppSelector(state => state.cabang)
+  const storeTahunAjaran = useAppSelector(state => state.tahun_ajaran)
+  const storeKelasFormal = useAppSelector(state => state.kelas_formal)
+  const storeKelasMda = useAppSelector(state => state.kelas_mda)
 
   const canCreate = useCan('create')
 
@@ -115,9 +147,34 @@ const RaporSantriList = () => {
   const [pdfUrl, setPdfUrl] = useState('')
   const [pdfTitle, setPdfTitle] = useState('')
 
+  const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>({ label: 'Semua Cabang', value: '' })
+  const [selectedTahun, setSelectedTahun] = useState<TahunAjaranOption | null>({
+    label: 'Semua Tahun Ajaran',
+    value: ''
+  })
+  const [selectedSemester, setSelectedSemester] = useState<string>('Semua')
+  const [selectedKelas, setSelectedKelas] = useState<KelasOption | null>({ label: 'Semua Kelas', value: '' })
+
   const fetchData = useCallback(() => {
-    dispatch(fetchRaporSantriPage({ page, perPage, keyword: filter }))
-  }, [dispatch, page, perPage, filter])
+    dispatch(
+      fetchRaporSantriPage({
+        page,
+        perPage,
+        keyword: filter,
+        id_cabang: selectedCabang?.value || '',
+        tahun: selectedTahun?.value || '',
+        semester: selectedSemester !== 'Semua' ? selectedSemester : '',
+        id_kelas: selectedKelas?.value || ''
+      })
+    )
+  }, [dispatch, page, perPage, filter, selectedCabang, selectedTahun, selectedSemester, selectedKelas])
+
+  useEffect(() => {
+    dispatch(fetchCabangAll({}))
+    dispatch(fetchTahunAjaranAll({ status: '' }))
+    dispatch(fetchKelasFormalAll({ status: '', id_tingkat: '' }))
+    dispatch(fetchKelasMdaAll({ status: '', id_tingkat: '' }))
+  }, [dispatch])
 
   useEffect(() => {
     const timer = setTimeout(fetchData, 500)
@@ -169,53 +226,121 @@ const RaporSantriList = () => {
             : `${process.env.NEXT_PUBLIC_API_URL || ''}${row.file_rapot_mda.startsWith('/') ? '' : '/'}${row.file_rapot_mda}`
           : ''
 
+        const placement = (row.santri?.penempatanKelas || []).find(
+          (p: any) => p.tahunAjaran?.tahun_ajaran?.toLowerCase() === row.tahun_ajaran?.toLowerCase()
+        )
+        const kelasFormalName = placement?.kelasFormal?.nama_kelas || '-'
+        const kelasMdaName = placement?.kelasMda?.nama_kelas_mda || '-'
+
         return {
           ...row,
           santri_info: (
-            <Box>
-              <Typography variant='body2' sx={{ fontWeight: 600, color: 'text.primary' }}>
-                {row.santri?.fullname || '-'}
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                variant='body2'
+                sx={{
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+                title={row.santri?.fullname}
+              >
+                {row.santri?.fullname}
               </Typography>
-              <Typography variant='caption'>NIS: {row.santri?.nis || '-'}</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start', mt: 0.5 }}>
+                <Typography
+                  variant='caption'
+                  sx={{
+                    px: 1,
+                    py: 0.2,
+                    borderRadius: 1,
+                    bgcolor: 'grey.100',
+                    color: 'text.secondary',
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '100%'
+                  }}
+                >
+                  NIS: {row.santri?.nis || '-'}
+                </Typography>
+
+                {row?.santri && row?.santri?.cabang && (
+                  <Typography
+                    variant='caption'
+                    sx={{
+                      px: 1,
+                      py: 0.2,
+                      borderRadius: 1,
+                      bgcolor: 'primary.lighter',
+                      color: 'primary.main',
+                      fontWeight: 500,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '100%'
+                    }}
+                  >
+                    {row?.santri?.cabang?.nama_cabang || '-'}
+                  </Typography>
+                )}
+              </Box>
             </Box>
           ),
-          file_rapot_link: fileUrl ? (
-            <Button
-              size='small'
-              color='primary'
-              variant='tonal'
-              startIcon={<i className='tabler-file-download' />}
-              onClick={() => {
-                setPdfUrl(fileUrl)
-                setPdfTitle(`Rapor ${row.santri?.fullname || 'Santri'} - ${row.tahun_ajaran}`)
-                setOpenPdf(true)
-              }}
-            >
-              Rapor Formal
-            </Button>
-          ) : (
-            <Typography variant='caption' color='text.disabled'>
-              Belum ada Rapor Formal
-            </Typography>
+          file_rapot_link: (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start' }}>
+              {fileUrl ? (
+                <Button
+                  size='small'
+                  color='primary'
+                  variant='tonal'
+                  startIcon={<i className='tabler-file-download' />}
+                  onClick={() => {
+                    setPdfUrl(fileUrl)
+                    setPdfTitle(`Rapor ${row.santri?.fullname || 'Santri'} - ${row.tahun_ajaran}`)
+                    setOpenPdf(true)
+                  }}
+                >
+                  Rapor Formal
+                </Button>
+              ) : (
+                <Typography variant='caption' color='text.disabled'>
+                  Belum ada Rapor Formal
+                </Typography>
+              )}
+              <Typography variant='caption' color='text.secondary' sx={{ fontSize: '12px', fontWeight: 300 }}>
+                Kelas: {kelasFormalName}
+              </Typography>
+            </Box>
           ),
-          file_rapot_mda_link: fileUrlMda ? (
-            <Button
-              size='small'
-              color='primary'
-              variant='tonal'
-              startIcon={<i className='tabler-file-download' />}
-              onClick={() => {
-                setPdfUrl(fileUrlMda)
-                setPdfTitle(`Rapor MDA ${row.santri?.fullname || 'Santri'} - ${row.tahun_ajaran}`)
-                setOpenPdf(true)
-              }}
-            >
-              Rapor MDA
-            </Button>
-          ) : (
-            <Typography variant='caption' color='text.disabled'>
-              Belum ada Rapor MDA
-            </Typography>
+          file_rapot_mda_link: (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start' }}>
+              {fileUrlMda ? (
+                <Button
+                  size='small'
+                  color='primary'
+                  variant='tonal'
+                  startIcon={<i className='tabler-file-download' />}
+                  onClick={() => {
+                    setPdfUrl(fileUrlMda)
+                    setPdfTitle(`Rapor MDA ${row.santri?.fullname || 'Santri'} - ${row.tahun_ajaran}`)
+                    setOpenPdf(true)
+                  }}
+                >
+                  Rapor MDA
+                </Button>
+              ) : (
+                <Typography variant='caption' color='text.disabled'>
+                  Belum ada Rapor MDA
+                </Typography>
+              )}
+              <Typography variant='caption' color='text.secondary' sx={{ fontSize: '12px', fontWeight: 300 }}>
+                Kelas: {kelasMdaName}
+              </Typography>
+            </Box>
           ),
           status_chip: (
             <Chip
@@ -244,6 +369,95 @@ const RaporSantriList = () => {
 
   return (
     <Grid container spacing={6}>
+      <Grid size={12}>
+        <Card sx={{ p: 5 }}>
+          <Grid container spacing={4}>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua Cabang', value: '' },
+                  ...(storeCabang.datas || []).map(r => ({
+                    label: `${r.nama_cabang}`,
+                    value: r.id_cabang
+                  }))
+                ]}
+                value={selectedCabang}
+                onChange={(_, newValue) => {
+                  setSelectedCabang(newValue)
+                  setPage(1)
+                }}
+                getOptionLabel={option => option?.label || ''}
+                isOptionEqualToValue={(option, value) => option?.value === value?.value}
+                renderInput={params => <TextField {...params} label='Cabang' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua Kelas', value: '' },
+                  ...(storeKelasFormal.datas || []).map((k: any) => ({
+                    label: `${k.nama_kelas} (Formal)`,
+                    value: k.id_kelas
+                  })),
+                  ...(storeKelasMda.datas || []).map((k: any) => ({
+                    label: `${k.nama_kelas_mda} (MDA)`,
+                    value: k.id_kelas_mda
+                  }))
+                ]}
+                value={selectedKelas}
+                onChange={(_, newValue) => {
+                  setSelectedKelas(newValue)
+                  setPage(1)
+                }}
+                getOptionLabel={option => option?.label || ''}
+                isOptionEqualToValue={(option, value) => option?.value === value?.value}
+                renderInput={params => <TextField {...params} label='Kelas' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua Tahun Ajaran', value: '' },
+                  ...(storeTahunAjaran.datas || []).map(r => ({
+                    label: `${r.tahun_ajaran}`,
+                    value: r.tahun_ajaran
+                  }))
+                ]}
+                value={selectedTahun}
+                onChange={(_, newValue) => {
+                  setSelectedTahun(newValue)
+                  setPage(1)
+                }}
+                getOptionLabel={option => option?.label || ''}
+                isOptionEqualToValue={(option, value) => option?.value === value?.value}
+                renderInput={params => <TextField {...params} label='Tahun Ajaran' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <FormControl fullWidth size='small'>
+                <InputLabel id='semester-select-label'>Semester</InputLabel>
+                <Select
+                  labelId='semester-select-label'
+                  id='semester-select'
+                  value={selectedSemester}
+                  label='Semester'
+                  onChange={e => {
+                    setSelectedSemester(e.target.value)
+                    setPage(1)
+                  }}
+                >
+                  <MenuItem value='Semua'>Semua Semester</MenuItem>
+                  <MenuItem value='GANJIL'>Ganjil</MenuItem>
+                  <MenuItem value='GENAP'>Genap</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Card>
+      </Grid>
       <Grid size={12}>
         <Card>
           <CardHeader title='Rapor Santri' subheader='Manajemen rapot santri' />
