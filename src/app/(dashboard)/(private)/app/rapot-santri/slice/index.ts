@@ -118,6 +118,16 @@ export const deleteRaporSantri = createAsyncThunk('rapot_santri/delete', async (
   }
 })
 
+export const postExport = createAsyncThunk('rapot_santri/export', async (params: any, thunkAPI) => {
+  try {
+    const response = await api.post('/app/rapot-santri/export', params)
+
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.rejectWithValue(e.response?.data)
+  }
+})
+
 /* --------------------------
    4. Slice & Reducers
 --------------------------- */

@@ -32,7 +32,7 @@ import {
 import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { deleteRaporSantri, fetchRaporSantriPage, resetRedux } from '../slice/index'
+import { deleteRaporSantri, fetchRaporSantriPage, resetRedux, postExport } from '../slice/index'
 import { useCan } from '@/hooks/useCan'
 import { fetchCabangAll } from '../../cabang/slice'
 import { fetchTahunAjaranAll } from '../../tahun-ajaran/slice'
@@ -138,10 +138,12 @@ const RaporSantriList = () => {
   const storeKelasMda = useAppSelector(state => state.kelas_mda)
 
   const canCreate = useCan('create')
+  const canExport = useCan('export')
 
   const [filter, setFilter] = useState('')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
+  const [loadingExport, setLoadingExport] = useState(false)
 
   const [openPdf, setOpenPdf] = useState(false)
   const [pdfUrl, setPdfUrl] = useState('')
@@ -196,6 +198,39 @@ const RaporSantriList = () => {
 
   const onAddForm = () => {
     router.replace('/app/rapot-santri/form')
+  }
+
+  const onExport = async () => {
+    try {
+      setLoadingExport(true)
+      const res = await dispatch(
+        postExport({
+          keyword: filter,
+          id_cabang: selectedCabang?.value || '',
+          tahun: selectedTahun?.value || '',
+          semester: selectedSemester !== 'Semua' ? selectedSemester : '',
+          id_kelas: selectedKelas?.value || ''
+        })
+      ).unwrap()
+
+      if (res?.status && res?.data) {
+        const url = `${process.env.NEXT_PUBLIC_API_URL || ''}${res.data}`
+        const link = document.createElement('a')
+
+        link.href = url
+        link.download = ''
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        toast.success('Rapor Santri berhasil diexport')
+      } else {
+        toast.error('Gagal memproses data export')
+      }
+    } catch {
+      toast.error('Gagal export data')
+    } finally {
+      setLoadingExport(false)
+    }
   }
 
   const buildTable = () => {
@@ -472,6 +507,21 @@ const RaporSantriList = () => {
                   startIcon={<i className='tabler-plus' />}
                 >
                   Tambah
+                </Button>
+              </Tooltip>
+            )}
+            {canExport && (
+              <Tooltip title='Export Excel'>
+                <Button
+                  size='small'
+                  color='warning'
+                  variant='outlined'
+                  sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
+                  onClick={onExport}
+                  startIcon={<i className='tabler-file-export' />}
+                  disabled={loadingExport}
+                >
+                  {loadingExport ? 'Proses...' : 'Export Excel'}
                 </Button>
               </Tooltip>
             )}
