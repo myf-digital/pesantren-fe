@@ -29,7 +29,8 @@ import {
   Alert,
   Dialog,
   DialogTitle,
-  DialogContent
+  DialogContent,
+  DialogActions
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -37,7 +38,13 @@ import { toast } from 'react-toastify'
 import { format } from 'date-fns'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { fetchKelasSantri, postAbsenKelasSantri, postAbsenKelasScanQR } from '../slice'
+import {
+  fetchKelasSantri,
+  postAbsenKelasSantri,
+  postAbsenKelasScanQR,
+  fetchActiveJurnalKelas,
+  endJurnalKelas
+} from '../slice/index'
 import QRScanner from '@/views/onevour/components/qr-scanner'
 
 // Interface untuk baris data di Form Kolektif
@@ -80,6 +87,59 @@ const PresensiFormPage = () => {
   // State internal untuk Skenario 1: Form Kolektif / Massal
   const [listSantriAbsen, setListSantriAbsen] = useState<AbsenItemInput[]>([])
   const [loadingSubmit, setLoadingSubmit] = useState(false)
+
+  // Jurnal Kelas States
+  const [openEndClassModal, setOpenEndClassModal] = useState(false)
+  const [materiInput, setMateriInput] = useState('')
+  const [catatanInput, setCatatanInput] = useState('')
+  const [submittingEndClass, setSubmittingEndClass] = useState(false)
+
+  // Fetch active jurnal kelas
+  useEffect(() => {
+    if (idKelas && idJamPelajaran) {
+      dispatch(
+        fetchActiveJurnalKelas({
+          tanggal,
+          id_lokasi: idKelas,
+          id_jam_pelajaran: idJamPelajaran
+        })
+      )
+    }
+  }, [dispatch, tanggal, idKelas, idJamPelajaran])
+
+  // Set initial materi & catatan if already exist in store.activeJurnal
+  useEffect(() => {
+    if (store.activeJurnal) {
+      setMateriInput(store.activeJurnal.materi || '')
+      setCatatanInput(store.activeJurnal.catatan || '')
+    }
+  }, [store.activeJurnal])
+
+  const handleConfirmEndClass = async () => {
+    if (!store.activeJurnal?.id_jurnal) {
+      toast.error('Tidak ada kelas aktif yang dapat diakhiri.')
+      return
+    }
+
+    try {
+      setSubmittingEndClass(true)
+      await dispatch(
+        endJurnalKelas({
+          id_jurnal: store.activeJurnal.id_jurnal,
+          materi: materiInput,
+          catatan: catatanInput
+        })
+      ).unwrap()
+
+      toast.success('Kelas berhasil diakhiri dan jurnal disimpan!')
+      setOpenEndClassModal(false)
+      router.push('/app/absen-kelas-santri/list')
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal mengakhiri kelas')
+    } finally {
+      setSubmittingEndClass(false)
+    }
+  }
 
   // State internal untuk Skenario 2: Scan QR Kartu
   const [qrCodeInput, setQrCodeInput] = useState('')
@@ -231,16 +291,34 @@ const PresensiFormPage = () => {
           <Typography variant='h5' sx={{ fontWeight: 600 }}>
             {mode === 'scan_qr' ? 'Presensi Elektrik Via Scan QR Kartu' : 'Form Input Kehadiran Massal'}
           </Typography>
-          <Button
-            variant='outlined'
-            color='secondary'
-            component={Link}
-            href='/app/absen-kelas-santri/list'
-            startIcon={<i className='tabler-arrow-left' />}
-          >
-            Kembali
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant='outlined'
+              color='secondary'
+              component={Link}
+              href='/app/absen-kelas-santri/list'
+              startIcon={<i className='tabler-arrow-left' />}
+            >
+              Kembali
+            </Button>
+            {store.activeJurnal && !store.activeJurnal.jam_selesai && (
+              <Button
+                variant='contained'
+                color='error'
+                startIcon={<i className='tabler-square-x' />}
+                onClick={() => setOpenEndClassModal(true)}
+              >
+                Akhiri Kelas
+              </Button>
+            )}
+          </Box>
         </Box>
+
+        {store.activeJurnal && store.activeJurnal.jam_selesai && (
+          <Alert severity='warning' sx={{ mb: 4 }}>
+            Kelas ini sudah diakhiri pada pukul {store.activeJurnal.jam_selesai}. Form presensi dikunci.
+          </Alert>
+        )}
 
         {/* TOP INFORMATION CARD */}
         <Card sx={{ mb: 4 }}>
@@ -301,11 +379,20 @@ const PresensiFormPage = () => {
                     <TextField
                       fullWidth
                       autoFocus
+                      disabled={Boolean(store.activeJurnal && store.activeJurnal.jam_selesai)}
                       label='Input Scan ID Kartu / NIS'
-                      placeholder='Tembak scanner kartu disini...'
+                      placeholder={
+                        store.activeJurnal && store.activeJurnal.jam_selesai
+                          ? 'Kelas sudah diakhiri'
+                          : 'Tembak scanner kartu disini...'
+                      }
                       value={qrCodeInput}
                       onChange={e => setQrCodeInput(e.target.value)}
-                      onClick={() => handleOpenScanQrCode()}
+                      onClick={() => {
+                        if (!(store.activeJurnal && store.activeJurnal.jam_selesai)) {
+                          handleOpenScanQrCode()
+                        }
+                      }}
                       slotProps={{
                         input: {
                           endAdornment: (
@@ -529,7 +616,11 @@ const PresensiFormPage = () => {
                 variant='contained'
                 color='primary'
                 onClick={handleSubmitKolektif}
-                disabled={loadingSubmit || listSantriAbsen.length === 0}
+                disabled={
+                  loadingSubmit ||
+                  listSantriAbsen.length === 0 ||
+                  Boolean(store.activeJurnal && store.activeJurnal.jam_selesai)
+                }
                 startIcon={
                   loadingSubmit ? (
                     <CircularProgress size={20} color='inherit' />
@@ -540,9 +631,81 @@ const PresensiFormPage = () => {
               >
                 Simpan Presensi Massal
               </Button>
+              {store.activeJurnal && !store.activeJurnal.jam_selesai && (
+                <Button
+                  variant='contained'
+                  color='error'
+                  startIcon={<i className='tabler-square-x' />}
+                  onClick={() => setOpenEndClassModal(true)}
+                >
+                  Akhiri Kelas
+                </Button>
+              )}
             </Box>
           </Card>
         )}
+
+        <Dialog open={openEndClassModal} onClose={() => setOpenEndClassModal(false)} maxWidth='sm' fullWidth>
+          <DialogTitle
+            component='div'
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}
+          >
+            <Typography variant='h6' sx={{ fontWeight: 700 }}>
+              Akhiri Kelas & Isi Jurnal Pembelajaran
+            </Typography>
+            <IconButton onClick={() => setOpenEndClassModal(false)} size='small'>
+              <i className='tabler-x' />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent dividers sx={{ p: 4 }}>
+            <Typography variant='body2' sx={{ mb: 4 }} color='text.secondary'>
+              Silakan masukkan materi yang diajarkan dan catatan kelas sebelum mengakhiri sesi pembelajaran ini.
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <TextField
+                fullWidth
+                label='Materi Pembelajaran'
+                placeholder='Contoh: Bab 1 - Sejarah Islam'
+                multiline
+                rows={3}
+                value={materiInput}
+                onChange={e => setMateriInput(e.target.value)}
+              />
+              <TextField
+                fullWidth
+                label='Catatan Kelas'
+                placeholder='Contoh: Santri sangat kondusif, 2 santri terlambat.'
+                multiline
+                rows={3}
+                value={catatanInput}
+                onChange={e => setCatatanInput(e.target.value)}
+              />
+            </Box>
+          </DialogContent>
+
+          <DialogActions sx={{ p: 3, gap: 1 }}>
+            <Button
+              onClick={() => setOpenEndClassModal(false)}
+              variant='outlined'
+              color='secondary'
+              disabled={submittingEndClass}
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={handleConfirmEndClass}
+              variant='contained'
+              color='error'
+              disabled={submittingEndClass}
+              startIcon={
+                submittingEndClass ? <CircularProgress size={20} color='inherit' /> : <i className='tabler-square-x' />
+              }
+            >
+              Akhiri & Simpan Jurnal
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Grid>
     </Grid>
   )

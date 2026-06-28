@@ -75,13 +75,13 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem
           component={Link}
-          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_kelas=${row.id_kelas}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_kelas=${row.lokasi?.nama_kelas || ''}`}
+          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_kelas=${row.id_lokasi}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_kelas=${row.lokasi || ''}`}
         >
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View
         </MenuItem>
         <MenuItem
           component={Link}
-          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_kelas=${row.id_kelas}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_kelas=${row.lokasi?.nama_kelas || ''}`}
+          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_kelas=${row.id_lokasi}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_kelas=${row.lokasi || ''}`}
         >
           <i className='tabler-edit' style={{ marginRight: 8 }} /> Edit
         </MenuItem>
