@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, forwardRef } from 'react'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -35,6 +35,7 @@ import { toast } from 'react-toastify'
 import { format, parseISO } from 'date-fns'
 import { id } from 'date-fns/locale'
 
+import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import {
   deleteAbsenHarian,
@@ -396,6 +397,32 @@ const PresensiPegawai = ({ store, onClockIn, onClockOut, isLocating }: PresensiP
   )
 }
 
+const PickersComponent = forwardRef(({ onClear, ...props }: any, ref) => {
+  return (
+    <TextField
+      inputRef={ref}
+      fullWidth
+      size='small'
+      {...props}
+      InputProps={{
+        ...props.InputProps,
+        endAdornment: props.value ? (
+          <IconButton
+            size='small'
+            onClick={e => {
+              e.stopPropagation()
+              if (onClear) onClear()
+            }}
+            sx={{ mr: -1.5 }}
+          >
+            <i className='tabler-x' style={{ fontSize: '1.15rem' }} />
+          </IconButton>
+        ) : null
+      }}
+    />
+  )
+})
+
 /* -------------------------------------------------------------
    KOMPONEN UTAMA: MODUL ABSEN HARIAN PEGAWAI (DENGAN TAB TABS)
 ------------------------------------------------------------- */
@@ -412,7 +439,7 @@ const AbsenHarianPegawaiList = () => {
   // State Manajemen Internal
   const [activeTab, setActiveTab] = useState(0)
   const [filter, setFilter] = useState('')
-  const [filterDate, setFilterDate] = useState('')
+  const [filterDate, setFilterDate] = useState<Date | null>(null)
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
@@ -436,7 +463,7 @@ const AbsenHarianPegawaiList = () => {
           page,
           perPage,
           keyword: filter,
-          tanggal: filterDate || undefined,
+          tanggal: filterDate ? format(filterDate, 'yyyy-MM-dd') : undefined,
           id_pegawai: authUser?.pegawai?.id_pegawai
         })
       )
@@ -480,7 +507,7 @@ const AbsenHarianPegawaiList = () => {
         postAbsenHarianExport({
           q: filter,
           template: '0',
-          tanggal: filterDate,
+          tanggal: filterDate ? format(filterDate, 'yyyy-MM-dd') : '',
           id_pegawai: authUser?.pegawai?.id_pegawai
         })
       ).unwrap()
@@ -695,7 +722,7 @@ const AbsenHarianPegawaiList = () => {
   return (
     <Grid container spacing={6}>
       <Grid size={12}>
-        <Card>
+        <Card sx={{ overflow: 'visible' }}>
           <CardHeader
             title='Monitoring Absensi Mandiri Pegawai'
             subheader={authUser?.pegawai?.nama_lengkap ? `Pegawai Aktif: ${authUser?.pegawai?.nama_lengkap}` : ''}
@@ -751,28 +778,24 @@ const AbsenHarianPegawaiList = () => {
                 <Typography sx={{ flex: '1 1 auto', display: { xs: 'none', sm: 'block' } }} />
 
                 {/* FILTER TANGGAL */}
-                <Tooltip
-                  title='Filter Berdasarkan Tanggal Spesifik'
-                  slotProps={{ popper: { style: { width: '100%' } } }}
-                >
-                  <TextField
-                    id='filter-tanggal-absen'
-                    label='Pilih Tanggal'
-                    type='date'
-                    size='small'
-                    value={filterDate}
-                    onChange={e => {
-                      setFilterDate(e.target.value)
-                      setPage(1)
-                    }}
-                    slotProps={{
-                      inputLabel: {
-                        shrink: true
-                      }
-                    }}
-                    sx={{ width: { xs: '100%', sm: 170 } }} // Full width di mobile, 170px di desktop
-                  />
-                </Tooltip>
+                <AppReactDatepicker
+                  selected={filterDate}
+                  onChange={(date: Date | null) => {
+                    setFilterDate(date)
+                    setPage(1)
+                  }}
+                  placeholderText='Pilih Tanggal'
+                  dateFormat='dd/MM/yyyy'
+                  customInput={
+                    <PickersComponent
+                      label='Pilih Tanggal'
+                      onClear={() => {
+                        setFilterDate(null)
+                        setPage(1)
+                      }}
+                    />
+                  }
+                />
 
                 {/* SEARCH ABSEN (YANG KAMU TANYAKAN) */}
                 <Tooltip title='Cari Berdasarkan Status Kehadiran...'>

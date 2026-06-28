@@ -530,19 +530,6 @@ const PerizinanPegawaiTabsList = () => {
                 {loadingExport ? 'Memproses...' : 'Export Excel'}
               </Button>
             )}
-
-            {/* {canImport && (
-              <Button
-                color='secondary'
-                variant='contained'
-                fullWidth={isMobile}
-                startIcon={<i className='tabler-file-import' />}
-                component={Link}
-                href='/app/perizinan-pegawai/import?ub=manajemen-hrd'
-              >
-                Import Excel
-              </Button>
-            )} */}
           </Toolbar>
         </Card>
 

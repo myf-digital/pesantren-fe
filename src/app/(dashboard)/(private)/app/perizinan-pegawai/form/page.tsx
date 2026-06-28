@@ -48,8 +48,8 @@ const FormPerizinanPegawaiPage = () => {
       : null,
     id_lokasi_kerja: currentUser?.pegawai?.jamKerjaPegawai
       ? {
-          label: currentUser.pegawai.jamKerjaPegawai?.lokasiKerja.nama_lokasi,
-          value: currentUser.pegawai.jamKerjaPegawai.id_lokasi
+          label: currentUser.pegawai.jamKerjaPegawai?.lokasiKerja?.nama_lokasi || '',
+          value: currentUser.pegawai.jamKerjaPegawai.id_lokasi || ''
         }
       : null,
     sumber_pengajuan: { label: 'Mandiri (Pegawai)', value: 'Pegawai' },
@@ -67,10 +67,14 @@ const FormPerizinanPegawaiPage = () => {
           label: currentUser.pegawai.nama_lengkap,
           value: currentUser.pegawai.id_pegawai
         },
-        id_lokasi_kerja: prev.id_lokasi_kerja || {
-          label: currentUser.pegawai.jamKerjaPegawai?.lokasiKerja.nama_lokasi,
-          value: currentUser.pegawai.jamKerjaPegawai.id_lokasi
-        }
+        id_lokasi_kerja:
+          prev.id_lokasi_kerja ||
+          (currentUser.pegawai.jamKerjaPegawai
+            ? {
+                label: currentUser.pegawai.jamKerjaPegawai?.lokasiKerja?.nama_lokasi || '',
+                value: currentUser.pegawai.jamKerjaPegawai.id_lokasi || ''
+              }
+            : null)
       }))
     }
   }, [currentUser])
@@ -121,7 +125,7 @@ const FormPerizinanPegawaiPage = () => {
     if (store.crud?.status) {
       toast.success(store.crud?.message || 'Data pengajuan perizinan pegawai berhasil disimpan')
       dispatch(resetRedux())
-      router.replace('/app/perizinan-pegawai/list')
+      router.replace('/app/perizinan-pegawai/kewaliasuhan')
     } else if (store.crud?.message) {
       toast.error(store.crud?.message || 'Gagal menyimpan pengajuan perizinan pegawai')
       dispatch(resetRedux())
@@ -318,7 +322,7 @@ const FormPerizinanPegawaiPage = () => {
                   <Button
                     variant='outlined'
                     color='secondary'
-                    onClick={() => router.push('/app/perizinan-pegawai/list')}
+                    onClick={() => router.push('/app/perizinan-pegawai/kewaliasuhan')}
                   >
                     Batal
                   </Button>
