@@ -33,22 +33,22 @@ import { useCan } from '@/hooks/useCan'
 import CustomChip from '@/@core/components/mui/Chip'
 
 const statusObj: Record<string, { color: any; value: string }> = {
-  'A': {
+  A: {
     color: 'success',
     value: 'Aktif'
   },
-  'N': {
+  N: {
     color: 'secondary',
     value: 'Nonaktif'
   }
 }
 
 const typeObj: Record<string, { color: any; value: string }> = {
-  'FORMAL': {
+  FORMAL: {
     color: 'info',
     value: 'FORMAL'
   },
-  'PESANTREN': {
+  PESANTREN: {
     color: 'primary',
     value: 'PESANTREN'
   }
@@ -109,9 +109,9 @@ function RowAction(data: any) {
           View
         </MenuItem>
 
-        {canEdit &&
+        {canEdit && (
           <MenuItem
-            key="edit"
+            key='edit'
             component={Link}
             sx={{ '& svg': { mr: 2 } }}
             href={`/app/mata-pelajaran/form?id=${data.row.id_mapel}`}
@@ -120,17 +120,15 @@ function RowAction(data: any) {
             <i className='tabler-edit' />
             Edit
           </MenuItem>
-        }
+        )}
 
         {canDelete && [
-          <MenuItem
-            key="delete"
-            onClick={() => setOpenConfirm(true)} sx={{ '& svg': { mr: 2 }, color: 'error.main' }}>
+          <MenuItem key='delete' onClick={() => setOpenConfirm(true)} sx={{ '& svg': { mr: 2 }, color: 'error.main' }}>
             <i className='tabler-trash' />
             Delete
           </MenuItem>,
           <DialogDelete
-            key="dialog-delete"
+            key='dialog-delete'
             id={data.row.nama_mapel}
             open={openConfirm}
             onClose={(event: any, reason: any) => {
@@ -151,7 +149,7 @@ function RowAction(data: any) {
       </Menu>
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -264,7 +262,7 @@ const Table = () => {
           tableColumn('KETERANGAN', 'keterangan'),
           tableColumn('TIPE', 'lembaga_type'),
           tableColumn('STATUS', 'status'),
-          tableColumn('TERAKHIR DIUBAH', 'updated_at'),
+          tableColumn('TERAKHIR DIUBAH', 'updated_at')
         ],
         values: values?.map((row: any) => {
           return {
@@ -287,14 +285,14 @@ const Table = () => {
                 sx={{ textTransform: 'capitalize' }}
               />
             ),
-            lembaga_formal: (row?.lembaga_formal?.nama_lembaga),
-            kelompok_pelajaran: (row?.kelompok_pelajaran?.nama_kelpelajaran),
+            lembaga_formal: row?.lembaga_formal?.nama_lembaga,
+            kelompok_pelajaran: row?.kelompok_pelajaran?.nama_kelpelajaran
           }
         }),
         count: total,
         perPage: perPage,
         changePage: (_: any, newPage: number) => {
-          handleChangePage(newPage + 1);
+          handleChangePage(newPage + 1)
         },
         changePerPage: (event: any, o: any) => {
           handleChangePerPage(event)
@@ -314,17 +312,17 @@ const Table = () => {
               minHeight: 'auto',
               gap: 2,
               flexWrap: 'wrap',
-              mb: '10px',
+              mb: '10px'
             }}
           >
             {canCreate && (
-              <Tooltip title="Tambah">
+              <Tooltip title='Tambah'>
                 <Button
-                  size="small"
-                  variant="outlined"
+                  size='small'
+                  variant='outlined'
                   sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
                   onClick={onAddForm}
-                  startIcon={<i className="tabler-plus" />}
+                  startIcon={<i className='tabler-plus' />}
                 >
                   Tambah
                 </Button>
@@ -332,31 +330,31 @@ const Table = () => {
             )}
 
             {canImport && (
-              <Tooltip title="Import CSV">
+              <Tooltip title='Import Excel'>
                 <Button
-                  size="small"
-                  color="success"
-                  variant="outlined"
+                  size='small'
+                  color='success'
+                  variant='outlined'
                   sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
                   onClick={onImport}
-                  startIcon={<i className="tabler-file-import" />}
+                  startIcon={<i className='tabler-file-import' />}
                 >
-                  Import CSV
+                  Import Excel
                 </Button>
               </Tooltip>
             )}
 
             {canExport && (
-              <Tooltip title="Export CSV">
+              <Tooltip title='Export Excel'>
                 <Button
-                  size="small"
-                  color="warning"
-                  variant="outlined"
+                  size='small'
+                  color='warning'
+                  variant='outlined'
                   sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
                   onClick={onExport}
-                  startIcon={<i className="tabler-file-export" />}
+                  startIcon={<i className='tabler-file-export' />}
                 >
-                  {loadingExport ? 'Proses...' : 'Export CSV'}
+                  {loadingExport ? 'Proses...' : 'Export Excel'}
                 </Button>
               </Tooltip>
             )}

@@ -305,7 +305,7 @@ export function formColumnDetailField(form) {
     return (
       <Grid size={12} key={index}>
         <div className='demo-space-x'>
-          <Button size='medium' type='submit' variant='contained' disabled={props.disabled}>
+          <Button size='medium' type='submit' variant='contained' disabled={props.disabled || props.loading}>
             {props?.loading ? (
               <CircularProgress
                 sx={{
@@ -336,14 +336,14 @@ export function formColumnDetailField(form) {
               type='button'
               variant='contained'
               onClick={props.onPrint}
-              disabled={props.disabled}
+              disabled={props.disabled || props.loading}
               color='info'
               startIcon={<i className='material-symbols-print' />}
             >
               Print
             </Button>
           ) : (
-            <Button size='medium' type='button' variant='contained' onClick={props.onClick} disabled={props.disabled}>
+            <Button size='medium' type='button' variant='contained' onClick={props.onClick} disabled={props.disabled || props.loading}>
               {props?.loading ? (
                 <CircularProgress
                   sx={{

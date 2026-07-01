@@ -116,8 +116,18 @@ const PerizinanPegawaiReportList = () => {
         fetchPerizinanSantriPage({
           page: overrides?.page !== undefined ? overrides.page : page,
           perPage: overrides?.perPage !== undefined ? overrides.perPage : perPage,
-          start_date: overrides?.start_date !== undefined ? overrides.start_date : (tanggalAwal ? format(tanggalAwal, 'yyyy-MM-dd') : ''),
-          end_date: overrides?.end_date !== undefined ? overrides.end_date : (tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : ''),
+          start_date:
+            overrides?.start_date !== undefined
+              ? overrides.start_date
+              : tanggalAwal
+                ? format(tanggalAwal, 'yyyy-MM-dd')
+                : '',
+          end_date:
+            overrides?.end_date !== undefined
+              ? overrides.end_date
+              : tanggalAkhir
+                ? format(tanggalAkhir, 'yyyy-MM-dd')
+                : '',
           status_approval: activeStatus !== 'Semua' ? activeStatus : undefined,
           jenis_izin: activeJenis !== 'Semua' ? activeJenis : undefined,
           kondisi: activeKondisi !== 'Semua' ? activeKondisi : undefined,
@@ -240,13 +250,7 @@ const PerizinanPegawaiReportList = () => {
           <Chip
             label={row.kondisi || 'Normal'}
             size='small'
-            color={
-              row.kondisi === 'Overdue'
-                ? 'error'
-                : row.kondisi === 'Closed'
-                  ? 'success'
-                  : 'secondary'
-            }
+            color={row.kondisi === 'Overdue' ? 'error' : row.kondisi === 'Closed' ? 'success' : 'secondary'}
             variant='tonal'
           />
         ),
@@ -255,11 +259,7 @@ const PerizinanPegawaiReportList = () => {
             label={row.status_approval}
             size='small'
             color={
-              row.status_approval === 'Disetujui'
-                ? 'success'
-                : row.status_approval === 'Menunggu'
-                  ? 'warning'
-                  : 'error'
+              row.status_approval === 'Disetujui' ? 'success' : row.status_approval === 'Menunggu' ? 'warning' : 'error'
             }
             variant='tonal'
           />
@@ -291,7 +291,7 @@ const PerizinanPegawaiReportList = () => {
                 scrollableYearDropdown
                 maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
                 dropdownMode='select'
-                customInput={<PickersComponent label="Tanggal Awal" />}
+                customInput={<PickersComponent label='Tanggal Awal' />}
               />
             </Grid>
 
@@ -305,7 +305,7 @@ const PerizinanPegawaiReportList = () => {
                 scrollableYearDropdown
                 maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
                 dropdownMode='select'
-                customInput={<PickersComponent label="Tanggal Akhir" />}
+                customInput={<PickersComponent label='Tanggal Akhir' />}
               />
             </Grid>
 
@@ -371,7 +371,7 @@ const PerizinanPegawaiReportList = () => {
                 startIcon={<i className='tabler-file-export' />}
                 onClick={onExport}
               >
-                {loadingExport ? 'Proses...' : 'Export CSV'}
+                {loadingExport ? 'Proses...' : 'Export Excel'}
               </Button>
             )}
           </Toolbar>

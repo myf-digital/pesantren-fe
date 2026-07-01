@@ -40,7 +40,7 @@ const statusObj: Record<number, { color: any; value: string }> = {
   1: {
     color: 'success',
     value: 'Aktif'
-  },
+  }
 }
 
 function RowAction(data: any) {
@@ -125,7 +125,8 @@ function RowAction(data: any) {
         {canDelete && [
           <MenuItem
             key={data.row.role_id}
-            onClick={() => setOpenConfirm(true)} sx={{ '& svg': { mr: 2 }, color: 'error.main' }}
+            onClick={() => setOpenConfirm(true)}
+            sx={{ '& svg': { mr: 2 }, color: 'error.main' }}
           >
             <i className='tabler-trash' />
             Delete
@@ -153,7 +154,7 @@ function RowAction(data: any) {
       </Menu>
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -261,7 +262,7 @@ const Table = () => {
           tableColumn('OPTION', 'act-x', 'left', renderOption as any),
           tableColumn('NAME', 'role_name'),
           tableColumn('STATUS', 'status'),
-          tableColumn('TERAKHIR DIUBAH', 'updated_at'),
+          tableColumn('TERAKHIR DIUBAH', 'updated_at')
         ],
         values: values?.map((row: any) => {
           return {
@@ -280,7 +281,7 @@ const Table = () => {
         count: total,
         perPage: perPage,
         changePage: (_: any, newPage: number) => {
-          handleChangePage(newPage + 1);
+          handleChangePage(newPage + 1)
         },
         changePerPage: (event: any, o: any) => {
           handleChangePerPage(event)
@@ -317,31 +318,31 @@ const Table = () => {
               </Tooltip>
             )}
             {canImport && (
-              <Tooltip title="Import CSV">
+              <Tooltip title='Import Excel'>
                 <Button
-                  size="small"
-                  color="success"
-                  variant="outlined"
+                  size='small'
+                  color='success'
+                  variant='outlined'
                   sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
                   onClick={onImport}
-                  startIcon={<i className="tabler-file-import" />}
+                  startIcon={<i className='tabler-file-import' />}
                 >
-                  Import CSV
+                  Import Excel
                 </Button>
               </Tooltip>
             )}
 
             {canExport && (
-              <Tooltip title="Export CSV">
+              <Tooltip title='Export Excel'>
                 <Button
-                  size="small"
-                  color="warning"
-                  variant="outlined"
+                  size='small'
+                  color='warning'
+                  variant='outlined'
                   sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
                   onClick={onExport}
-                  startIcon={<i className="tabler-file-export" />}
+                  startIcon={<i className='tabler-file-export' />}
                 >
-                  {loadingExport ? 'Proses...' : 'Export CSV'}
+                  {loadingExport ? 'Proses...' : 'Export Excel'}
                 </Button>
               </Tooltip>
             )}
