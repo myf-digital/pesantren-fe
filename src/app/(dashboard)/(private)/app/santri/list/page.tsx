@@ -191,7 +191,7 @@ const TableSantri = () => {
           page: overrides?.page !== undefined ? overrides.page : page,
           perPage: overrides?.perPage !== undefined ? overrides.perPage : perPage,
           id_cabang: overrides?.id_cabang !== undefined ? overrides.id_cabang : selectedCabang?.value || '',
-          status: overrides?.status !== undefined ? overrides.status : (status !== 'Semua' ? status : undefined),
+          status: overrides?.status !== undefined ? overrides.status : status !== 'Semua' ? status : undefined,
           q: overrides?.q !== undefined ? overrides.q : filter
         })
       )
@@ -904,7 +904,7 @@ const TableSantri = () => {
                 startIcon={<i className='tabler-file-export' />}
                 onClick={onExport}
               >
-                {loadingExport ? 'Proses...' : 'Export CSV'}
+                {loadingExport ? 'Proses...' : 'Export Excel'}
               </Button>
             )}
           </Toolbar>

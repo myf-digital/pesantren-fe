@@ -267,7 +267,7 @@ const LembagaFormalList = () => {
             )}
 
             {canImport && (
-              <Tooltip title='Import CSV'>
+              <Tooltip title='Import Excel'>
                 <Button
                   size='small'
                   color='success'
@@ -276,13 +276,13 @@ const LembagaFormalList = () => {
                   onClick={onImport}
                   startIcon={<i className='tabler-file-import' />}
                 >
-                  Import CSV
+                  Import Excel
                 </Button>
               </Tooltip>
             )}
 
             {canExport && (
-              <Tooltip title='Export CSV'>
+              <Tooltip title='Export Excel'>
                 <Button
                   size='small'
                   color='warning'
@@ -291,7 +291,7 @@ const LembagaFormalList = () => {
                   onClick={onExport}
                   startIcon={<i className='tabler-file-export' />}
                 >
-                  {loadingExport ? 'Proses...' : 'Export CSV'}
+                  {loadingExport ? 'Proses...' : 'Export Excel'}
                 </Button>
               </Tooltip>
             )}

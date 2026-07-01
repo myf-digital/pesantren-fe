@@ -599,7 +599,7 @@ const AbsenHarianSantriList = () => {
                 startIcon={<i className='tabler-file-export' />}
                 onClick={onExport}
               >
-                {loadingExport ? 'Proses...' : 'Export CSV'}
+                {loadingExport ? 'Proses...' : 'Export Excel'}
               </Button>
             )}
 
@@ -611,7 +611,7 @@ const AbsenHarianSantriList = () => {
                 component={Link}
                 href='/app/absen-harian-santri/import'
               >
-                Import CSV
+                Import Excel
               </Button>
             )}
           </Toolbar>

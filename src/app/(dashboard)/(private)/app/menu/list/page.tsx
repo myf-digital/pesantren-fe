@@ -41,7 +41,7 @@ const statusObj: Record<number, { color: any; value: string }> = {
   1: {
     color: 'success',
     value: 'Aktif'
-  },
+  }
 }
 
 function RowAction(data: any) {
@@ -114,7 +114,8 @@ function RowAction(data: any) {
         {canDelete && [
           <MenuItem
             key={data.row.menu_id}
-            onClick={() => setOpenConfirm(true)} sx={{ '& svg': { mr: 2 }, color: 'error.main' }}
+            onClick={() => setOpenConfirm(true)}
+            sx={{ '& svg': { mr: 2 }, color: 'error.main' }}
           >
             <i className='tabler-trash' />
             Delete
@@ -141,7 +142,7 @@ function RowAction(data: any) {
       </Menu>
     </>
   )
-    
+
   if (isMobile) {
     return <Box sx={{ display: 'inline-block' }}>{content}</Box>
   }
@@ -255,7 +256,7 @@ const Table = () => {
           tableColumn('MODULE', 'module_name'),
           tableColumn('SEQUENCE', 'seq_number'),
           tableColumn('STATUS', 'status'),
-          tableColumn('TERAKHIR DIUBAH', 'updated_at'),
+          tableColumn('TERAKHIR DIUBAH', 'updated_at')
         ],
         values: flatValues?.map((row: any) => {
           return {
@@ -271,8 +272,8 @@ const Table = () => {
               </div>
             ),
             menu_icon: (
-              <InputAdornment position="start">
-                <i className={row.menu_icon ?? "tabler-circle"} />
+              <InputAdornment position='start'>
+                <i className={row.menu_icon ?? 'tabler-circle'} />
               </InputAdornment>
             ),
             status: (
@@ -289,7 +290,7 @@ const Table = () => {
         count: total,
         perPage: perPage,
         changePage: (_: any, newPage: number) => {
-          handleChangePage(newPage + 1);
+          handleChangePage(newPage + 1)
         },
         changePerPage: (event: any, o: any) => {
           handleChangePerPage(event)
@@ -309,17 +310,17 @@ const Table = () => {
               minHeight: 'auto',
               gap: 2,
               flexWrap: 'wrap',
-              mb: '10px',
+              mb: '10px'
             }}
           >
             {/* {canCreate && ( */}
-            <Tooltip title="Tambah">
+            <Tooltip title='Tambah'>
               <Button
-                size="small"
-                variant="outlined"
+                size='small'
+                variant='outlined'
                 sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
                 onClick={onAddForm}
-                startIcon={<i className="tabler-plus" />}
+                startIcon={<i className='tabler-plus' />}
               >
                 Tambah
               </Button>
@@ -327,31 +328,31 @@ const Table = () => {
             {/* )} */}
 
             {canImport && (
-              <Tooltip title="Import CSV">
+              <Tooltip title='Import Excel'>
                 <Button
-                  size="small"
-                  color="success"
-                  variant="outlined"
+                  size='small'
+                  color='success'
+                  variant='outlined'
                   sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
                   onClick={onImport}
-                  startIcon={<i className="tabler-file-import" />}
+                  startIcon={<i className='tabler-file-import' />}
                 >
-                  Import CSV
+                  Import Excel
                 </Button>
               </Tooltip>
             )}
 
             {canExport && (
-              <Tooltip title="Export CSV">
+              <Tooltip title='Export Excel'>
                 <Button
-                  size="small"
-                  color="warning"
-                  variant="outlined"
+                  size='small'
+                  color='warning'
+                  variant='outlined'
                   sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
                   onClick={onExport}
-                  startIcon={<i className="tabler-file-export" />}
+                  startIcon={<i className='tabler-file-export' />}
                 >
-                  {loadingExport ? 'Proses...' : 'Export CSV'}
+                  {loadingExport ? 'Proses...' : 'Export Excel'}
                 </Button>
               </Tooltip>
             )}

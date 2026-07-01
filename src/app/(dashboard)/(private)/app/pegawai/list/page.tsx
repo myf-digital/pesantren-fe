@@ -351,10 +351,13 @@ const PegawaiList = () => {
               <Grid size={{ xs: 12, sm: 3 }}>
                 <Autocomplete
                   size='small'
-                  options={[{ label: 'Semua', value: '' }, ...storeJabatan.datas.map(r => ({
-                    label: r.nama_jabatan,
-                    value: r.id_jabatan
-                  }))]}
+                  options={[
+                    { label: 'Semua', value: '' },
+                    ...storeJabatan.datas.map(r => ({
+                      label: r.nama_jabatan,
+                      value: r.id_jabatan
+                    }))
+                  ]}
                   value={selectedJabatan}
                   onChange={(_, newValue) => setSelectedJabatan(newValue || { label: 'Semua', value: '' })}
                   getOptionLabel={option => option.label || ''}
@@ -397,7 +400,7 @@ const PegawaiList = () => {
             )}
 
             {canImport && (
-              <Tooltip title='Import CSV'>
+              <Tooltip title='Import Excel'>
                 <Button
                   size='small'
                   color='success'
@@ -406,13 +409,13 @@ const PegawaiList = () => {
                   onClick={onImport}
                   startIcon={<i className='tabler-file-import' />}
                 >
-                  Import CSV
+                  Import Excel
                 </Button>
               </Tooltip>
             )}
 
             {canExport && (
-              <Tooltip title='Export CSV'>
+              <Tooltip title='Export Excel'>
                 <Button
                   size='small'
                   color='warning'
@@ -421,7 +424,7 @@ const PegawaiList = () => {
                   onClick={onExport}
                   startIcon={<i className='tabler-file-export' />}
                 >
-                  {loadingExport ? 'Proses...' : 'Export CSV'}
+                  {loadingExport ? 'Proses...' : 'Export Excel'}
                 </Button>
               </Tooltip>
             )}
