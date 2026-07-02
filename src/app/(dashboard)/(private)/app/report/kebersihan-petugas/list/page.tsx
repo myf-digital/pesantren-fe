@@ -263,7 +263,7 @@ const TableKebersihanPetugas = () => {
                 startIcon={<i className='tabler-file-export' />}
                 onClick={onExport}
               >
-                {loadingExport ? 'Proses...' : 'Export CSV'}
+                {loadingExport ? 'Proses...' : 'Export Excel'}
               </Button>
             )}
           </Toolbar>

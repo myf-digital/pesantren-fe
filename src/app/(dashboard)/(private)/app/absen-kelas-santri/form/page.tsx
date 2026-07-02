@@ -29,7 +29,8 @@ import {
   Alert,
   Dialog,
   DialogTitle,
-  DialogContent
+  DialogContent,
+  DialogActions
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -37,7 +38,14 @@ import { toast } from 'react-toastify'
 import { format } from 'date-fns'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { fetchKelasSantri, postAbsenKelasSantri, postAbsenKelasScanQR } from '../slice'
+import {
+  fetchKelasSantri,
+  postAbsenKelasSantri,
+  postAbsenKelasScanQR,
+  fetchActiveJurnalKelas,
+  endJurnalKelas,
+  fetchAbsenKelasSantriPage
+} from '../slice/index'
 import QRScanner from '@/views/onevour/components/qr-scanner'
 
 // Interface untuk baris data di Form Kolektif
@@ -70,6 +78,12 @@ const PresensiFormPage = () => {
   const idKelas = searchParams.get('id_kelas') || ''
   const idJamPelajaran = searchParams.get('id_jam_pelajaran') || ''
   const qrCodeParam = searchParams.get('qrcode') || ''
+  const idAbsen = searchParams.get('id') || ''
+
+  const isViewOnlyParam = searchParams.get('view') === 'true'
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  const isToday = tanggal === todayStr
+  const isViewOnly = isViewOnlyParam || (Boolean(idAbsen) && !isToday)
 
   // Label readable untuk header komponen UI
   const namaJamPelParam = searchParams.get('nama_jampel') || '-'
@@ -80,6 +94,59 @@ const PresensiFormPage = () => {
   // State internal untuk Skenario 1: Form Kolektif / Massal
   const [listSantriAbsen, setListSantriAbsen] = useState<AbsenItemInput[]>([])
   const [loadingSubmit, setLoadingSubmit] = useState(false)
+
+  // Jurnal Kelas States
+  const [openEndClassModal, setOpenEndClassModal] = useState(false)
+  const [materiInput, setMateriInput] = useState('')
+  const [catatanInput, setCatatanInput] = useState('')
+  const [submittingEndClass, setSubmittingEndClass] = useState(false)
+
+  // Fetch active jurnal kelas
+  useEffect(() => {
+    if (idKelas && idJamPelajaran) {
+      dispatch(
+        fetchActiveJurnalKelas({
+          tanggal,
+          id_lokasi: idKelas,
+          id_jam_pelajaran: idJamPelajaran
+        })
+      )
+    }
+  }, [dispatch, tanggal, idKelas, idJamPelajaran])
+
+  // Set initial materi & catatan if already exist in store.activeJurnal
+  useEffect(() => {
+    if (store.activeJurnal) {
+      setMateriInput(store.activeJurnal.materi || '')
+      setCatatanInput(store.activeJurnal.catatan || '')
+    }
+  }, [store.activeJurnal])
+
+  const handleConfirmEndClass = async () => {
+    if (!store.activeJurnal?.id_jurnal) {
+      toast.error('Tidak ada kelas aktif yang dapat diakhiri.')
+      return
+    }
+
+    try {
+      setSubmittingEndClass(true)
+      await dispatch(
+        endJurnalKelas({
+          id_jurnal: store.activeJurnal.id_jurnal,
+          materi: materiInput,
+          catatan: catatanInput
+        })
+      ).unwrap()
+
+      toast.success('Kelas berhasil diakhiri dan jurnal disimpan!')
+      setOpenEndClassModal(false)
+      router.push('/app/absen-kelas-santri/list')
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal mengakhiri kelas')
+    } finally {
+      setSubmittingEndClass(false)
+    }
+  }
 
   // State internal untuk Skenario 2: Scan QR Kartu
   const [qrCodeInput, setQrCodeInput] = useState('')
@@ -92,24 +159,45 @@ const PresensiFormPage = () => {
   // Fetch data antrean santri siap absen jika memilih mode kolektif
   useEffect(() => {
     if (mode === 'kolektif' && idKelas) {
-      dispatch(fetchKelasSantri({ id_kelas: idKelas }))
+      if (idAbsen) {
+        dispatch(
+          fetchAbsenKelasSantriPage({
+            tanggal,
+            id_kelas: idKelas,
+            id_jam_pelajaran: idJamPelajaran,
+            perPage: 1000
+          })
+        )
+      } else {
+        dispatch(fetchKelasSantri({ id_kelas: idKelas }))
+      }
     }
-  }, [dispatch, mode, idKelas])
+  }, [dispatch, mode, idKelas, idAbsen, tanggal, idJamPelajaran])
 
   // Menyalin data dari Redux Store ke Local State agar form input bisa diubah secara interaktif
   useEffect(() => {
-    if (mode === 'kolektif' && store.santriList) {
-      const formatted = store.santriList.map((s: any) => ({
-        id_santri: s.id_santri,
-        fullname: s.fullname,
-        nis: s.nis,
-        status_kehadiran: 'Hadir', // Default awal diset Hadir semua
-        keterangan: '' // Default keterangan kosong
-      }))
-
-      setListSantriAbsen(formatted as AbsenItemInput[])
+    if (mode === 'kolektif') {
+      if (idAbsen && store.dataPage?.values && store.dataPage.values.length > 0) {
+        const formatted = store.dataPage.values.map((s: any) => ({
+          id_santri: s.santri?.id_santri || s.id_santri,
+          fullname: s.santri?.fullname || s.fullname || '',
+          nis: s.santri?.nis || s.nis || '',
+          status_kehadiran: s.status_kehadiran || 'Hadir',
+          keterangan: s.keterangan || ''
+        }))
+        setListSantriAbsen(formatted as AbsenItemInput[])
+      } else if (!idAbsen && store.santriList) {
+        const formatted = store.santriList.map((s: any) => ({
+          id_santri: s.id_santri,
+          fullname: s.fullname,
+          nis: s.nis,
+          status_kehadiran: 'Hadir', // Default awal diset Hadir semua
+          keterangan: '' // Default keterangan kosong
+        }))
+        setListSantriAbsen(formatted as AbsenItemInput[])
+      }
     }
-  }, [store.santriList, mode])
+  }, [store.santriList, store.dataPage?.values, mode, idAbsen])
 
   // Handler ubah status kehadiran via Select Dropdown per baris santri
   const handleStatusChange = (idSantri: string, value: 'Hadir' | 'Izin' | 'Sakit' | 'Alfa') => {
@@ -231,16 +319,34 @@ const PresensiFormPage = () => {
           <Typography variant='h5' sx={{ fontWeight: 600 }}>
             {mode === 'scan_qr' ? 'Presensi Elektrik Via Scan QR Kartu' : 'Form Input Kehadiran Massal'}
           </Typography>
-          <Button
-            variant='outlined'
-            color='secondary'
-            component={Link}
-            href='/app/absen-kelas-santri/list'
-            startIcon={<i className='tabler-arrow-left' />}
-          >
-            Kembali
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant='outlined'
+              color='secondary'
+              component={Link}
+              href='/app/absen-kelas-santri/list'
+              startIcon={<i className='tabler-arrow-left' />}
+            >
+              Kembali
+            </Button>
+            {store.activeJurnal && !store.activeJurnal.jam_selesai && !isViewOnly && (
+              <Button
+                variant='contained'
+                color='error'
+                startIcon={<i className='tabler-square-x' />}
+                onClick={() => setOpenEndClassModal(true)}
+              >
+                Akhiri Kelas
+              </Button>
+            )}
+          </Box>
         </Box>
+
+        {store.activeJurnal && store.activeJurnal.jam_selesai && (
+          <Alert severity='warning' sx={{ mb: 4 }}>
+            Kelas ini sudah diakhiri pada pukul {store.activeJurnal.jam_selesai}.
+          </Alert>
+        )}
 
         {/* TOP INFORMATION CARD */}
         <Card sx={{ mb: 4 }}>
@@ -301,15 +407,26 @@ const PresensiFormPage = () => {
                     <TextField
                       fullWidth
                       autoFocus
+                      disabled={isViewOnly || Boolean(store.activeJurnal && store.activeJurnal.jam_selesai)}
                       label='Input Scan ID Kartu / NIS'
-                      placeholder='Tembak scanner kartu disini...'
+                      placeholder={
+                        isViewOnly
+                          ? 'Mode Lihat Saja'
+                          : store.activeJurnal && store.activeJurnal.jam_selesai
+                            ? 'Kelas sudah diakhiri'
+                            : 'Tembak scanner kartu disini...'
+                      }
                       value={qrCodeInput}
                       onChange={e => setQrCodeInput(e.target.value)}
-                      onClick={() => handleOpenScanQrCode()}
+                      onClick={() => {
+                        if (!isViewOnly && !(store.activeJurnal && store.activeJurnal.jam_selesai)) {
+                          handleOpenScanQrCode()
+                        }
+                      }}
                       slotProps={{
                         input: {
                           endAdornment: (
-                            <IconButton type='submit' color='primary'>
+                            <IconButton type='submit' color='primary' disabled={isViewOnly}>
                               <i className='tabler-scan' />
                             </IconButton>
                           )
@@ -402,20 +519,22 @@ const PresensiFormPage = () => {
             <CardHeader
               title={`Daftar Anak (${listSantriAbsen.length} Santri)`}
               action={
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  <Button size='small' variant='tonal' color='success' onClick={() => handleSetAllStatus('Hadir')}>
-                    Semua Hadir
-                  </Button>
-                  <Button size='small' variant='tonal' color='info' onClick={() => handleSetAllStatus('Izin')}>
-                    Semua Izin
-                  </Button>
-                  <Button size='small' variant='tonal' color='warning' onClick={() => handleSetAllStatus('Sakit')}>
-                    Semua Sakit
-                  </Button>
-                  <Button size='small' variant='tonal' color='error' onClick={() => handleSetAllStatus('Alfa')}>
-                    Semua Alfa
-                  </Button>
-                </Box>
+                !isViewOnly && (
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Button size='small' variant='tonal' color='success' onClick={() => handleSetAllStatus('Hadir')}>
+                      Semua Hadir
+                    </Button>
+                    <Button size='small' variant='tonal' color='info' onClick={() => handleSetAllStatus('Izin')}>
+                      Semua Izin
+                    </Button>
+                    <Button size='small' variant='tonal' color='warning' onClick={() => handleSetAllStatus('Sakit')}>
+                      Semua Sakit
+                    </Button>
+                    <Button size='small' variant='tonal' color='error' onClick={() => handleSetAllStatus('Alfa')}>
+                      Semua Alfa
+                    </Button>
+                  </Box>
+                )
               }
             />
             <Divider />
@@ -477,6 +596,7 @@ const PresensiFormPage = () => {
                             <Select
                               value={santri.status_kehadiran}
                               onChange={e => handleStatusChange(santri.id_santri, e.target.value as any)}
+                              disabled={isViewOnly}
                               sx={{
                                 fontWeight: 600,
                                 color:
@@ -502,7 +622,8 @@ const PresensiFormPage = () => {
                           <TextField
                             fullWidth
                             size='small'
-                            placeholder='Contoh: Sakit demam, Izin jenguk...'
+                            disabled={isViewOnly}
+                            placeholder={isViewOnly ? '' : 'Contoh: Sakit demam, Izin jenguk...'}
                             value={santri.keterangan}
                             onChange={e => handleKeteranganChange(santri.id_santri, e.target.value)}
                           />
@@ -523,26 +644,104 @@ const PresensiFormPage = () => {
                 href='/app/absen-kelas-santri/list'
                 disabled={loadingSubmit}
               >
-                Batal
+                {isViewOnly ? 'Kembali' : 'Batal'}
               </Button>
-              <Button
-                variant='contained'
-                color='primary'
-                onClick={handleSubmitKolektif}
-                disabled={loadingSubmit || listSantriAbsen.length === 0}
-                startIcon={
-                  loadingSubmit ? (
-                    <CircularProgress size={20} color='inherit' />
-                  ) : (
-                    <i className='tabler-device-floppy' />
-                  )
-                }
-              >
-                Simpan Presensi Massal
-              </Button>
+              {!isViewOnly && (
+                <Button
+                  variant='contained'
+                  color='primary'
+                  onClick={handleSubmitKolektif}
+                  disabled={
+                    loadingSubmit ||
+                    listSantriAbsen.length === 0 ||
+                    Boolean(store.activeJurnal && store.activeJurnal.jam_selesai)
+                  }
+                  startIcon={
+                    loadingSubmit ? (
+                      <CircularProgress size={20} color='inherit' />
+                    ) : (
+                      <i className='tabler-device-floppy' />
+                    )
+                  }
+                >
+                  Simpan Presensi Massal
+                </Button>
+              )}
+              {store.activeJurnal && !store.activeJurnal.jam_selesai && !isViewOnly && (
+                <Button
+                  variant='contained'
+                  color='error'
+                  startIcon={<i className='tabler-square-x' />}
+                  onClick={() => setOpenEndClassModal(true)}
+                >
+                  Akhiri Kelas
+                </Button>
+              )}
             </Box>
           </Card>
         )}
+
+        <Dialog open={openEndClassModal} onClose={() => setOpenEndClassModal(false)} maxWidth='sm' fullWidth>
+          <DialogTitle
+            component='div'
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}
+          >
+            <Typography variant='h6' sx={{ fontWeight: 700 }}>
+              Akhiri Kelas & Isi Jurnal Pembelajaran
+            </Typography>
+            <IconButton onClick={() => setOpenEndClassModal(false)} size='small'>
+              <i className='tabler-x' />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent dividers sx={{ p: 4 }}>
+            <Typography variant='body2' sx={{ mb: 4 }} color='text.secondary'>
+              Silakan masukkan materi yang diajarkan dan catatan kelas sebelum mengakhiri sesi pembelajaran ini.
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <TextField
+                fullWidth
+                label='Materi Pembelajaran'
+                placeholder='Contoh: Bab 1 - Sejarah Islam'
+                multiline
+                rows={3}
+                value={materiInput}
+                onChange={e => setMateriInput(e.target.value)}
+              />
+              <TextField
+                fullWidth
+                label='Catatan Kelas'
+                placeholder='Contoh: Santri sangat kondusif, 2 santri terlambat.'
+                multiline
+                rows={3}
+                value={catatanInput}
+                onChange={e => setCatatanInput(e.target.value)}
+              />
+            </Box>
+          </DialogContent>
+
+          <DialogActions sx={{ p: 3, gap: 1 }}>
+            <Button
+              onClick={() => setOpenEndClassModal(false)}
+              variant='outlined'
+              color='secondary'
+              disabled={submittingEndClass}
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={handleConfirmEndClass}
+              variant='contained'
+              color='error'
+              disabled={submittingEndClass}
+              startIcon={
+                submittingEndClass ? <CircularProgress size={20} color='inherit' /> : <i className='tabler-square-x' />
+              }
+            >
+              Akhiri & Simpan Jurnal
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Grid>
     </Grid>
   )

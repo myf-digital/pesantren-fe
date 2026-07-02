@@ -26,6 +26,7 @@ export interface InitialState {
   export: any
   lembaga: any[]
   pegawai: any[]
+  lembaga_kepesantrenan: any[]
 }
 
 /* --------------------------
@@ -45,6 +46,7 @@ const initialState: InitialState = {
   export: null,
   lembaga: [],
   pegawai: [],
+  lembaga_kepesantrenan: []
 }
 
 /* --------------------------
@@ -54,7 +56,6 @@ const initialState: InitialState = {
 export const fetchGuruMataPelajaranAll = createAsyncThunk<any, FetchParams>(
   'guru_mata_pelajaran/fetchAll',
   async (params, thunkAPI) => {
-
     try {
       const response = await api.get(`/app/guru-mata-pelajaran/all-data`, { params })
 
@@ -68,7 +69,6 @@ export const fetchGuruMataPelajaranAll = createAsyncThunk<any, FetchParams>(
 export const fetchGuruMataPelajaranPage = createAsyncThunk<any, FetchParams>(
   'guru_mata_pelajaran/fetchPage',
   async (params, thunkAPI) => {
-
     try {
       const response = await api.get(`/app/guru-mata-pelajaran`, { params })
 
@@ -82,7 +82,6 @@ export const fetchGuruMataPelajaranPage = createAsyncThunk<any, FetchParams>(
 export const fetchGuruMataPelajaranById = createAsyncThunk<any, string>(
   'guru_mata_pelajaran/fetchById',
   async (id, thunkAPI) => {
-
     try {
       const response = await api.get(`/app/guru-mata-pelajaran/${id}`)
 
@@ -96,7 +95,6 @@ export const fetchGuruMataPelajaranById = createAsyncThunk<any, string>(
 export const postGuruMataPelajaran = createAsyncThunk<any, any>(
   'guru_mata_pelajaran/create',
   async (params, thunkAPI) => {
-
     try {
       const response = await api.post(`/app/guru-mata-pelajaran`, params)
 
@@ -110,7 +108,6 @@ export const postGuruMataPelajaran = createAsyncThunk<any, any>(
 export const postGuruMataPelajaranUpdate = createAsyncThunk<any, { id: string; params: any }>(
   'guru_mata_pelajaran/update',
   async ({ id, params }, thunkAPI) => {
-
     try {
       const response = await api.put(`/app/guru-mata-pelajaran/${id}`, params)
 
@@ -124,7 +121,6 @@ export const postGuruMataPelajaranUpdate = createAsyncThunk<any, { id: string; p
 export const deleteGuruMataPelajaran = createAsyncThunk<any, string>(
   'guru_mata_pelajaran/delete',
   async (id, thunkAPI) => {
-
     try {
       const response = await api.delete(`/app/guru-mata-pelajaran/${id}`)
 
@@ -135,68 +131,61 @@ export const deleteGuruMataPelajaran = createAsyncThunk<any, string>(
   }
 )
 
-export const postBatch = createAsyncThunk<any, any>(
-  'guru_mata_pelajaran/insert',
-  async (params, thunkAPI) => {
+export const postBatch = createAsyncThunk<any, any>('guru_mata_pelajaran/insert', async (params, thunkAPI) => {
+  try {
+    const response = await api.post(`/app/guru-mata-pelajaran/insert`, params)
 
-    try {
-      const response = await api.post(`/app/guru-mata-pelajaran/insert`, params)
-
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
-export const postImport = createAsyncThunk<any, any>(
-  'guru_mata_pelajaran/import',
-  async (params, thunkAPI) => {
+export const postImport = createAsyncThunk<any, any>('guru_mata_pelajaran/import', async (params, thunkAPI) => {
+  try {
+    const response = await api.post(`/app/guru-mata-pelajaran/import`, params)
 
-    try {
-      const response = await api.post(`/app/guru-mata-pelajaran/import`, params)
-
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
-export const postExport = createAsyncThunk<any, any>(
-  'guru_mata_pelajaran/export',
-  async (params, thunkAPI) => {
+export const postExport = createAsyncThunk<any, any>('guru_mata_pelajaran/export', async (params, thunkAPI) => {
+  try {
+    const response = await api.post(`/app/guru-mata-pelajaran/export`, params)
 
-    try {
-      const response = await api.post(`/app/guru-mata-pelajaran/export`, params)
-
-      return response.data;
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
-export const fetchLembagaAll = createAsyncThunk<any, FetchParams>(
-  'lembaga/fetchAll',
-  async (params, thunkAPI) => {
+export const fetchLembagaAll = createAsyncThunk<any, FetchParams>('lembaga/fetchAll', async (params, thunkAPI) => {
+  try {
+    const response = await api.get(`/app/lembaga-formal/all-data`, { params })
 
-    try {
-      const response = await api.get(`/app/lembaga-formal/all-data`, { params })
-
-      return response.data
-    } catch (e: any) {
-      return thunkAPI.fulfillWithValue(e.response?.data)
-    }
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
   }
-)
+})
 
-export const fetchPegawaiAll = createAsyncThunk<any, FetchParams>(
-  'pegawai/fetchAll',
+export const fetchPegawaiAll = createAsyncThunk<any, FetchParams>('pegawai/fetchAll', async (params, thunkAPI) => {
+  try {
+    const response = await api.get(`/app/pegawai/all-data`, { params })
+
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
+  }
+})
+
+export const fetchLembagaKepesantrenanAll = createAsyncThunk<any, FetchParams>(
+  'lembaga_kepesantrenan/fetchAll',
   async (params, thunkAPI) => {
-
     try {
-      const response = await api.get(`/app/pegawai/all-data`, { params })
+      const response = await api.get(`/app/lembaga-kepesantrenan/all-data`, { params })
 
       return response.data
     } catch (e: any) {
@@ -213,7 +202,7 @@ export const slice = createSlice({
   name: 'guru_mata_pelajaran',
   initialState,
   reducers: {
-    resetRedux: () => initialState,
+    resetRedux: () => initialState
   },
   extraReducers: builder => {
     builder.addCase(fetchGuruMataPelajaranAll.fulfilled, (state, action) => {
@@ -262,7 +251,11 @@ export const slice = createSlice({
     builder.addCase(fetchPegawaiAll.fulfilled, (state, action) => {
       state.pegawai = action.payload.data || []
     })
-  },
+
+    builder.addCase(fetchLembagaKepesantrenanAll.fulfilled, (state, action) => {
+      state.lembaga_kepesantrenan = action.payload.data || []
+    })
+  }
 })
 
 export const { resetRedux } = slice.actions

@@ -68,6 +68,10 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
+  const rowDateStr = row.tanggal ? format(new Date(row.tanggal), 'yyyy-MM-dd') : ''
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  const isRowToday = rowDateStr === todayStr
+
   const content = (
     <>
       <IconButton size='small' onClick={e => setAnchorEl(e.currentTarget)}>
@@ -80,15 +84,19 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
         >
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View
         </MenuItem>
-        <MenuItem
-          component={Link}
-          href={`/app/absen-harian-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_lokasi_kamar=${row.id_lokasi_kamar}&id_shift_presensi=${row.id_shift_presensi}&nama_shift=${row.shiftPresensi?.nama_shift || ''}&nama_lokasi=${row.lokasiKamar?.nama_lokasi || ''}`}
-        >
-          <i className='tabler-edit' style={{ marginRight: 8 }} /> Edit
-        </MenuItem>
-        <MenuItem onClick={() => setOpenConfirm(true)} sx={{ color: 'error.main' }}>
-          <i className='tabler-trash' style={{ marginRight: 8 }} /> Delete
-        </MenuItem>
+        {isRowToday && (
+          <MenuItem
+            component={Link}
+            href={`/app/absen-harian-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_lokasi_kamar=${row.id_lokasi_kamar}&id_shift_presensi=${row.id_shift_presensi}&nama_shift=${row.shiftPresensi?.nama_shift || ''}&nama_lokasi=${row.lokasiKamar?.nama_lokasi || ''}`}
+          >
+            <i className='tabler-edit' style={{ marginRight: 8 }} /> Edit
+          </MenuItem>
+        )}
+        {isRowToday && (
+          <MenuItem onClick={() => setOpenConfirm(true)} sx={{ color: 'error.main' }}>
+            <i className='tabler-trash' style={{ marginRight: 8 }} /> Delete
+          </MenuItem>
+        )}
       </Menu>
 
       <DialogDelete
@@ -145,6 +153,7 @@ const AbsenHarianSantriList = () => {
   // State Snapshot Filter Sah (Mencegah Auto Fetch)
   const [currentFilters, setCurrentFilters] = useState<any>(null)
   const [isFilterApplied, setIsFilterApplied] = useState(false)
+  const [isInitialLoaded, setIsInitialLoaded] = useState(false)
 
   // State Pagination & Loading Utama
   const [page, setPage] = useState(1)
@@ -213,6 +222,35 @@ const AbsenHarianSantriList = () => {
     },
     [dispatch]
   )
+
+  useEffect(() => {
+    if (!loadingShift && !loadingKamar && listShift.length > 0 && listKamar.length > 0 && !isInitialLoaded) {
+      setIsInitialLoaded(true)
+      const filters = {
+        tanggal: formatTanggal(tanggal),
+        idShift: selectedShift?.id_shift || '',
+        idLokasi: selectedKamar?.id_lokasi || '',
+        status,
+        searchTyped
+      }
+      setIsFilterApplied(true)
+      setCurrentFilters(filters)
+      executeFetchData(1, perPage, filters)
+    }
+  }, [
+    loadingShift,
+    loadingKamar,
+    listShift,
+    listKamar,
+    isInitialLoaded,
+    selectedShift,
+    selectedKamar,
+    tanggal,
+    status,
+    searchTyped,
+    perPage,
+    executeFetchData
+  ])
 
   // Efek pagination halaman
   useEffect(() => {
@@ -561,7 +599,7 @@ const AbsenHarianSantriList = () => {
                 startIcon={<i className='tabler-file-export' />}
                 onClick={onExport}
               >
-                {loadingExport ? 'Proses...' : 'Export CSV'}
+                {loadingExport ? 'Proses...' : 'Export Excel'}
               </Button>
             )}
 
@@ -573,7 +611,7 @@ const AbsenHarianSantriList = () => {
                 component={Link}
                 href='/app/absen-harian-santri/import'
               >
-                Import CSV
+                Import Excel
               </Button>
             )}
           </Toolbar>

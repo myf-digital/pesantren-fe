@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 // ** React Imports
 import React, { useCallback, useEffect, useState } from 'react'
@@ -15,7 +15,15 @@ import { toast } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
-import { fetchLembagaAll, fetchGuruMataPelajaranById, postGuruMataPelajaran, postGuruMataPelajaranUpdate, resetRedux, fetchPegawaiAll } from '../slice/index'
+import {
+  fetchLembagaAll,
+  fetchLembagaKepesantrenanAll,
+  fetchGuruMataPelajaranById,
+  postGuruMataPelajaran,
+  postGuruMataPelajaranUpdate,
+  resetRedux,
+  fetchPegawaiAll
+} from '../slice/index'
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchTingkatAll } from '../../tingkat/slice'
 import { fetchMataPelajaranAll } from '../../mata-pelajaran/slice'
@@ -33,18 +41,16 @@ const statusOption = {
   ]
 }
 
-const typeOption = {
-  values: [
-    {
-      label: 'Formal',
-      value: 'FORMAL'
-    },
-    {
-      label: 'Pesantren',
-      value: 'PESANTREN'
-    }
-  ]
-}
+const typeOption = [
+  {
+    label: 'Formal',
+    value: 'FORMAL'
+  },
+  {
+    label: 'Pesantren',
+    value: 'PESANTREN'
+  }
+]
 
 const FormValidationBasic = () => {
   const router = useRouter()
@@ -65,27 +71,27 @@ const FormValidationBasic = () => {
     status: {
       value: string
       label: string
-    },
+    }
     lembaga_type: {
       value: string
       label: string
-    },
+    } | null
     id_lembaga: {
       value: string
       label: string
-    },
+    } | null
     id_guru: {
       value: string
       label: string
-    },
+    } | null
     id_mapel: {
       value: string
       label: string
-    },
+    } | null
     id_tingkat: {
       value: string
       label: string
-    },
+    } | null
   }
 
   const defaultValues = {
@@ -95,26 +101,11 @@ const FormValidationBasic = () => {
       value: 'A',
       label: 'Aktif'
     },
-    lembaga_type: {
-      value: '',
-      label: ''
-    },
-    id_lembaga: {
-      value: '',
-      label: ''
-    },
-    id_guru: {
-      value: '',
-      label: ''
-    },
-    id_mapel: {
-      value: '',
-      label: ''
-    },
-    id_tingkat: {
-      value: '',
-      label: ''
-    },
+    lembaga_type: null,
+    id_lembaga: null,
+    id_guru: null,
+    id_mapel: null,
+    id_tingkat: null
   }
 
   const [state, setState] = useState<FormData>(defaultValues)
@@ -123,9 +114,10 @@ const FormValidationBasic = () => {
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
     reset
-  } = useForm({defaultValues})
+  } = useForm({ defaultValues })
 
   const onCancel = useCallback(() => {
     dispatch(resetRedux())
@@ -133,38 +125,54 @@ const FormValidationBasic = () => {
   }, [dispatch, router])
 
   useEffect(() => {
-    dispatch(fetchLembagaAll({}))
     dispatch(fetchPegawaiAll({}))
     dispatch(fetchMataPelajaranAll({}))
-    dispatch(fetchTingkatAll({type: ''}))
 
     if (id) {
       dispatch(fetchGuruMataPelajaranById(id)).then(res => {
         const datas = { ...res?.payload?.data }
 
         if (datas) {
-          datas.lembaga_type = typeOption.values.find(r => r.value === datas.lembaga_type)
+          datas.lembaga_type = typeOption.find(r => r.value === datas.lembaga_type)
           datas.status = statusOption.values.find(r => r.value === datas.status)
-          datas.id_lembaga = {
-            ...datas.lembaga_formal,
-            label: datas?.lembaga_formal?.nama_lembaga,
-            value: datas?.lembaga_formal?.id_lembaga,
+          if (datas.lembaga_formal) {
+            datas.id_lembaga = {
+              ...datas.lembaga_formal,
+              label: datas?.lembaga_formal?.nama_lembaga,
+              value: datas?.lembaga_formal?.id_lembaga
+            }
+          }
+
+          if (datas.lembaga_kepesantrenan) {
+            datas.id_lembaga = {
+              ...datas.lembaga_kepesantrenan,
+              label: datas?.lembaga_kepesantrenan?.nama_lembaga,
+              value: datas?.lembaga_kepesantrenan?.id_lembaga
+            }
           }
           datas.id_guru = {
             ...datas.pegawai,
             label: datas?.pegawai?.nama_lengkap,
-            value: datas?.pegawai?.id_pegawai,
+            value: datas?.pegawai?.id_pegawai
           }
           datas.id_mapel = {
             ...datas.mata_pelajaran,
             label: datas?.mata_pelajaran?.nama_mapel,
-            value: datas?.mata_pelajaran?.id_mapel,
+            value: datas?.mata_pelajaran?.id_mapel
           }
           datas.id_tingkat = {
             ...datas.tingkat,
             label: datas?.tingkat?.tingkat,
-            value: datas?.tingkat?.id_tingkat,
+            value: datas?.tingkat?.id_tingkat
           }
+
+          if (datas.lembaga_type.value == 'FORMAL') {
+            dispatch(fetchLembagaAll({}))
+          } else {
+            dispatch(fetchLembagaKepesantrenanAll({}))
+          }
+
+          dispatch(fetchTingkatAll({ type: datas.lembaga_type?.value }))
 
           setState(datas)
           reset(datas)
@@ -197,9 +205,9 @@ const FormValidationBasic = () => {
           id: id,
           params: {
             ...state,
-            nama_jenis_guru: state.id_guru.label,
+            nama_jenis_guru: `${state.id_guru?.label}|${state.id_lembaga?.label}|${state.id_mapel?.label}|${state.id_tingkat?.label}`,
             status: state.status.value,
-            lembaga_type: state.lembaga_type.value,
+            lembaga_type: state.lembaga_type?.value
           }
         })
       )
@@ -207,9 +215,9 @@ const FormValidationBasic = () => {
       dispatch(
         postGuruMataPelajaran({
           ...state,
-          nama_jenis_guru: state.id_guru.label,
+          nama_jenis_guru: `${state.id_guru?.label}|${state.id_lembaga?.label}|${state.id_mapel?.label}|${state.id_tingkat?.label}`,
           status: state.status.value,
-          lembaga_type: state.lembaga_type.value,
+          lembaga_type: state.lembaga_type?.value
         })
       )
     }
@@ -229,7 +237,7 @@ const FormValidationBasic = () => {
               label: m.nama_lengkap,
               value: m.id_pegawai
             }
-          }),
+          })
         },
         readOnly: Boolean(view)
       }),
@@ -245,7 +253,7 @@ const FormValidationBasic = () => {
               label: m.nama_mapel,
               value: m.id_mapel
             }
-          }),
+          })
         },
         readOnly: Boolean(view)
       }),
@@ -255,7 +263,21 @@ const FormValidationBasic = () => {
         label: 'Tipe',
         placeholder: 'Pilih Tipe',
         required: true,
-        options: typeOption,
+        options: {
+          values: typeOption,
+          onChange: (e: any) => {
+            if (!e) return
+
+            setValue('id_lembaga', null)
+            setState(state => ({ ...state, id_lembaga: null }))
+
+            if (e.value == 'FORMAL') {
+              dispatch(fetchLembagaAll({}))
+            } else {
+              dispatch(fetchLembagaKepesantrenanAll({}))
+            }
+          }
+        },
         readOnly: Boolean(view)
       }),
       field({
@@ -265,12 +287,28 @@ const FormValidationBasic = () => {
         placeholder: 'Pilih Lembaga',
         required: true,
         options: {
-          values: store.lembaga.map(m => {
-            return {
-              label: m.nama_lembaga,
-              value: m.id_lembaga
-            }
-          }),
+          values:
+            state.lembaga_type?.value == 'FORMAL'
+              ? store.lembaga.map(m => {
+                  return {
+                    label: m.nama_lembaga,
+                    value: m.id_lembaga
+                  }
+                })
+              : store.lembaga_kepesantrenan.map(m => {
+                  return {
+                    label: m.nama_lembaga,
+                    value: m.id_lembaga
+                  }
+                }),
+          onChange: (e: any) => {
+            if (!e) return
+
+            setValue('id_tingkat', null)
+            setState(state => ({ ...state, id_tingkat: null }))
+
+            dispatch(fetchTingkatAll({ type: state.lembaga_type?.value } as any))
+          }
         },
         readOnly: Boolean(view)
       }),
@@ -286,7 +324,7 @@ const FormValidationBasic = () => {
               label: m.tingkat,
               value: m.id_tingkat
             }
-          }),
+          })
         },
         readOnly: Boolean(view)
       }),

@@ -67,6 +67,10 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
+  const rowDateStr = row.tanggal ? format(new Date(row.tanggal), 'yyyy-MM-dd') : ''
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  const isRowToday = rowDateStr === todayStr
+
   const content = (
     <>
       <IconButton size='small' onClick={e => setAnchorEl(e.currentTarget)}>
@@ -75,19 +79,23 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         <MenuItem
           component={Link}
-          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_kelas=${row.id_kelas}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_kelas=${row.lokasi?.nama_kelas || ''}`}
+          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&view=true&mode=kolektif&tanggal=${row.tanggal}&id_kelas=${row.id_lokasi}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_kelas=${row.lokasi || ''}`}
         >
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View
         </MenuItem>
-        <MenuItem
-          component={Link}
-          href={`/app/absen-kelas-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_kelas=${row.id_kelas}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_kelas=${row.lokasi?.nama_kelas || ''}`}
-        >
-          <i className='tabler-edit' style={{ marginRight: 8 }} /> Edit
-        </MenuItem>
-        <MenuItem onClick={() => setOpenConfirm(true)} sx={{ color: 'error.main' }}>
-          <i className='tabler-trash' style={{ marginRight: 8 }} /> Delete
-        </MenuItem>
+        {isRowToday && (
+          <MenuItem
+            component={Link}
+            href={`/app/absen-kelas-santri/form?id=${row.id_absen}&mode=kolektif&tanggal=${row.tanggal}&id_kelas=${row.id_lokasi}&id_jam_pelajaran=${row.id_jam_pelajaran}&nama_jampel=${row.jamPelajaran?.nama_jampel || ''}&nama_kelas=${row.lokasi || ''}`}
+          >
+            <i className='tabler-edit' style={{ marginRight: 8 }} /> Edit
+          </MenuItem>
+        )}
+        {isRowToday && (
+          <MenuItem onClick={() => setOpenConfirm(true)} sx={{ color: 'error.main' }}>
+            <i className='tabler-trash' style={{ marginRight: 8 }} /> Delete
+          </MenuItem>
+        )}
       </Menu>
 
       <DialogDelete
@@ -595,7 +603,7 @@ const AbsenKelasHarianSantriList = () => {
                 startIcon={<i className='tabler-file-export' />}
                 onClick={onExport}
               >
-                {loadingExport ? 'Proses...' : 'Export CSV'}
+                {loadingExport ? 'Proses...' : 'Export Excel'}
               </Button>
             )}
 
@@ -607,7 +615,7 @@ const AbsenKelasHarianSantriList = () => {
                 component={Link}
                 href='/app/absen-kelas-santri/import'
               >
-                Import CSV
+                Import Excel
               </Button>
             )}
           </Toolbar>

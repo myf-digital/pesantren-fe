@@ -24,6 +24,8 @@ import { tableColumn } from '../table/TableViewBuilder'
 
 import Repeater from '../../../@core/components/repeater'
 
+import { useRouter } from 'next/navigation'
+
 const RepeatingContent = styled(Grid)(({ theme }) => ({
   paddingRight: 0,
   display: 'flex',
@@ -55,14 +57,11 @@ const RepeaterWrapper = styled(CardContent)(({ theme }) => ({
   }
 }))
 
-const RowAction = ({ data, onRowUpdate, onRowDeleted }) => {
+const RowAction = ({ data, onRowUpdate, onRowDeleted, view }) => {
+  const router = useRouter()
   const [anchorEl, setAnchorEl] = useState(null)
 
   const rowOptionsOpen = Boolean(anchorEl)
-
-  useState(() => {
-    console.log('row is', data)
-  })
 
   const setOpen = event => {
     setAnchorEl(event.currentTarget)
@@ -82,6 +81,11 @@ const RowAction = ({ data, onRowUpdate, onRowDeleted }) => {
     optionsOnClose()
   }
 
+  const handleTindakan = () => {
+    optionsOnClose()
+    router.push(`/app/kebersihan-temuan/form?id=${data.id_temuan}&tindakan=true`)
+  }
+
   return (
     <TableCell size='small'>
       <IconButton aria-controls='long-menu' size='small' aria-haspopup='true' onClick={setOpen}>
@@ -96,21 +100,32 @@ const RowAction = ({ data, onRowUpdate, onRowDeleted }) => {
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         PaperProps={{ style: { minWidth: '8rem' } }}
       >
-        <MenuItem onClick={handleUpdate} sx={{ '& svg': { mr: 2 } }}>
-          <i className='tabler-edit' fontSize={20} />
-          Edit
-        </MenuItem>
+        {Boolean(view) ? (
+          <>
+            <MenuItem onClick={handleTindakan} sx={{ '& svg': { mr: 2 } }}>
+              <i className='tabler-check' fontSize={20} />
+              Tindakan
+            </MenuItem>
+          </>
+        ) : (
+          <>
+            <MenuItem onClick={handleUpdate} sx={{ '& svg': { mr: 2 } }}>
+              <i className='tabler-edit' fontSize={20} />
+              Edit
+            </MenuItem>
 
-        <MenuItem onClick={handleDelete} sx={{ '& svg': { mr: 2 } }}>
-          <i className='tabler-trash' fontSize={20} />
-          Delete
-        </MenuItem>
+            <MenuItem onClick={handleDelete} sx={{ '& svg': { mr: 2 } }}>
+              <i className='tabler-trash' fontSize={20} />
+              Delete
+            </MenuItem>
+          </>
+        )}
       </Menu>
     </TableCell>
   )
 }
 
-const ItemForm = ({ temuanDetailsSelected, onAddTemuanDetail, onDeleteTemuanDetail }) => {
+const ItemForm = ({ temuanDetailsSelected, onAddTemuanDetail, onDeleteTemuanDetail, view }) => {
   const [count, setCount] = useState(1)
 
   const defaultValues = {
@@ -169,12 +184,10 @@ const ItemForm = ({ temuanDetailsSelected, onAddTemuanDetail, onDeleteTemuanDeta
   }
 
   const onButtonSubmit = () => {
-    console.log('on submit')
     handleSubmit(onSubmit)()
   }
 
   const onSubmit = () => {
-    console.log('add item', state, temuanDetailsSelected)
     const cost = { ...state, temuan_id: state.temuan_id ? state.temuan_id : new Date().getTime() }
 
     // add temp
@@ -295,38 +308,40 @@ const ItemForm = ({ temuanDetailsSelected, onAddTemuanDetail, onDeleteTemuanDeta
   }
 
   const renderOption = (row, value) => {
-    return <RowAction data={row} onRowUpdate={onRowUpdate} onRowDeleted={onRowDeleted} />
+    return <RowAction data={row} onRowUpdate={onRowUpdate} onRowDeleted={onRowDeleted} view={view} />
   }
 
   return (
     <RepeaterWrapper>
-      <form ref={formRef} onSubmit={handleSubmit(onSubmit)} autoComplete='off' className='mb-3'>
-        <Repeater count={count}>
-          {i => {
-            const Tag = i === 0 ? Box : Collapse
+      {!Boolean(view) && (
+        <form ref={formRef} onSubmit={handleSubmit(onSubmit)} autoComplete='off' className='mb-3'>
+          <Repeater count={count}>
+            {i => {
+              const Tag = i === 0 ? Box : Collapse
 
-            return (
-              <Tag key={i} className='repeater-wrapper' {...(i !== 0 ? { in: true } : {})}>
-                <Grid container>
-                  <RepeatingContent item xs={12}>
-                    <Grid container sx={{ py: 4, width: '100%', pr: { lg: 0, xs: 4 } }}>
-                      <Grid item lg={12} md={12} xs={12} sx={{ px: 4, my: { lg: 0, xs: 4 } }}>
-                        {formColumn({
-                          control: control,
-                          errors: errors,
-                          state: state,
-                          setState: setState,
-                          fields: fields()
-                        })}
+              return (
+                <Tag key={i} className='repeater-wrapper' {...(i !== 0 ? { in: true } : {})}>
+                  <Grid container>
+                    <RepeatingContent item xs={12}>
+                      <Grid container sx={{ py: 4, width: '100%', pr: { lg: 0, xs: 4 } }}>
+                        <Grid item lg={12} md={12} xs={12} sx={{ px: 4, my: { lg: 0, xs: 4 } }}>
+                          {formColumn({
+                            control: control,
+                            errors: errors,
+                            state: state,
+                            setState: setState,
+                            fields: fields()
+                          })}
+                        </Grid>
                       </Grid>
-                    </Grid>
-                  </RepeatingContent>
-                </Grid>
-              </Tag>
-            )
-          }}
-        </Repeater>
-      </form>
+                    </RepeatingContent>
+                  </Grid>
+                </Tag>
+              )
+            }}
+          </Repeater>
+        </form>
+      )}
 
       <TableView model={buildTable()} />
     </RepeaterWrapper>

@@ -910,6 +910,7 @@ const FormValidationBasic = () => {
                 temuanDetailsSelected={item.values}
                 onAddTemuanDetail={onAddTemuanDetail}
                 onDeleteTemuanDetail={onDeleteTemuanDetail}
+                view={view}
               />
               {formColumn({
                 control: control,

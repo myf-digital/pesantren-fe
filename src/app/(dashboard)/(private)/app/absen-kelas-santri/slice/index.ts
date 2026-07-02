@@ -11,12 +11,17 @@ export interface InitialState {
     values: any[]
     total: number
   }
+  jurnalPage: {
+    values: any[]
+    total: number
+  }
   data: any
   jamPel: any
   santriList: any[]
   crud: any
   delete: any
   loading: boolean
+  activeJurnal: any | null
 }
 
 /* --------------------------
@@ -27,12 +32,17 @@ const initialState: InitialState = {
     values: [],
     total: 0
   },
+  jurnalPage: {
+    values: [],
+    total: 0
+  },
   data: {},
   jamPel: null,
   santriList: [],
   crud: null,
   delete: null,
-  loading: false
+  loading: false,
+  activeJurnal: null
 }
 
 /* --------------------------
@@ -174,6 +184,54 @@ export const postAbsenKelasExport = createAsyncThunk<any, any>('absenKelasSantri
   }
 })
 
+export const fetchActiveJurnalKelas = createAsyncThunk(
+  'absenKelasSantri/fetchActiveJurnal',
+  async (params: { tanggal: string; id_lokasi: string; id_jam_pelajaran: string }, thunkAPI) => {
+    try {
+      const response = await api.get('/app/jurnal-kelas/active', { params })
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.rejectWithValue(e.response?.data)
+    }
+  }
+)
+
+export const endJurnalKelas = createAsyncThunk(
+  'absenKelasSantri/endJurnal',
+  async (payload: { id_jurnal: string; materi: string | null; catatan: string | null }, thunkAPI) => {
+    try {
+      const response = await api.post('/app/jurnal-kelas/end', payload)
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.rejectWithValue(e.response?.data)
+    }
+  }
+)
+
+export const fetchJurnalKelasPage = createAsyncThunk(
+  'absenKelasSantri/fetchJurnalKelasPage',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await api.get('/app/jurnal-kelas', { params })
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.rejectWithValue(e.response?.data)
+    }
+  }
+)
+
+export const postJurnalKelasExport = createAsyncThunk<any, any>(
+  'absenKelasSantri/exportJurnal',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.post('/app/jurnal-kelas/export', params)
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
+
 /* --------------------------
    4. Slice Definition
 --------------------------- */
@@ -185,6 +243,7 @@ export const absenKelasSantriSlice = createSlice({
       state.crud = null
       state.delete = null
       state.jamPel = null
+      state.activeJurnal = null
     },
     clearSantriList: state => {
       state.santriList = []
@@ -193,6 +252,13 @@ export const absenKelasSantriSlice = createSlice({
   extraReducers: builder => {
     builder.addCase(fetchAbsenKelasSantriPage.fulfilled, (state, action) => {
       state.dataPage = {
+        values: action.payload.data?.values || [],
+        total: action.payload.data?.total || 0
+      }
+    })
+
+    builder.addCase(fetchJurnalKelasPage.fulfilled, (state, action) => {
+      state.jurnalPage = {
         values: action.payload.data?.values || [],
         total: action.payload.data?.total || 0
       }
@@ -212,6 +278,7 @@ export const absenKelasSantriSlice = createSlice({
 
     builder.addCase(postAbsenKelasSantri.fulfilled, (state, action) => {
       state.crud = { status: true, message: action.payload.message, data: action.payload.data }
+      state.activeJurnal = action.payload.data?.jurnal || null
     })
     builder.addCase(postAbsenKelasSantri.rejected, (state, action: any) => {
       state.crud = { status: false, message: action.payload?.message }
@@ -222,9 +289,25 @@ export const absenKelasSantriSlice = createSlice({
     })
     builder.addCase(postAbsenKelasScanQR.fulfilled, (state, action) => {
       state.crud = { status: true, message: action.payload.message, data: action.payload.data }
+      state.activeJurnal = action.payload.data?.jurnal || null
     })
     builder.addCase(postAbsenKelasScanQR.rejected, (state, action: any) => {
       state.crud = { status: false, message: action.payload?.message || 'Gagal memproses scan QR kartu' }
+    })
+
+    builder.addCase(fetchActiveJurnalKelas.fulfilled, (state, action) => {
+      state.activeJurnal = action.payload.data || null
+    })
+    builder.addCase(fetchActiveJurnalKelas.rejected, (state) => {
+      state.activeJurnal = null
+    })
+
+    builder.addCase(endJurnalKelas.fulfilled, (state, action) => {
+      state.crud = { status: true, message: action.payload.message }
+      state.activeJurnal = null
+    })
+    builder.addCase(endJurnalKelas.rejected, (state, action: any) => {
+      state.crud = { status: false, message: action.payload?.message }
     })
 
     builder.addCase(postAbsenKelasSantriUpdate.fulfilled, (state, action) => {

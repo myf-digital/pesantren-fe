@@ -37,7 +37,7 @@ import { toast } from 'react-toastify'
 import { format } from 'date-fns'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { fetchSantriKamarReady, postAbsenScanQR } from '../slice'
+import { fetchSantriKamarReady, postAbsenScanQR, fetchAbsenSantriPage, postAbsenSantri } from '../slice'
 import QRScanner from '@/views/onevour/components/qr-scanner'
 
 // Interface untuk baris data di Form Kolektif
@@ -70,6 +70,12 @@ const PresensiFormPage = () => {
   const idLokasiKamar = searchParams.get('id_lokasi_kamar') || ''
   const idShiftPresensi = searchParams.get('id_shift_presensi') || ''
   const qrCodeParam = searchParams.get('qrcode') || ''
+  const idAbsen = searchParams.get('id') || ''
+
+  const isViewOnlyParam = searchParams.get('view') === 'true'
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  const isToday = tanggal === todayStr
+  const isViewOnly = isViewOnlyParam || (Boolean(idAbsen) && !isToday)
 
   // Label readable untuk header komponen UI
   const namaShiftParam = searchParams.get('nama_shift') || 'Shift Asrama'
@@ -92,24 +98,45 @@ const PresensiFormPage = () => {
   // Fetch data antrean santri siap absen jika memilih mode kolektif
   useEffect(() => {
     if (mode === 'kolektif' && idLokasiKamar) {
-      dispatch(fetchSantriKamarReady({ id_lokasi_kamar: idLokasiKamar }))
+      if (idAbsen) {
+        dispatch(
+          fetchAbsenSantriPage({
+            tanggal,
+            id_lokasi_kamar: idLokasiKamar,
+            id_shift_presensi: idShiftPresensi,
+            perPage: 1000
+          })
+        )
+      } else {
+        dispatch(fetchSantriKamarReady({ id_lokasi_kamar: idLokasiKamar }))
+      }
     }
-  }, [dispatch, mode, idLokasiKamar])
+  }, [dispatch, mode, idLokasiKamar, idAbsen, tanggal, idShiftPresensi])
 
   // Menyalin data dari Redux Store ke Local State agar form input bisa diubah secara interaktif
   useEffect(() => {
-    if (mode === 'kolektif' && store.santriKamar) {
-      const formatted = store.santriKamar.map((s: any) => ({
-        id_santri: s.id_santri,
-        fullname: s.fullname,
-        nis: s.nis,
-        status_kehadiran: 'Hadir', // Default awal diset Hadir semua
-        keterangan: '' // Default keterangan kosong
-      }))
-
-      setListSantriAbsen(formatted as AbsenItemInput[])
+    if (mode === 'kolektif') {
+      if (idAbsen && store.dataPage?.values && store.dataPage.values.length > 0) {
+        const formatted = store.dataPage.values.map((s: any) => ({
+          id_santri: s.santri?.id_santri || s.id_santri,
+          fullname: s.santri?.fullname || s.fullname || '',
+          nis: s.santri?.nis || s.nis || '',
+          status_kehadiran: s.status_kehadiran || 'Hadir',
+          keterangan: s.keterangan || ''
+        }))
+        setListSantriAbsen(formatted as AbsenItemInput[])
+      } else if (!idAbsen && store.santriKamar) {
+        const formatted = store.santriKamar.map((s: any) => ({
+          id_santri: s.id_santri,
+          fullname: s.fullname,
+          nis: s.nis,
+          status_kehadiran: 'Hadir', // Default awal diset Hadir semua
+          keterangan: '' // Default keterangan kosong
+        }))
+        setListSantriAbsen(formatted as AbsenItemInput[])
+      }
     }
-  }, [store.santriKamar, mode])
+  }, [store.santriKamar, store.dataPage?.values, mode, idAbsen])
 
   // Handler ubah status kehadiran via Select Dropdown per baris santri
   const handleStatusChange = (idSantri: string, value: 'Hadir' | 'Izin' | 'Sakit' | 'Alfa') => {
@@ -149,12 +176,12 @@ const PresensiFormPage = () => {
       }
 
       // Integrasi Redux Thunk API Anda:
-      // await dispatch(postAbsenKolektif(payload)).unwrap()
+      await dispatch(postAbsenSantri(payload)).unwrap()
 
       toast.success('Data presensi massal kamar berhasil disimpan!')
       router.push('/app/absen-harian-santri/list')
-    } catch {
-      toast.error('Gagal menyimpan data presensi kolektif')
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal menyimpan data presensi kolektif')
     } finally {
       setLoadingSubmit(false)
     }
@@ -304,15 +331,20 @@ const PresensiFormPage = () => {
                     <TextField
                       fullWidth
                       autoFocus
+                      disabled={isViewOnly}
                       label='Input Scan ID Kartu / NIS'
-                      placeholder='Tembak scanner kartu disini...'
+                      placeholder={isViewOnly ? 'Mode Lihat Saja' : 'Tembak scanner kartu disini...'}
                       value={qrCodeInput}
                       onChange={e => setQrCodeInput(e.target.value)}
-                      onClick={() => handleOpenScanQrCode()}
+                      onClick={() => {
+                        if (!isViewOnly) {
+                          handleOpenScanQrCode()
+                        }
+                      }}
                       slotProps={{
                         input: {
                           endAdornment: (
-                            <IconButton type='submit' color='primary'>
+                            <IconButton type='submit' color='primary' disabled={isViewOnly}>
                               <i className='tabler-scan' />
                             </IconButton>
                           )
@@ -326,7 +358,10 @@ const PresensiFormPage = () => {
                     maxWidth='xs'
                     fullWidth
                   >
-                    <DialogTitle component='div' sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}>
+                    <DialogTitle
+                      component='div'
+                      sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}
+                    >
                       <Typography variant='h6' sx={{ fontWeight: 700 }}>
                         Scan QR Code Kartu Santri
                       </Typography>
@@ -402,20 +437,22 @@ const PresensiFormPage = () => {
             <CardHeader
               title={`Daftar Anak Kamar (${listSantriAbsen.length} Santri)`}
               action={
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  <Button size='small' variant='tonal' color='success' onClick={() => handleSetAllStatus('Hadir')}>
-                    Semua Hadir
-                  </Button>
-                  <Button size='small' variant='tonal' color='info' onClick={() => handleSetAllStatus('Izin')}>
-                    Semua Izin
-                  </Button>
-                  <Button size='small' variant='tonal' color='warning' onClick={() => handleSetAllStatus('Sakit')}>
-                    Semua Sakit
-                  </Button>
-                  <Button size='small' variant='tonal' color='error' onClick={() => handleSetAllStatus('Alfa')}>
-                    Semua Alfa
-                  </Button>
-                </Box>
+                !isViewOnly && (
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Button size='small' variant='tonal' color='success' onClick={() => handleSetAllStatus('Hadir')}>
+                      Semua Hadir
+                    </Button>
+                    <Button size='small' variant='tonal' color='info' onClick={() => handleSetAllStatus('Izin')}>
+                      Semua Izin
+                    </Button>
+                    <Button size='small' variant='tonal' color='warning' onClick={() => handleSetAllStatus('Sakit')}>
+                      Semua Sakit
+                    </Button>
+                    <Button size='small' variant='tonal' color='error' onClick={() => handleSetAllStatus('Alfa')}>
+                      Semua Alfa
+                    </Button>
+                  </Box>
+                )
               }
             />
             <Divider />
@@ -477,6 +514,7 @@ const PresensiFormPage = () => {
                             <Select
                               value={santri.status_kehadiran}
                               onChange={e => handleStatusChange(santri.id_santri, e.target.value as any)}
+                              disabled={isViewOnly}
                               sx={{
                                 fontWeight: 600,
                                 color:
@@ -502,7 +540,8 @@ const PresensiFormPage = () => {
                           <TextField
                             fullWidth
                             size='small'
-                            placeholder='Contoh: Sakit demam, Izin jenguk...'
+                            disabled={isViewOnly}
+                            placeholder={isViewOnly ? '' : 'Contoh: Sakit demam, Izin jenguk...'}
                             value={santri.keterangan}
                             onChange={e => handleKeteranganChange(santri.id_santri, e.target.value)}
                           />
@@ -523,23 +562,25 @@ const PresensiFormPage = () => {
                 href='/app/absen-harian-santri/list'
                 disabled={loadingSubmit}
               >
-                Batal
+                {isViewOnly ? 'Kembali' : 'Batal'}
               </Button>
-              <Button
-                variant='contained'
-                color='primary'
-                onClick={handleSubmitKolektif}
-                disabled={loadingSubmit || listSantriAbsen.length === 0}
-                startIcon={
-                  loadingSubmit ? (
-                    <CircularProgress size={20} color='inherit' />
-                  ) : (
-                    <i className='tabler-device-floppy' />
-                  )
-                }
-              >
-                Simpan Presensi Massal
-              </Button>
+              {!isViewOnly && (
+                <Button
+                  variant='contained'
+                  color='primary'
+                  onClick={handleSubmitKolektif}
+                  disabled={loadingSubmit || listSantriAbsen.length === 0}
+                  startIcon={
+                    loadingSubmit ? (
+                      <CircularProgress size={20} color='inherit' />
+                    ) : (
+                      <i className='tabler-device-floppy' />
+                    )
+                  }
+                >
+                  Simpan Presensi Massal
+                </Button>
+              )}
             </Box>
           </Card>
         )}
