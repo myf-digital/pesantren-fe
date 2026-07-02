@@ -122,16 +122,16 @@ const PerizinanPegawaiList = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   // State Utama Filter Range Date & Kategori Data
-  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfMonth(new Date()))
-  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(endOfMonth(new Date()))
+  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(null)
+  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(null)
   const [statusApproval, setStatusApproval] = useState('Semua')
   const [jenisIzin, setJenisIzin] = useState('Semua')
   const [searchQuery, setSearchQuery] = useState('')
 
   // State Snapshot Sinkronisasi Fetcher dengan bendera is_pegawai
   const [currentFilters, setCurrentFilters] = useState<any>({
-    startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-    endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+    startDate: null, // format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+    endDate: null, // format(endOfMonth(new Date()), 'yyyy-MM-dd'),
     statusApproval: 'Semua',
     jenisIzin: 'Semua',
     searchQuery: '',
@@ -222,8 +222,8 @@ const PerizinanPegawaiList = () => {
   const handleResetFilter = () => {
     const defaultStart = startOfMonth(new Date())
     const defaultEnd = endOfMonth(new Date())
-    setTanggalAwal(defaultStart)
-    setTanggalAkhir(defaultEnd)
+    setTanggalAwal(null)
+    setTanggalAkhir(null)
     setStatusApproval('Semua')
     setJenisIzin('Semua')
     setSearchQuery('')
@@ -231,8 +231,8 @@ const PerizinanPegawaiList = () => {
     setIsFilterApplied(true)
 
     const baseFilters = {
-      startDate: format(defaultStart, 'yyyy-MM-dd'),
-      endDate: format(defaultEnd, 'yyyy-MM-dd'),
+      startDate: null,
+      endDate: null,
       statusApproval: 'Semua',
       jenisIzin: 'Semua',
       searchQuery: '',

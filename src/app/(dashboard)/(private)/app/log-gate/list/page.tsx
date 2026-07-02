@@ -65,6 +65,7 @@ const LogGateSantriList = () => {
   const [tanggalLog, setTanggalLog] = useState<Date | null>(new Date())
   const [filterStatus, setFilterStatus] = useState('Semua')
   const [searchQuery, setSearchQuery] = useState('')
+  const [messageScanGate, setMessageScanGate] = useState('')
 
   // Snapshot filter ter-submit untuk sinkronisasi pagination & export data
   const [currentFilters, setCurrentFilters] = useState<any>({
@@ -157,6 +158,8 @@ const LogGateSantriList = () => {
       // Refresh list data tabel & summary metrics ter-update hari ini
       executeFetchData(page, perPage, currentFilters)
     } catch (err: any) {
+      console.log(err)
+      setMessageScanGate(err?.message)
       // Jika token palsu / expired ditangkap rejected reducer, paksa buka modal result untuk render error state
       setOpenModalResult(true)
     }
@@ -165,6 +168,7 @@ const LogGateSantriList = () => {
   // Handler Trigger Tombol Akses "Scan Berikutnya"
   const handleScanNext = () => {
     setOpenModalResult(false)
+    setMessageScanGate('')
     dispatch(resetRedux())
     // Berikan delay timeout singkat agar siklus penutupan modal result selesai dengan smooth sebelum membuka camera
     setTimeout(() => {
@@ -413,7 +417,10 @@ const LogGateSantriList = () => {
               color='primary'
               fullWidth={isMobile}
               startIcon={<i className='tabler-qrcode' />}
-              onClick={() => setOpenModalScanQrCode(true)}
+              onClick={() => {
+                setOpenModalScanQrCode(true)
+                setMessageScanGate('')
+              }}
               sx={{ fontWeight: 600 }}
             >
               Scan QR Gate Keeper
@@ -620,15 +627,23 @@ const LogGateSantriList = () => {
                 Akses Ditolak
               </Typography>
               <Typography variant='body2' color='text.secondary'>
-                Token QR Code tidak memenuhi validasi administrasi pondok atau santri telah tercatat berada di dalam
-                komplek.
+                {messageScanGate ||
+                  'Token QR Code tidak memenuhi validasi administrasi pondok atau santri telah tercatat berada di dalam komplek.'}
               </Typography>
             </Box>
           )}
         </DialogContent>
 
         <DialogActions sx={{ p: 4, gap: 2 }}>
-          <Button onClick={() => setOpenModalResult(false)} variant='outlined' color='secondary' disabled={loading}>
+          <Button
+            onClick={() => {
+              setOpenModalResult(false)
+              setMessageScanGate('')
+            }}
+            variant='outlined'
+            color='secondary'
+            disabled={loading}
+          >
             Tutup Dialog
           </Button>
           <Button

@@ -15,6 +15,7 @@ import { fetchLocationPage } from '../../location/slice/index'
 // Form Builder Core Module Imports
 import { field, formColumn } from '@views/onevour/form/AppFormBuilder'
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog'
+import { format } from 'date-fns'
 
 const FormPerizinanSantriPage = () => {
   const router = useRouter()
@@ -137,8 +138,8 @@ const FormPerizinanSantriPage = () => {
       id_lokasi_kamar: state.id_lokasi_kamar.value,
       sumber_pengajuan: state.sumber_pengajuan?.value || 'Waliasuh',
       jenis_izin: state.jenis_izin?.value || 'Izin',
-      tanggal_mulai: state.tanggal_mulai,
-      tanggal_selesai: state.tanggal_selesai,
+      tanggal_mulai: state.tanggal_mulai ? format(state.tanggal_mulai, 'yyyy-MM-dd') : null,
+      tanggal_selesai: state.tanggal_selesai ? format(state.tanggal_selesai, 'yyyy-MM-dd') : null,
       alasan: state.alasan,
       file_izin: fileObject
     }

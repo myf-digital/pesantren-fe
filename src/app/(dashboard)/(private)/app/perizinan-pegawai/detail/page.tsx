@@ -925,7 +925,10 @@ const DetailPerizinanPegawaiPage = () => {
   const idIzin = searchParams.get('id')
   const isViewOnly = searchParams.get('view') === 'true'
 
-  const redirectBackUrl = '/app/perizinan-pegawai/kewaliasuhan'
+  const redirectBackUrl =
+    searchParams.get('from') == 'kedisiplinan'
+      ? '/app/perizinan-pegawai/kedisiplinan'
+      : '/app/perizinan-pegawai/kewaliasuhan'
 
   // State Utama
   const [data, setData] = useState<any>(null)
