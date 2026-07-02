@@ -129,7 +129,6 @@ const FormValidationBasic = () => {
   }
 
   useEffect(() => {
-    dispatch(fetchLembagaAll({}))
     dispatch(fetchJenisJamPelajaranAll({}))
 
     if (id) {

@@ -257,7 +257,7 @@ const Table = () => {
           tableColumn('OPTION', 'act-x', 'left', renderOption as any),
           tableColumn('GURU (NIP)', 'nama_guru'),
           tableColumn('MAPEL', 'nama_mapel'),
-          tableColumn('LEMBAGA', 'lembaga_formal'),
+          tableColumn('LEMBAGA', 'lembaga'),
           tableColumn('TINGKAT', 'tingkat'),
           tableColumn('KETERANGAN', 'keterangan'),
           tableColumn('TIPE', 'lembaga_type'),
@@ -269,7 +269,7 @@ const Table = () => {
             ...row,
             nama_guru: `${row?.pegawai?.nama_lengkap || ''} (${row?.pegawai?.nip || ''})`,
             nama_mapel: row?.mata_pelajaran?.nama_mapel,
-            lembaga_formal: row?.lembaga_formal?.nama_lembaga,
+            lembaga: row?.lembaga_formal ? row?.lembaga_formal?.nama_lembaga : row?.lembaga_kepesantrenan?.nama_lembaga,
             tingkat: row?.tingkat?.tingkat,
             lembaga_type: (
               <CustomChip
