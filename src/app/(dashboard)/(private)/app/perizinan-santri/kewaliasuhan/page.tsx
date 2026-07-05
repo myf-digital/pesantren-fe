@@ -575,16 +575,6 @@ const PerizinanSantriList = () => {
               Ajukan Izin
             </Button>
 
-            <Button
-              component={Link}
-              href={`/app/perizinan-santri/massal`}
-              variant='contained'
-              color='primary'
-              startIcon={<i className='tabler-file-plus' />}
-            >
-              Ajukan Izin
-            </Button>
-
             {/* Spacer murni untuk mendorong button export/import ke sisi kanan pada layar desktop */}
             {!isMobile && <Box sx={{ flexGrow: 1 }} />}
 
