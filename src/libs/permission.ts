@@ -69,8 +69,8 @@ export function normalizeAbility(abilities: AbilityItem[]) {
       (item.role_menu_import ? 16 : 0) +
       (item.role_menu_export ? 32 : 0)
     )
-    
-  return acc
+
+    return acc
   }, {})
 }
 
@@ -78,6 +78,6 @@ export function normalizeResource(path: string): string {
   return path
     .toLowerCase()
     .split('?')[0]
-    .replace(/\/(list|form|edit|detail|access|import)(\/.*)?$/, '')
+    .replace(/\/(list|form|edit|detail|access|import)[^\/]*(\/.*)?$/, '')
     .replace(/\/$/, '');
 }

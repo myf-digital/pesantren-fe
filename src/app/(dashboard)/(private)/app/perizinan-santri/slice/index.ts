@@ -259,6 +259,28 @@ export const postScanQrGate = createAsyncThunk(
   }
 )
 
+// [POST] Mengajukan Perizinan Massal Tingkat Cabang/Institusi secara Kolektif
+export const postPerizinanMassal = createAsyncThunk(
+  'perizinanSantri/postMassal',
+  async (
+    payload: {
+      id_cabang: string
+      jenis_izin: string
+      tanggal_mulai: string | null
+      tanggal_selesai: string | null
+      alasan: string
+    },
+    thunkAPI
+  ) => {
+    try {
+      const response = await api.post('/app/perizinan-santri/massal', payload)
+      return response.data // Respon: { status: true, message: "...", data: { total_santri: X } }
+    } catch (e: any) {
+      return thunkAPI.rejectWithValue(e.response?.data)
+    }
+  }
+)
+
 /* --------------------------
    4. Slice Definition
 --------------------------- */
@@ -360,6 +382,14 @@ export const perizinanSantriSlice = createSlice({
     builder.addCase(postScanQrGate.rejected, (state, action: any) => {
       state.scanResult = null
       // state.crud = { status: false, message: action.payload?.message || 'Proses pemindaian QR Code gagal.' }
+    })
+
+    // 11. Handle Response Pengajuan Perizinan Massal Cabang
+    builder.addCase(postPerizinanMassal.fulfilled, (state, action) => {
+      state.crud = { status: true, message: action.payload.message, data: action.payload.data }
+    })
+    builder.addCase(postPerizinanMassal.rejected, (state, action: any) => {
+      state.crud = { status: false, message: action.payload?.message || 'Gagal memproses perizinan massal cabang' }
     })
 
     // Matcher Global untuk mengelola status loading state secara terpusat

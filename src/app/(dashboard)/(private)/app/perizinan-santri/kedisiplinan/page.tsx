@@ -263,10 +263,10 @@ const PerizinanSantriTabsList = () => {
   const renderTanggalIzin = (row: any) => (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
       <Typography variant='body2' sx={{ fontWeight: 500 }}>
-        {row.tanggal_mulai ? format(new Date(row.tanggal_mulai), 'dd MMM yyyy') : '-'}
+        {row.tanggal_mulai ? format(new Date(row.tanggal_mulai), 'dd MMM yyyy HH:mm') : '-'}
       </Typography>
       <Typography variant='caption' color='text.secondary'>
-        s/d {row.tanggal_selesai ? format(new Date(row.tanggal_selesai), 'dd MMM yyyy') : '-'}
+        s/d {row.tanggal_selesai ? format(new Date(row.tanggal_selesai), 'dd MMM yyyy HH:mm') : '-'}
       </Typography>
     </Box>
   )
