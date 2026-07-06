@@ -322,9 +322,9 @@ const ItemForm = ({ temuanDetailsSelected, onAddTemuanDetail, onDeleteTemuanDeta
               return (
                 <Tag key={i} className='repeater-wrapper' {...(i !== 0 ? { in: true } : {})}>
                   <Grid container>
-                    <RepeatingContent item xs={12}>
+                    <RepeatingContent size={12}>
                       <Grid container sx={{ py: 4, width: '100%', pr: { lg: 0, xs: 4 } }}>
-                        <Grid item lg={12} md={12} xs={12} sx={{ px: 4, my: { lg: 0, xs: 4 } }}>
+                        <Grid size={12} sx={{ px: 4, my: { lg: 0, xs: 4 } }}>
                           {formColumn({
                             control: control,
                             errors: errors,

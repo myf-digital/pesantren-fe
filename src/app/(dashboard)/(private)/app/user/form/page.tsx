@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchUserById, postUser, postUserUpdate, resetRedux } from '../slice'
 import { fetchRoleAll } from '../../role/slice'
 import { fetchProvinces, fetchRegenciesByProvince } from '../../areas/slice'
+import { fetchPegawaiAll } from '../../guru-mata-pelajaran/slice'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
 
@@ -29,6 +30,7 @@ const UserForm = () => {
     roles: [],
     provinces: [],
     regencies: [],
+    pegawais: [],
     status: [
       { label: 'Belum Verifikasi', value: 'NV' },
       { label: 'Aktif', value: 'A' }
@@ -44,10 +46,11 @@ const UserForm = () => {
     date_of_birth: '',
     telepon: '',
     image_foto: '',
-    status: { label: 'Belum Verifikasi', value: 'NV' },
+    status: { label: 'Aktif', value: 'A' },
     role_id: null,
     province_id: null,
-    regency_id: null
+    regency_id: null,
+    id_eksternal: null
   })
 
   const {
@@ -71,15 +74,17 @@ const UserForm = () => {
 
   const initForm = useCallback(async () => {
     try {
-      const [resRole, resProv] = await Promise.all([
+      const [resRole, resProv, resPegawai] = await Promise.all([
         dispatch(fetchRoleAll()).unwrap(),
-        dispatch(fetchProvinces()).unwrap()
+        dispatch(fetchProvinces()).unwrap(),
+        dispatch(fetchPegawaiAll({})).unwrap()
       ])
 
       const roleOpts = (resRole?.data || []).map((i: any) => ({ label: i.role_name, value: i.role_id }))
       const provOpts = (resProv?.data || []).map((i: any) => ({ label: i.name, value: i.id }))
+      const pegawaiOpts = (resPegawai?.data || []).map((i: any) => ({ label: i.nama_lengkap, value: i.id_pegawai }))
 
-      setOpt((prev: any) => ({ ...prev, roles: roleOpts, provinces: provOpts }))
+      setOpt((prev: any) => ({ ...prev, roles: roleOpts, provinces: provOpts, pegawais: pegawaiOpts }))
 
       if (id) {
         const resDetail = await dispatch(fetchUserById(id)).unwrap()
@@ -90,12 +95,19 @@ const UserForm = () => {
             await loadRegencies(d.area_province_id)
           }
 
+          const matchedPegawai = (resPegawai?.data || []).find((p: any) => p.id_pegawai === d.id_eksternal)
+
           const formatted = {
             ...d,
             role_id: d.role ? { label: d.role.role_name, value: d.role.role_id } : null,
             province_id: d.province ? { label: d.province.name, value: d.province.id } : null,
             regency_id: d.regency ? { label: d.regency.name, value: d.regency.id } : null,
-            status: opt.status.find((o: any) => o.value === d.status) || { label: 'Belum Verifikasi', value: 'NV' },
+            id_eksternal: matchedPegawai
+              ? { label: matchedPegawai.nama_lengkap, value: matchedPegawai.id_pegawai }
+              : d.pegawai
+                ? { label: d.pegawai.nama_lengkap, value: d.pegawai.id_pegawai }
+                : null,
+            status: opt.status.find((o: any) => o.value === d.status) || { label: 'Aktif', value: 'A' },
             password: ''
           }
 
@@ -131,6 +143,7 @@ const UserForm = () => {
       role_id: state.role_id,
       province_id: state.province_id,
       regency_id: state.regency_id,
+      id_eksternal: state.id_eksternal?.value || null,
       status: state.status?.value || 'NV',
       date_of_birth: state.date_of_birth ? formatDate(new Date(state.date_of_birth), 'yyyy-MM-dd') : null
     }
@@ -139,7 +152,7 @@ const UserForm = () => {
   }
 
   const fields = () => [
-    { section: 'Informasi Akun' },
+    field({ type: 'separator', label: 'Informasi Akun' }),
     field({ type: 'text', key: 'username', label: 'Username', required: true, readOnly: !!view || !!id }),
     field({ type: 'text', key: 'email', label: 'Email', required: true, readOnly: !!view }),
     field({
@@ -151,13 +164,22 @@ const UserForm = () => {
       placeholder: id ? 'Kosongkan jika tidak ingin mengubah password' : 'Masukkan password baru'
     }),
 
-    { section: 'Informasi Pribadi' },
+    field({ type: 'separator', label: 'Informasi Pribadi' }),
     field({ type: 'text', key: 'full_name', label: 'Nama Lengkap', required: true, readOnly: !!view }),
-    field({ type: 'text', key: 'place_of_birth', label: 'Tempat Lahir', readOnly: !!view }),
-    field({ type: 'date_custom', key: 'date_of_birth', label: 'Tanggal Lahir', readOnly: !!view }),
     field({ type: 'text', key: 'telepon', label: 'No. Telepon / HP', required: true, readOnly: !!view }),
+    field({ type: 'text', key: 'place_of_birth', label: 'Tempat Lahir', readOnly: !!view }),
+    field({ type: 'date', key: 'date_of_birth', label: 'Tanggal Lahir', readOnly: !!view }),
 
-    { section: 'Hak Akses & Alamat' },
+    field({ type: 'separator', label: 'Hak Akses & Alamat' }),
+    field({
+      type: 'select',
+      key: 'id_eksternal',
+      label: 'Pegawai Terkait',
+      placeholder: 'Pilih Pegawai',
+      options: { values: opt.pegawais },
+      required: false,
+      readOnly: !!view
+    }),
     field({
       type: 'select',
       key: 'role_id',
@@ -191,19 +213,19 @@ const UserForm = () => {
       readOnly: !!view
     }),
     field({
-      type: 'select',
-      key: 'regency_id',
-      label: 'Kabupaten/Kota',
-      options: { values: opt.regencies },
-      readOnly: !state.province_id || !!view
-    }),
-    field({
       type: 'image',
       key: 'image_foto',
       label: 'Foto Profil',
       placeholder: 'Foto',
       urlImage: '/uploads/resource/',
       readOnly: !!view
+    }),
+    field({
+      type: 'select',
+      key: 'regency_id',
+      label: 'Kabupaten/Kota',
+      options: { values: opt.regencies },
+      readOnly: !state.province_id || !!view
     }),
 
     fieldBuildSubmit({ onCancel: () => router.push('/app/user/list'), loading: store.loading, disabled: !!view })
