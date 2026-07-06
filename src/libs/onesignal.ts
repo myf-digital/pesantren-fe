@@ -3,7 +3,14 @@ import OneSignal from 'react-onesignal'
 let initialized = false
 
 export async function initOneSignal(): Promise<void> {
-  if (typeof window === 'undefined' || initialized) return
+  if (typeof window === 'undefined') return
+
+  if (window.Notification && window.Notification.permission === 'denied') {
+    console.warn('⚠️ OneSignal initialization skipped: Notification permission is denied.')
+    return
+  }
+
+  if (initialized) return
 
   try {
     await OneSignal.init({
@@ -43,6 +50,11 @@ export async function initOneSignal(): Promise<void> {
 export async function loginOneSignal(externalId: string, retryCount = 0): Promise<void> {
   if (typeof window === 'undefined' || !externalId) return
 
+  if (window.Notification && window.Notification.permission === 'denied') {
+    console.warn('⚠️ OneSignal login skipped: Notification permission is denied.')
+    return
+  }
+
   if (!initialized) {
     console.warn('⚠️ OneSignal is not initialized yet. Retrying login in 500ms...')
     setTimeout(() => loginOneSignal(externalId, retryCount), 500)
@@ -75,6 +87,11 @@ export async function loginOneSignal(externalId: string, retryCount = 0): Promis
 
 export async function requestNotificationPermission(): Promise<void> {
   try {
+    if (typeof window !== 'undefined' && window.Notification && window.Notification.permission === 'denied') {
+      console.warn('⚠️ OneSignal request permission skipped: Notification permission is denied.')
+      return
+    }
+
     const permission = OneSignal.Notifications.permission
 
     if (!permission) {

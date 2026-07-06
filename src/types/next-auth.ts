@@ -10,6 +10,7 @@ declare module "next-auth" {
       full_name?: string
       email?: string
       role_name?: string
+      pegawai?: any
     } & DefaultSession["user"]
   }
 
@@ -21,6 +22,7 @@ declare module "next-auth" {
       full_name?: string
       email?: string
       role_name?: string
+      pegawai?: any
     }
   }
 }
@@ -34,6 +36,7 @@ declare module "next-auth/jwt" {
       full_name?: string
       email?: string
       role_name?: string
+      pegawai?: any
     }
   }
 }

@@ -91,14 +91,14 @@ export default function GetLocation({ result, active, locations, selected, back 
     <Grid container spacing={2}>
       {active && (
         <Fragment>
-          <Grid item size={12}>
+          <Grid size={12}>
             <h4>Lokasi Anda :</h4>
             <h4>Lat : {state?.latitude}</h4>
             <h4>Lng : {state?.longitude}</h4>
             <h4 className='mt-1'>Radius Valid : 50 m</h4>
             <h4>Jarak Anda : {jarak} m</h4>
           </Grid>
-          <Grid item size={12}>
+          <Grid size={12}>
             {formSingleColumn({
               control: control,
               errors: errors,
@@ -121,7 +121,7 @@ export default function GetLocation({ result, active, locations, selected, back 
               })
             })}
           </Grid>
-          <Grid item size={12}>
+          <Grid size={12}>
             {error && (
               <Fragment>
                 <h4 className='mb-3'>{error}</h4>
@@ -131,7 +131,7 @@ export default function GetLocation({ result, active, locations, selected, back 
               </Fragment>
             )}
           </Grid>
-          <Grid item size={12} className='flex justify-between'>
+          <Grid size={12} className='flex justify-between'>
             {error ? (
               <Button
                 size='small'

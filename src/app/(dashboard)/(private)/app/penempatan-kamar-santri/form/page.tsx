@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 // ** React Imports
 import React, { useCallback, useEffect, useState } from 'react'
@@ -17,7 +17,12 @@ import { useForm } from 'react-hook-form'
 import Grid from '@mui/material/Grid2'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
-import { fetchPenempatanKamarSantriById, postPenempatanKamarSantri, postPenempatanKamarSantriUpdate, resetRedux } from '../slice/index'
+import {
+  fetchPenempatanKamarSantriById,
+  postPenempatanKamarSantri,
+  postPenempatanKamarSantriUpdate,
+  resetRedux
+} from '../slice/index'
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchSantriAll } from '../../santri/slice'
 import { fetchLocationAll } from '../../location/slice'
@@ -57,19 +62,19 @@ const FormValidationBasic = () => {
     status: {
       value: string
       label: string
-    },
+    }
     id_santri: {
       value: string
       label: string
-    },
+    }
     id_lokasi: {
       value: string
       label: string
-    },
+    }
     id_tahunajaran: {
       value: string
       label: string
-    },
+    }
   }
 
   const defaultValues = {
@@ -91,7 +96,7 @@ const FormValidationBasic = () => {
     id_tahunajaran: {
       value: '',
       label: ''
-    },
+    }
   }
 
   const [state, setState] = useState<FormData>(defaultValues)
@@ -102,7 +107,7 @@ const FormValidationBasic = () => {
     handleSubmit,
     formState: { errors },
     reset
-  } = useForm({defaultValues})
+  } = useForm({ defaultValues })
 
   const onCancel = useCallback(() => {
     dispatch(resetRedux())
@@ -110,9 +115,9 @@ const FormValidationBasic = () => {
   }, [dispatch, router])
 
   useEffect(() => {
-    dispatch(fetchSantriAll({status: '1'}))
-    dispatch(fetchLocationAll({jenis_lokasi: 'Kamar'}))
-    dispatch(fetchTahunAjaranAll({status: 'Aktif'}))
+    dispatch(fetchSantriAll({ status: '1' }))
+    dispatch(fetchLocationAll({ jenis_lokasi: 'Kamar' }))
+    dispatch(fetchTahunAjaranAll({ status: 'Aktif' }))
 
     if (id) {
       dispatch(fetchPenempatanKamarSantriById(id)).then(res => {
@@ -170,7 +175,7 @@ const FormValidationBasic = () => {
       status: state.status.value || null,
       tanggal_masuk: state.tanggal_masuk || null,
       tanggal_keluar: state.tanggal_keluar || null,
-      keterangan: state.keterangan || null,
+      keterangan: state.keterangan || null
     }
 
     if (id) {
@@ -182,9 +187,7 @@ const FormValidationBasic = () => {
         })
       )
     } else {
-      dispatch(
-        postPenempatanKamarSantri(payload)
-      )
+      dispatch(postPenempatanKamarSantri(payload))
     }
   }
 
@@ -200,11 +203,11 @@ const FormValidationBasic = () => {
         options: {
           values: storeSantri.datas.map(m => {
             return {
-              label: m.fullname,
+              label: `${m.fullname} (NIS: ${m.nis})`,
               value: m.id_santri
             }
-          }),
-        },
+          })
+        }
       }),
       field({
         type: 'select',
@@ -219,8 +222,8 @@ const FormValidationBasic = () => {
               label: m.nama_lokasi,
               value: m.id_lokasi
             }
-          }),
-        },
+          })
+        }
       }),
       field({
         type: 'select',
@@ -235,8 +238,8 @@ const FormValidationBasic = () => {
               label: m.tahun_ajaran,
               value: m.id_tahunajaran
             }
-          }),
-        },
+          })
+        }
       }),
       field({
         type: 'select',
@@ -255,7 +258,7 @@ const FormValidationBasic = () => {
         required: false,
         readOnly: Boolean(view)
       }),
-      field({ 
+      field({
         type: 'date_custom',
         key: 'tanggal_keluar',
         label: 'Keluar',

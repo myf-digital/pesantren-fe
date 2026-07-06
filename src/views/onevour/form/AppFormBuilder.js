@@ -726,7 +726,7 @@ export function formColumnDetailField(form) {
             store[props.key] = image
             session.setState(store)
           }}
-          gridProps={{ sm: 4, md: 2, xs: 12 }}
+          gridProps={{ size: { sm: 4, md: 2, xs: 12 } }}
           ref={props.ref}
         />
       </Grid>
@@ -753,7 +753,7 @@ export function formColumnDetailField(form) {
           handleClear={() => {
             updateValueText(session, props, { target: { value: '' } })
           }}
-          gridProps={{ sm: 4, md: 2, xs: 12 }}
+          gridProps={{ size: { sm: 4, md: 2, xs: 12 } }}
           selected={valueFile}
           url={props?.urlImage}
           accept={props?.accept}
@@ -778,7 +778,7 @@ export function formColumnDetailField(form) {
         <MapGoogle
           key={index}
           selected={valueMap}
-          gridProps={{ sm: 4, md: 2, xs: 12 }}
+          gridProps={{ size: { sm: 4, md: 2, xs: 12 } }}
           handleChange={data => {
             if (typeof props?.options?.onChange === 'function') {
               props?.options?.onChange(data)
@@ -916,7 +916,7 @@ const formColumnDetailSingleField = form => {
             store[props.key] = image
             session.setState(store)
           }}
-          gridProps={{ sm: 4, md: 2, xs: 12 }}
+          gridProps={{ size: { sm: 4, md: 2, xs: 12 } }}
           ref={props.ref}
         />
       </Grid>

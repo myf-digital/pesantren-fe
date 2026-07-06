@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 
 import { useSearchParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
@@ -64,12 +65,21 @@ const RaporSantriForm = () => {
   const id = searchParams.get('id')
   const view = searchParams.get('view')
 
+  const { data: session } = useSession()
+  const roleName = session?.userdata?.role_name
+
+  const isAdministrator = roleName == 'administrator'
+  const isAdminPendidikan = roleName == 'admin_pendidikan'
+  const isAdminFormal = roleName == 'admin_formal'
+  const isAdminFormalMda = roleName == 'admin_mda'
+
+  const showFileRapot = isAdministrator || isAdminPendidikan || isAdminFormal
+  const showFileRapotMda = isAdministrator || isAdminPendidikan || isAdminFormalMda
+
   const dispatch = useAppDispatch()
 
   const store = useAppSelector(state => state.rapot_santri)
   const storeSantri = useAppSelector(state => state.santri)
-  const storeTahunAjaran = useAppSelector(state => state.tahun_ajaran)
-  const storeSemester = useAppSelector(state => state.semester)
 
   const [state, setState] = useState<any>(defaultValues)
   const [fileObject, setFileObject] = useState<File | null>(null)
@@ -212,11 +222,27 @@ const RaporSantriForm = () => {
       return
     }
 
-    if (!id && !fileObject) {
-      toast.error('File Rapor wajib diunggah')
-      setLoading(false)
+    if (!id) {
+      if (showFileRapot && !showFileRapotMda && !fileObject) {
+        toast.error('File Rapor Kelas Formal wajib diunggah')
+        setLoading(false)
 
-      return
+        return
+      }
+
+      if (!showFileRapot && showFileRapotMda && !fileObjectMda) {
+        toast.error('File Rapor Kelas MDA wajib diunggah')
+        setLoading(false)
+
+        return
+      }
+
+      if (showFileRapot && showFileRapotMda && !fileObject && !fileObjectMda) {
+        toast.error('File Rapor wajib diunggah (Formal atau MDA)')
+        setLoading(false)
+
+        return
+      }
     }
 
     const file_delete: string[] = []
@@ -265,7 +291,7 @@ const RaporSantriForm = () => {
         readOnly: Boolean(view),
         options: {
           values: (storeSantri.datas || []).map(m => ({
-            label: m.fullname,
+            label: `${m.fullname} (NIS: ${m.nis})`,
             value: m.id_santri
           }))
         }
@@ -295,58 +321,68 @@ const RaporSantriForm = () => {
         required: true,
         readOnly: Boolean(view),
         options: statusOption
-      }),
-      field({
-        type: 'file',
-        key: 'file_rapot',
-        label: 'Rapor Kelas Formal (PDF)',
-        required: false,
-        readOnly: Boolean(view),
-        accept: 'application/pdf',
-        helperText: 'Hanya mendukung file PDF (maks. 10MB)',
-        options: {
-          onChange: (file: File) => {
-            setFileObject(file)
-            setState((prev: any) => ({
-              ...prev,
-              file_rapot: file.name
-            }))
-          }
-        },
-        urlImage: fileObject
-          ? URL.createObjectURL(fileObject)
-          : state.file_rapot && typeof state.file_rapot === 'string'
-            ? state.file_rapot.startsWith('http')
-              ? state.file_rapot
-              : `${process.env.NEXT_PUBLIC_API_URL || ''}${state.file_rapot.startsWith('/') ? '' : '/'}${state.file_rapot}`
-            : ''
-      }),
-      field({
-        type: 'file',
-        key: 'file_rapot_mda',
-        label: 'Rapor Kelas MDA (PDF)',
-        required: false,
-        readOnly: Boolean(view),
-        accept: 'application/pdf',
-        helperText: 'Hanya mendukung file PDF (maks. 10MB)',
-        options: {
-          onChange: (file: File) => {
-            setFileObjectMda(file)
-            setState((prev: any) => ({
-              ...prev,
-              file_rapot_mda: file.name
-            }))
-          }
-        },
-        urlImage: fileObjectMda
-          ? URL.createObjectURL(fileObjectMda)
-          : state.file_rapot_mda && typeof state.file_rapot_mda === 'string'
-            ? state.file_rapot_mda.startsWith('http')
-              ? state.file_rapot_mda
-              : `${process.env.NEXT_PUBLIC_API_URL || ''}${state.file_rapot_mda.startsWith('/') ? '' : '/'}${state.file_rapot_mda}`
-            : ''
       })
     ]
+
+    if (showFileRapot) {
+      list.push(
+        field({
+          type: 'file',
+          key: 'file_rapot',
+          label: 'Rapor Kelas Formal (PDF)',
+          required: showFileRapot && !showFileRapotMda,
+          readOnly: Boolean(view),
+          accept: 'application/pdf',
+          helperText: 'Hanya mendukung file PDF (maks. 10MB)',
+          options: {
+            onChange: (file: File) => {
+              setFileObject(file)
+              setState((prev: any) => ({
+                ...prev,
+                file_rapot: file.name
+              }))
+            }
+          },
+          urlImage: fileObject
+            ? URL.createObjectURL(fileObject)
+            : state.file_rapot && typeof state.file_rapot === 'string'
+              ? state.file_rapot.startsWith('http')
+                ? state.file_rapot
+                : `${process.env.NEXT_PUBLIC_API_URL || ''}${state.file_rapot.startsWith('/') ? '' : '/'}${state.file_rapot}`
+              : ''
+        })
+      )
+    }
+
+    if (showFileRapotMda) {
+      list.push(
+        field({
+          type: 'file',
+          key: 'file_rapot_mda',
+          label: 'Rapor Kelas MDA (PDF)',
+          required: showFileRapotMda && !showFileRapot,
+          readOnly: Boolean(view),
+          accept: 'application/pdf',
+          helperText: 'Hanya mendukung file PDF (maks. 10MB)',
+          options: {
+            onChange: (file: File) => {
+              setFileObjectMda(file)
+              setState((prev: any) => ({
+                ...prev,
+                file_rapot_mda: file.name
+              }))
+            }
+          },
+          urlImage: fileObjectMda
+            ? URL.createObjectURL(fileObjectMda)
+            : state.file_rapot_mda && typeof state.file_rapot_mda === 'string'
+              ? state.file_rapot_mda.startsWith('http')
+                ? state.file_rapot_mda
+                : `${process.env.NEXT_PUBLIC_API_URL || ''}${state.file_rapot_mda.startsWith('/') ? '' : '/'}${state.file_rapot_mda}`
+              : ''
+        })
+      )
+    }
 
     list.push(fieldBuildSubmit({ onCancel, loading, disabled: Boolean(view) }))
 

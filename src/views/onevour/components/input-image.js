@@ -9,7 +9,24 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 
 const InputImage = props => {
-  const { data, selected, gridProps, handleChange, className, color = 'primary' } = props
+  const { data, selected, gridProps = {}, handleChange, className, color = 'primary' } = props
+
+  // Handle legacy gridProps layout (xs, sm, md, lg, xl) and item prop for Grid2
+  const finalGridProps = { ...gridProps }
+  delete finalGridProps.item
+
+  const sizeObj = {}
+  const layoutKeys = ['xs', 'sm', 'md', 'lg', 'xl']
+  layoutKeys.forEach(key => {
+    if (key in finalGridProps) {
+      sizeObj[key] = finalGridProps[key]
+      delete finalGridProps[key]
+    }
+  })
+
+  if (Object.keys(sizeObj).length > 0) {
+    finalGridProps.size = { ...finalGridProps.size, ...sizeObj }
+  }
 
   const { alt, img, value } = data
 
@@ -178,7 +195,7 @@ const InputImage = props => {
 
   return (
     <>
-      <Grid item {...gridProps} className={className}>
+      <Grid {...finalGridProps} className={className}>
         <Box
           onClick={() => setOpenSourceDialog(true)}
           sx={{

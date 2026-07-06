@@ -18,7 +18,12 @@ import { fetchSantriAll } from '../../santri/slice'
 import { fetchTahunAjaranAll } from '../../tahun-ajaran/slice'
 import { fetchKelasMdaAll } from '../../kelas-mda/slice'
 import { fetchKelasFormalAll } from '../../kelas-formal/slice'
-import { fetchPenempatanKelasSantriById, postPenempatanKelasSantri, postPenempatanKelasSantriUpdate, resetRedux } from '../slice'
+import {
+  fetchPenempatanKelasSantriById,
+  postPenempatanKelasSantri,
+  postPenempatanKelasSantriUpdate,
+  resetRedux
+} from '../slice'
 
 const statusOption = {
   values: [
@@ -197,7 +202,7 @@ const PenempatanKelasSantriForm = () => {
         readOnly: Boolean(view),
         options: {
           values: (storeSantri.datas || []).map(m => ({
-            label: m.fullname,
+            label: `${m.fullname} (NIS: ${m.nis})`,
             value: m.id_santri
           }))
         }
