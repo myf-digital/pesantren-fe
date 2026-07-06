@@ -64,7 +64,7 @@ const RowAction = ({
 
   // Aturan Visibilitas Tombol Berdasarkan Spesifikasi Role & Status Pegawai
   const isPegawaiOrAdmin = ['pegawai', 'administrator'].includes(currentUserRole)
-  const isKedisiplinan = ['petugas_kedisiplinan', 'administrator'].includes(currentUserRole)
+  const isKedisiplinan = ['pegawai_kedisiplinan', 'administrator'].includes(currentUserRole)
   const isStatusMenunggu = row.status_approval === 'Menunggu' && !row.is_canceled
   const isStatusRequestCanceled = row.is_request_canceled && !row.is_canceled
 
@@ -111,7 +111,7 @@ const PerizinanPegawaiList = () => {
   const { data: session } = useSession()
   const currentUser: any = session?.userdata
 
-  const userRole = currentUser?.role_name || 'pegawai_kedisiplinan' // Default fallback
+  const userRole = currentUser?.role_name || '' // Default fallback
 
   // Hooks Otorisasi Multi-Aksi Konten Vuexy khusus pegawai
   const canImport = useCan('import')

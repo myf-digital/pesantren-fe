@@ -49,7 +49,7 @@ const RowAction = ({ row, currentUserRole }: { row: any; currentUserRole: string
 
   // Aturan Visibilitas Tombol Berdasarkan Spesifikasi Role & Status Kepegawaian
   const isManajemenAtasan = ['atasan_langsung', 'direksi', 'administrator', 'manajemen_hrd'].includes(currentUserRole)
-  const isHrdStaff = ['staff_hrd', 'manajemen_hrd', 'administrator'].includes(currentUserRole)
+  const isKedisipliaStaff = ['pegawai_kedisiplinan', 'administrator'].includes(currentUserRole)
   const isStatusMenunggu = row.status_approval === 'Menunggu' && !row.is_canceled
   const isStatusRequestCanceled = row.is_request_canceled && !row.is_canceled
 
@@ -70,14 +70,14 @@ const RowAction = ({ row, currentUserRole }: { row: any; currentUserRole: string
         )}
 
         {/* Tombol Proses Pengajuan: Aktif untuk divisi kepegawaian atau hrd pada status pending */}
-        {isHrdStaff && (isStatusMenunggu || isStatusRequestCanceled) && (
+        {isKedisipliaStaff && (isStatusMenunggu || isStatusRequestCanceled) && (
           <MenuItem component={Link} href={`/app/perizinan-pegawai/detail?id=${row.id_izin}&from=manajemen-hrd`}>
             <i className='tabler-gavel' style={{ marginRight: 8 }} /> Proses Izin
           </MenuItem>
         )}
 
         {/* Cadangan fallback view reguler jika role diluar spesifikasi diatas */}
-        {!isManajemenAtasan && !isHrdStaff && (
+        {!isManajemenAtasan && !isKedisipliaStaff && (
           <MenuItem
             component={Link}
             href={`/app/perizinan-pegawai/detail?id=${row.id_izin}&view=true&from=manajemen-hrd`}
