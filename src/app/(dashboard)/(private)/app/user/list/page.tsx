@@ -22,13 +22,17 @@ import {
   Avatar,
   useTheme,
   useMediaQuery,
-  Tooltip
+  Tooltip,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material'
 
 import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { deleteUser, fetchUserPage, resetRedux } from '../slice/index'
+import { fetchRoleAll } from '../../role/slice'
 
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
@@ -110,16 +114,22 @@ const UserList = () => {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.user)
+  const storeRole = useAppSelector(state => state.role)
 
   const canCreate = useCan('create')
 
   const [filter, setFilter] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
 
   const fetchData = useCallback(() => {
-    dispatch(fetchUserPage({ page, perPage, keyword: filter }))
-  }, [dispatch, page, perPage, filter])
+    dispatch(fetchUserPage({ page, perPage, keyword: filter, role: roleFilter }))
+  }, [dispatch, page, perPage, filter, roleFilter])
+
+  useEffect(() => {
+    dispatch(fetchRoleAll())
+  }, [dispatch])
 
   useEffect(() => {
     const timer = setTimeout(fetchData, 500)
@@ -239,6 +249,41 @@ const UserList = () => {
               </Tooltip>
             )}
             <Typography sx={{ flex: '1 1 auto' }} />
+            <FormControl size='small' sx={{ minWidth: 200 }}>
+              <InputLabel id='role-select-label'>Role</InputLabel>
+              <Select
+                labelId='role-select-label'
+                id='role-select'
+                value={roleFilter}
+                label='Role'
+                onChange={e => {
+                  setRoleFilter(e.target.value)
+                  setPage(1)
+                }}
+                endAdornment={
+                  roleFilter ? (
+                    <IconButton
+                      size='small'
+                      onClick={e => {
+                        e.stopPropagation()
+                        setRoleFilter('')
+                        setPage(1)
+                      }}
+                      sx={{ position: 'absolute', right: 24, zIndex: 1 }}
+                    >
+                      <i className='tabler-x' style={{ fontSize: '1.1rem' }} />
+                    </IconButton>
+                  ) : null
+                }
+              >
+                <MenuItem value=''>Semua Role</MenuItem>
+                {(storeRole.datas || []).map((r: any) => (
+                  <MenuItem key={r.role_id} value={r.role_name}>
+                    {r.role_name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <TextField
               size='small'
               placeholder='Cari Nama, Username, atau Email...'
