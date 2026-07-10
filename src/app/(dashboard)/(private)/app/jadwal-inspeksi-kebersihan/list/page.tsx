@@ -362,11 +362,9 @@ const Table = () => {
         page: page,
         fields: [
           tableColumn('OPTION', 'act-x', 'left', renderOption as any),
-          tableColumn('CABANG', 'cabang'),
-          tableColumn('HARI', 'hari_custom'),
-          tableColumn('SLOT', 'kode_slot'),
-          tableColumn('JAM', 'jam'),
           tableColumn('PETUGAS', 'petugas'),
+          tableColumn('CABANG', 'cabang'),
+          tableColumn('JADWAL', 'jadwal_custom'),
           tableColumn('STATUS', 'status_custom'),
           tableColumn('KETERANGAN', 'keterangan'),
           tableColumn('TERAKHIR DIUBAH', 'updated_at')
@@ -375,11 +373,19 @@ const Table = () => {
           return {
             ...row,
             cabang: row.cabang?.nama_cabang || '',
-            hari_custom: harisObj.find(r => r.value === row.hari)?.label,
-            slot: row.master_slot_waktu?.kode_slot || '',
-            jam: row.master_slot_waktu
-              ? `${row.master_slot_waktu.jam_mulai?.slice(0, -3) || ''} - ${row.master_slot_waktu.jam_selesai?.slice(0, -3) || ''}`
-              : '',
+            jadwal_custom: (
+              <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
+                {[...(row.haris || [row.hari])]
+                  .sort((a: number, b: number) => a - b)
+                  ?.map((h: number) => {
+                    const dayLabel = harisObj.find(r => r.value === h)?.label || ''
+                    const slotText = row.master_slot_waktu
+                      ? ` (${row.master_slot_waktu.kode_slot} ${row.master_slot_waktu.jam_mulai?.slice(0, -3)} - ${row.master_slot_waktu.jam_selesai?.slice(0, -3)})`
+                      : ''
+                    return <li key={h}>{`${dayLabel}${slotText}`}</li>
+                  })}
+              </ul>
+            ),
             petugas: row.pegawai?.nama_lengkap || '',
             status_custom: (
               <CustomChip

@@ -1471,7 +1471,7 @@ const selectMultiField = form => {
     <Controller
       control={control}
       name={props.key}
-      value={selected ?? []}
+      value={Array.isArray(selected) ? selected : (selected ? [selected] : [])}
       defaultValue={[]}
       rules={{
         validate: value => {
@@ -1489,7 +1489,7 @@ const selectMultiField = form => {
             multiple
             autoHighlight
             filterSelectedOptions
-            value={value ?? []}
+            value={Array.isArray(value) ? value : (value ? [value] : [])}
             defaultValue={[]}
             getOptionLabel={option => {
               return option.label || ''

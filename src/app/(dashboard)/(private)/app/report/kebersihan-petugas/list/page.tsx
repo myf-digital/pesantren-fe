@@ -9,14 +9,14 @@ import Grid from '@mui/material/Grid2'
 import Card from '@mui/material/Card'
 
 import CardHeader from '@mui/material/CardHeader'
-import { TextField, Toolbar } from '@mui/material'
+import { Box, TextField, Toolbar } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 
 import { toast } from 'react-toastify'
 
-import { format, startOfWeek } from 'date-fns'
+import { format, startOfMonth } from 'date-fns'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchKebersihanPetugasPage, postExportPetugas } from '../../../kebersihan-inspeksi/slice/index'
@@ -56,7 +56,7 @@ const TableKebersihanPetugas = () => {
 
   // State Filter Utama UI
   const [tanggalAwal, setTanggalAwal] = useState<Date | null>(
-    initialTanggalMulai ? new Date(initialTanggalMulai) : startOfWeek(new Date(), { weekStartsOn: 1 })
+    initialTanggalMulai ? new Date(initialTanggalMulai) : startOfMonth(new Date())
   )
 
   const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(
@@ -149,7 +149,7 @@ const TableKebersihanPetugas = () => {
   }
 
   const handleResetFilter = () => {
-    const defaultTanggalAwal = startOfWeek(new Date(), { weekStartsOn: 1 })
+    const defaultTanggalAwal = startOfMonth(new Date())
     const defaultTanggalAkhir = new Date()
 
     setTanggalAwal(defaultTanggalAwal)
@@ -183,11 +183,43 @@ const TableKebersihanPetugas = () => {
           tableColumn('JADWAL', 'total_jadwal'),
           tableColumn('INSPEKSI', 'inspeksi'),
           tableColumn('TIDAK INSPEKSI', 'tidak_inspeksi'),
-          tableColumn('TEMUAN', 'total_temuan')
+          tableColumn('TEMUAN', 'total_temuan'),
+          tableColumn('PROGRES', 'progres_custom')
         ],
         values: values?.map((row: any) => {
+          const target = Number(row.total_jadwal) || 0
+          const actual = Number(row.inspeksi) || 0
+          const percentage = target > 0 ? Math.min((actual / target) * 100, 100) : 0
+
           return {
-            ...row
+            ...row,
+            progres_custom: (
+              <Box sx={{ display: 'flex', flexDirection: 'column', width: '120px' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant='body2' sx={{ fontWeight: 500, fontSize: '0.75rem' }}>
+                    {`${actual} / ${target}`}
+                  </Typography>
+                  <Typography variant='body2' sx={{ fontWeight: 500, fontSize: '0.75rem' }}>
+                    {`${Math.round(percentage)}%`}
+                  </Typography>
+                </Box>
+                <Box sx={{
+                  width: '100%',
+                  height: '8px',
+                  backgroundColor: '#FF6B00',
+                  borderRadius: '4px',
+                  overflow: 'hidden',
+                  position: 'relative'
+                }}>
+                  <Box sx={{
+                    width: `${percentage}%`,
+                    height: '100%',
+                    backgroundColor: '#0066FF',
+                    transition: 'width 0.3s ease'
+                  }} />
+                </Box>
+              </Box>
+            )
           }
         }),
         count: total,

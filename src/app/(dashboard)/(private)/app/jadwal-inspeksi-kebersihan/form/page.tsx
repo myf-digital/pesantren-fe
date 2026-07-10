@@ -89,7 +89,7 @@ const FormValidationBasic = () => {
     hari: {
       label: string
       value: number
-    } | null
+    }[]
     is_active: boolean
   }
 
@@ -97,7 +97,7 @@ const FormValidationBasic = () => {
     id_cabang: null,
     id_petugas: null,
     kode_slot: null,
-    hari: null,
+    hari: [],
     keterangan: '',
     is_active: false
   }
@@ -133,18 +133,19 @@ const FormValidationBasic = () => {
         const datas = { ...res?.payload?.data }
 
         if (datas) {
-          datas.hari = harisOption.values.find(r => r.value === datas.hari)
+          const dayList = Array.isArray(datas.hari) ? datas.hari : [datas.hari]
+          datas.hari = harisOption.values.filter(r => dayList.includes(r.value))
           datas.id_cabang = {
-            value: datas.cabang.id_cabang,
-            label: datas.cabang.nama_cabang
+            value: datas.cabang?.id_cabang,
+            label: datas.cabang?.nama_cabang
           }
           datas.kode_slot = {
-            value: datas.master_slot_waktu.kode_slot,
-            label: datas.master_slot_waktu.kode_slot
+            value: datas.master_slot_waktu?.kode_slot,
+            label: datas.master_slot_waktu?.kode_slot
           }
           datas.id_petugas = {
-            value: datas.pegawai.id_pegawai,
-            label: datas.pegawai.nama_lengkap
+            value: datas.pegawai?.id_pegawai,
+            label: datas.pegawai?.nama_lengkap
           }
 
           setState(datas)
@@ -171,20 +172,22 @@ const FormValidationBasic = () => {
     if (loading) return
     setLoading(true)
 
+    const payload = {
+      ...state,
+      hari: Array.isArray(state.hari) ? state.hari.map(h => h.value) : []
+    }
+
     if (id) {
       // update
       dispatch(
         postJadwalInspeksiKebersihanUpdate({
           id: id,
-          params: { ...state, hari: state.hari?.value }
+          params: payload
         })
       )
     } else {
       dispatch(
-        postJadwalInspeksiKebersihan({
-          ...state,
-          hari: state.hari?.value
-        })
+        postJadwalInspeksiKebersihan(payload)
       )
     }
   }
@@ -208,7 +211,7 @@ const FormValidationBasic = () => {
         readOnly: Boolean(view)
       }),
       field({
-        type: 'select',
+        type: 'select-multi',
         key: 'hari',
         label: 'Hari',
         placeholder: 'Pilih Hari',

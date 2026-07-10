@@ -48,8 +48,8 @@ const ScrollRow = ({ children }: { children: React.ReactNode }) => (
 
 const CRMCard = ({
   title,
-  subtitle,
   stats,
+  subtitle,
   avatarColor,
   avatarIcon,
   avatarSkin,
@@ -57,7 +57,8 @@ const CRMCard = ({
   chipText,
   chipColor,
   chipVariant,
-  href
+  href,
+  progressBar
 }: any) => {
   const CardWrapper = href ? Link : 'div'
 
@@ -66,7 +67,8 @@ const CRMCard = ({
       component={CardWrapper as any}
       href={href}
       sx={{
-        display: 'block',
+        display: 'flex',
+        flexDirection: 'column',
         textDecoration: 'none',
         color: 'inherit',
         height: '100%',
@@ -126,6 +128,33 @@ const CRMCard = ({
               />
             )}
           </Box>
+          {progressBar && (
+            <Box sx={{ width: '100%', mt: 1.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                <Typography sx={{ fontWeight: 500, fontSize: '9px' }}>
+                  {`${progressBar.actual} / ${progressBar.target}`}
+                </Typography>
+                <Typography sx={{ fontWeight: 500, fontSize: '9px' }}>
+                  {`${Math.round(progressBar.target > 0 ? Math.min((progressBar.actual / progressBar.target) * 100, 100) : 0)}%`}
+                </Typography>
+              </Box>
+              <Box sx={{
+                width: '100%',
+                height: '6px',
+                backgroundColor: '#FF6B00',
+                borderRadius: '3px',
+                overflow: 'hidden',
+                position: 'relative'
+              }}>
+                <Box sx={{
+                  width: `${progressBar.target > 0 ? Math.min((progressBar.actual / progressBar.target) * 100, 100) : 0}%`,
+                  height: '100%',
+                  backgroundColor: '#0066FF',
+                  transition: 'width 0.3s ease'
+                }} />
+              </Box>
+            </Box>
+          )}
         </Box>
       </Box>
 
@@ -134,7 +163,7 @@ const CRMCard = ({
           display: { xs: 'none', sm: 'flex' },
           flexDirection: 'column',
           justifyContent: 'space-between',
-          height: '100%'
+          flexGrow: 1
         }}
       >
         <CardContent
@@ -153,6 +182,33 @@ const CRMCard = ({
             <Typography color='text.primary' variant='h4' sx={{ fontWeight: 600, mt: 1 }}>
               {stats}
             </Typography>
+            {progressBar && (
+              <Box sx={{ width: '100%', mt: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant='body2' sx={{ fontWeight: 500, fontSize: '0.75rem' }}>
+                    {`${progressBar.actual} / ${progressBar.target}`}
+                  </Typography>
+                  <Typography variant='body2' sx={{ fontWeight: 500, fontSize: '0.75rem' }}>
+                    {`${Math.round(progressBar.target > 0 ? Math.min((progressBar.actual / progressBar.target) * 100, 100) : 0)}%`}
+                  </Typography>
+                </Box>
+                <Box sx={{
+                  width: '100%',
+                  height: '8px',
+                  backgroundColor: '#FF6B00',
+                  borderRadius: '4px',
+                  overflow: 'hidden',
+                  position: 'relative'
+                }}>
+                  <Box sx={{
+                    width: `${progressBar.target > 0 ? Math.min((progressBar.actual / progressBar.target) * 100, 100) : 0}%`,
+                    height: '100%',
+                    backgroundColor: '#0066FF',
+                    transition: 'width 0.3s ease'
+                  }} />
+                </Box>
+              </Box>
+            )}
           </Box>
           {chipText ? (
             <Chip label={chipText} color={chipColor} variant={chipVariant || 'tonal'} size='small' />
@@ -262,6 +318,7 @@ const DashboardCRM = async (props: {
     },
     total_sesi_guru: 0,
     total_petugas_inspeksi: 0,
+    petugas_inspeksi_progress: { target: 0, actual: 0 },
     total_perizinan_pegawai: {
       total: 0,
       menunggu: 0,
@@ -489,6 +546,7 @@ const DashboardCRM = async (props: {
                 avatarSkin='light'
                 avatarSize={44}
                 href={`/app/report/kebersihan-petugas/list?tanggal_mulai=${tanggal_mulai}&tanggal_selesai=${tanggal_selesai}`}
+                progressBar={summaryData.petugas_inspeksi_progress}
               />
             )}
           </ScrollRow>

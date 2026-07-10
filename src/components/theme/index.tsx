@@ -30,7 +30,7 @@ import { useSettings } from '@core/hooks/useSettings'
 // Core Theme Imports
 import defaultCoreTheme from '@core/theme'
 import { useSession } from 'next-auth/react'
-import { loginOneSignal, requestNotificationPermission } from '@/libs/onesignal'
+import { loginOneSignal } from '@/libs/onesignal'
 
 type Props = ChildrenType & {
   direction: Direction
@@ -99,9 +99,7 @@ const CustomThemeProvider = (props: Props) => {
     if (session) {
       const { userdata } = session
 
-      loginOneSignal(userdata?.username ?? '').then(e => {
-        requestNotificationPermission()
-      })
+      loginOneSignal(userdata?.username ?? '')
     }
   }, [session])
 
