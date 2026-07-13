@@ -14,6 +14,7 @@ import {
   resetRedux
 } from '../slice/index'
 import { fetchCabangPage } from '../../cabang/slice/index'
+import api from '@/libs/axios'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
 
@@ -29,6 +30,7 @@ const LembagaFormalForm = () => {
   // Opsi Dropdown
   const [opt, setOpt] = useState({
     cabang: [] as any[],
+    institution: [] as any[],
     jenis: [
       { label: 'SD', value: 'SD' }, { label: 'MI', value: 'MI' },
       { label: 'SMP', value: 'SMP' }, { label: 'MTs', value: 'MTs' },
@@ -47,6 +49,7 @@ const LembagaFormalForm = () => {
   const [state, setState] = useState<any>({
     nama_lembaga: '',
     id_cabang: null,
+    institution_id_sitrendi: null,
     jenis_lembaga: null,
     status_akreditasi: null,
     nomor_npsn: '',
@@ -69,6 +72,13 @@ const LembagaFormalForm = () => {
 
       setOpt(prev => ({ ...prev, cabang: cabangOptions }))
 
+      // Fetch Institution
+      const resInstitution = await api.get('/app/institution/all-data')
+      const institutionOptions = (resInstitution?.data?.data || [])
+        .map((item: any) => ({ label: item.institution_name, value: item.institution_id_sitrendi }))
+
+      setOpt(prev => ({ ...prev, institution: institutionOptions }))
+
       // Jika Mode Edit / View
       if (id) {
         const resDetail = await dispatch(fetchLembagaFormalById(id)).unwrap()
@@ -78,6 +88,7 @@ const LembagaFormalForm = () => {
           const formatted = {
             ...d,
             id_cabang: d.id_cabang ? cabangOptions.find((o: any) => o.value === d.id_cabang) : null,
+            institution_id_sitrendi: d.institution_id_sitrendi ? institutionOptions.find((o: any) => o.value === d.institution_id_sitrendi) : null,
             jenis_lembaga: d.jenis_lembaga ? { label: d.jenis_lembaga, value: d.jenis_lembaga } : null,
             status_akreditasi: d.status_akreditasi ? { label: d.status_akreditasi, value: d.status_akreditasi } : null,
           }
@@ -112,6 +123,7 @@ const LembagaFormalForm = () => {
     const payload = {
       ...state,
       id_cabang: state.id_cabang?.value || null,
+      institution_id_sitrendi: state.institution_id_sitrendi?.value || null,
       jenis_lembaga: state.jenis_lembaga?.value || null,
       status_akreditasi: state.status_akreditasi?.value || null,
     }
@@ -142,6 +154,14 @@ const LembagaFormalForm = () => {
       label: 'Kantor Cabang',
       options: { values: opt.cabang },
       required: true,
+      readOnly: !!view
+    }),
+
+    field({
+      type: 'select',
+      key: 'institution_id_sitrendi',
+      label: 'Institusi SiTrendi',
+      options: { values: opt.institution },
       readOnly: !!view
     }),
 
