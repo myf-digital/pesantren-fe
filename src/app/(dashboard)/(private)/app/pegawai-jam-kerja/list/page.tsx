@@ -178,6 +178,7 @@ const JamKerjaPegawaiList = () => {
         pegawai_display: (
           <CopyTooltip
             textToCopy={row.id_jamkerja}
+            sx={{ display: 'flex', minWidth: 0, width: '100%' }}
             title={
               <Box sx={{ minWidth: 0, width: '100%' }}>
                 <Typography

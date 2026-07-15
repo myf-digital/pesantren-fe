@@ -13,6 +13,8 @@ export interface FetchParams {
   parent?: string
   status?: string
   id_cabang?: string
+  id_lembaga_formal?: string
+  id_lembaga_mda?: string
 }
 
 export interface InitialState {

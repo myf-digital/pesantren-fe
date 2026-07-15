@@ -221,6 +221,7 @@ const PegawaiList = () => {
         nama_display: (
           <CopyTooltip
             textToCopy={row.id_pegawai}
+            sx={{ display: 'flex', minWidth: 0, width: '100%' }}
             title={
               <Box
                 sx={{

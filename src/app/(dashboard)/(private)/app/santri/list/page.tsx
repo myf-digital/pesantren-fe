@@ -46,8 +46,15 @@ import '@assets/iconify-icons/generated-icons.css'
 import { useCan } from '@/hooks/useCan'
 import CustomChip from '@/@core/components/mui/Chip'
 import { fetchCabangAll } from '../../cabang/slice'
+import { fetchLembagaFormalAll } from '../../lembaga-formal/slice'
+import { fetchLembagaAll as fetchLembagaKepesantrenanAll } from '../../lembaga-kepesantrenan/slice'
 
 interface CabangOption {
+  label: string
+  value: string
+}
+
+interface LembagaOption {
   label: string
   value: string
 }
@@ -166,6 +173,8 @@ const TableSantri = () => {
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.santri)
   const storeCabang = useAppSelector(state => state.cabang)
+  const storeLembagaFormal = useAppSelector(state => state.lembaga_formal)
+  const storeLembagaKepesantrenan = useAppSelector(state => state.lembaga_kepesantrenan)
 
   const canExport = useCan('export')
 
@@ -182,6 +191,11 @@ const TableSantri = () => {
   const [detail, setDetail] = useState<any>(null)
 
   const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>({ label: 'Semua', value: '' })
+  const [selectedLembagaFormal, setSelectedLembagaFormal] = useState<LembagaOption | null>({
+    label: 'Semua',
+    value: ''
+  })
+  const [selectedLembagaMda, setSelectedLembagaMda] = useState<LembagaOption | null>({ label: 'Semua', value: '' })
   const [status, setStatus] = useState(initialStatus)
 
   const executeFetchData = useCallback(
@@ -191,12 +205,18 @@ const TableSantri = () => {
           page: overrides?.page !== undefined ? overrides.page : page,
           perPage: overrides?.perPage !== undefined ? overrides.perPage : perPage,
           id_cabang: overrides?.id_cabang !== undefined ? overrides.id_cabang : selectedCabang?.value || '',
+          id_lembaga_formal:
+            overrides?.id_lembaga_formal !== undefined
+              ? overrides.id_lembaga_formal
+              : selectedLembagaFormal?.value || '',
+          id_lembaga_mda:
+            overrides?.id_lembaga_mda !== undefined ? overrides.id_lembaga_mda : selectedLembagaMda?.value || '',
           status: overrides?.status !== undefined ? overrides.status : status !== 'Semua' ? status : undefined,
           q: overrides?.q !== undefined ? overrides.q : filter
         })
       )
     },
-    [dispatch, page, perPage, selectedCabang, status, filter]
+    [dispatch, page, perPage, selectedCabang, selectedLembagaFormal, selectedLembagaMda, status, filter]
   )
 
   const handleSearchSubmit = () => {
@@ -205,7 +225,9 @@ const TableSantri = () => {
   }
 
   const handleResetFilter = () => {
-    setSelectedCabang(null)
+    setSelectedCabang({ label: 'Semua', value: '' })
+    setSelectedLembagaFormal({ label: 'Semua', value: '' })
+    setSelectedLembagaMda({ label: 'Semua', value: '' })
     setStatus('Semua')
     setFilter('')
     setPage(1)
@@ -214,6 +236,8 @@ const TableSantri = () => {
       page: 1,
       perPage: 10,
       id_cabang: '',
+      id_lembaga_formal: '',
+      id_lembaga_mda: '',
       status: undefined,
       q: ''
     })
@@ -228,7 +252,7 @@ const TableSantri = () => {
       setPage(newPage)
       executeFetchData({ page: newPage, q: filter })
     },
-    [dispatch, perPage, filter, selectedCabang?.value]
+    [dispatch, perPage, filter, selectedCabang?.value, selectedLembagaFormal?.value, selectedLembagaMda?.value]
   )
 
   const handleChangePerPage = (event: any) => {
@@ -241,7 +265,15 @@ const TableSantri = () => {
 
   useEffect(() => {
     dispatch(fetchCabangAll({}))
+    dispatch(fetchLembagaFormalAll({}))
+    dispatch(fetchLembagaKepesantrenanAll({}))
   }, [dispatch])
+
+  // Reset lembaga formal & mda filters when selected cabang changes
+  useEffect(() => {
+    setSelectedLembagaFormal({ label: 'Semua', value: '' })
+    setSelectedLembagaMda({ label: 'Semua', value: '' })
+  }, [selectedCabang])
 
   useEffect(() => {
     if (store.delete) {
@@ -273,13 +305,15 @@ const TableSantri = () => {
           perPage: perPage,
           q: filter,
           id_cabang: selectedCabang?.value || '',
+          id_lembaga_formal: selectedLembagaFormal?.value || '',
+          id_lembaga_mda: selectedLembagaMda?.value || '',
           status: status !== 'Semua' ? status : undefined
         })
       )
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [dispatch, filter, perPage, selectedCabang, status])
+  }, [dispatch, filter, perPage, selectedCabang, selectedLembagaFormal, selectedLembagaMda, status])
 
   const onExport = async () => {
     try {
@@ -288,6 +322,8 @@ const TableSantri = () => {
         postExport({
           q: filter,
           id_cabang: selectedCabang?.value || '',
+          id_lembaga_formal: selectedLembagaFormal?.value || '',
+          id_lembaga_mda: selectedLembagaMda?.value || '',
           status: status !== 'Semua' ? status : undefined
         })
       ).unwrap()
@@ -445,7 +481,7 @@ const TableSantri = () => {
           tableColumn('SANTRI', 'fullname'),
           tableColumn('WALI', 'nama_wali'),
           tableColumn('CABANG', 'nama_cabang'),
-          tableColumn('JENIS KELAMIN', 'gender'),
+          tableColumn('LEMBAGA', 'lembaga'),
           tableColumn('KARTU SANTRI', 'kartu_santri'),
           tableColumn('STATUS', 'status_label'),
           tableColumn('TERAKHIR DIUBAH', 'updated_at')
@@ -531,8 +567,18 @@ const TableSantri = () => {
             nama_cabang: (
               <Box>
                 <Typography variant='body2'>{row.cabang?.nama_cabang || '-'}</Typography>
-                <Typography variant='caption' color='text.disabled'>
+                <Typography variant='caption' color='text.disabled' sx={{ wordBreak: 'break-all' }}>
                   {row.cabang?.email || '-'}
+                </Typography>
+              </Box>
+            ),
+            lembaga: (
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant='body2' sx={{ wordBreak: 'break-all' }}>
+                  Formal: {row.lembagaFormal?.nama_lembaga || '-'}
+                </Typography>
+                <Typography variant='body2' sx={{ wordBreak: 'break-all' }}>
+                  MDA: {row.lembagaMda?.nama_lembaga || '-'}
                 </Typography>
               </Box>
             ),
@@ -672,7 +718,7 @@ const TableSantri = () => {
 
               <Grid size={{ xs: 12, md: 6 }}>
                 <Typography variant='caption'>Status</Typography>
-                <Typography variant='body2'>
+                <Typography variant='body2' component='div'>
                   <CustomChip
                     round='true'
                     size='small'
@@ -766,7 +812,7 @@ const TableSantri = () => {
           <Divider sx={{ mb: 6 }} />
 
           {/* SECTION CABANG */}
-          <Box>
+          <Box sx={{ mb: 6 }}>
             <Typography variant='h6' mb={3}>
               Data Cabang
             </Typography>
@@ -820,6 +866,27 @@ const TableSantri = () => {
               </Grid>
             </Grid>
           </Box>
+
+          <Divider sx={{ mb: 6 }} />
+
+          {/* SECTION LEMBAGA */}
+          <Box>
+            <Typography variant='h6' mb={3}>
+              Data Lembaga
+            </Typography>
+
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant='caption'>Lembaga Formal</Typography>
+                <Typography variant='body2'>{detail?.lembagaFormal?.nama_lembaga || '-'}</Typography>
+              </Grid>
+
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Typography variant='caption'>Lembaga MDA</Typography>
+                <Typography variant='body2'>{detail?.lembagaMda?.nama_lembaga || '-'}</Typography>
+              </Grid>
+            </Grid>
+          </Box>
         </DialogContent>
 
         <DialogActions>
@@ -829,6 +896,26 @@ const TableSantri = () => {
     )
   }
 
+  const formalOptions = [
+    { label: 'Semua', value: '' },
+    ...storeLembagaFormal.datas
+      .filter(r => !selectedCabang?.value || r.id_cabang === selectedCabang.value)
+      .map(r => ({
+        label: r.nama_lembaga,
+        value: r.id_lembaga
+      }))
+  ]
+
+  const mdaOptions = [
+    { label: 'Semua', value: '' },
+    ...storeLembagaKepesantrenan.datas
+      .filter(r => !selectedCabang?.value || r.id_cabang === selectedCabang.value)
+      .map(r => ({
+        label: r.nama_lembaga,
+        value: r.id_lembaga
+      }))
+  ]
+
   return (
     <Grid container spacing={6} sx={{ width: '100%' }}>
       <Grid size={12}>
@@ -837,14 +924,15 @@ const TableSantri = () => {
             <Grid size={{ xs: 12, sm: 3 }}>
               <Autocomplete
                 size='small'
-                options={storeCabang.datas.map(r => {
-                  return {
+                options={[
+                  { label: 'Semua', value: '' },
+                  ...storeCabang.datas.map(r => ({
                     label: `${r.nama_cabang}`,
                     value: r.id_cabang
-                  }
-                })}
+                  }))
+                ]}
                 value={selectedCabang}
-                onChange={(_, newValue) => setSelectedCabang(newValue)}
+                onChange={(_, newValue) => setSelectedCabang(newValue || { label: 'Semua', value: '' })}
                 getOptionLabel={option => option.label || ''}
                 isOptionEqualToValue={(option, value) => option.value === value?.value}
                 renderInput={params => (
@@ -860,20 +948,76 @@ const TableSantri = () => {
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 3 }}>
-              <FormControl fullWidth size='small'>
-                <InputLabel id='status-select-label'>Status Santri</InputLabel>
-                <Select
-                  labelId='status-select-label'
-                  id='status-select'
-                  value={status}
-                  label='Status Santri'
-                  onChange={e => setStatus(e.target.value)}
-                >
-                  <MenuItem value='Semua'>Semua</MenuItem>
-                  <MenuItem value='1'>Aktif</MenuItem>
-                  <MenuItem value='0'>Nonaktif</MenuItem>
-                </Select>
-              </FormControl>
+              <Autocomplete
+                size='small'
+                options={formalOptions}
+                value={selectedLembagaFormal}
+                onChange={(_, newValue) => setSelectedLembagaFormal(newValue || { label: 'Semua', value: '' })}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label='Lembaga Formal'
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: <>{params.InputProps.endAdornment}</>
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={mdaOptions}
+                value={selectedLembagaMda}
+                onChange={(_, newValue) => setSelectedLembagaMda(newValue || { label: 'Semua', value: '' })}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label='Lembaga MDA'
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: <>{params.InputProps.endAdornment}</>
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua', value: 'Semua' },
+                  { label: 'Aktif', value: '1' },
+                  { label: 'Nonaktif', value: '0' }
+                ]}
+                value={
+                  status === 'Semua'
+                    ? { label: 'Semua', value: 'Semua' }
+                    : status === '1'
+                      ? { label: 'Aktif', value: '1' }
+                      : status === '0'
+                        ? { label: 'Nonaktif', value: '0' }
+                        : null
+                }
+                onChange={(_, newValue) => setStatus(newValue ? newValue.value : 'Semua')}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label='Status Santri'
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: <>{params.InputProps.endAdornment}</>
+                    }}
+                  />
+                )}
+              />
             </Grid>
           </Grid>
 
