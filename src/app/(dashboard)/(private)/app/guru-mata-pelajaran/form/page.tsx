@@ -126,7 +126,6 @@ const FormValidationBasic = () => {
 
   useEffect(() => {
     dispatch(fetchPegawaiAll({}))
-    dispatch(fetchMataPelajaranAll({}))
 
     if (id) {
       dispatch(fetchGuruMataPelajaranById(id)).then(res => {
@@ -135,6 +134,7 @@ const FormValidationBasic = () => {
         if (datas) {
           datas.lembaga_type = typeOption.find(r => r.value === datas.lembaga_type)
           datas.status = statusOption.values.find(r => r.value === datas.status)
+
           if (datas.lembaga_formal) {
             datas.id_lembaga = {
               ...datas.lembaga_formal,
@@ -150,6 +150,7 @@ const FormValidationBasic = () => {
               value: datas?.lembaga_kepesantrenan?.id_lembaga
             }
           }
+
           datas.id_guru = {
             ...datas.pegawai,
             label: datas?.pegawai?.nama_lengkap,
@@ -171,6 +172,8 @@ const FormValidationBasic = () => {
           } else {
             dispatch(fetchLembagaKepesantrenanAll({}))
           }
+
+          dispatch(fetchMataPelajaranAll({ id_lembaga: datas.id_lembaga?.value }))
 
           dispatch(fetchTingkatAll({ type: datas.lembaga_type?.value }))
 
@@ -243,22 +246,6 @@ const FormValidationBasic = () => {
       }),
       field({
         type: 'select',
-        key: 'id_mapel',
-        label: 'Mata Pelajaran',
-        placeholder: 'Pilih Mata Pelajaran',
-        required: true,
-        options: {
-          values: storeMapel.datas.map(m => {
-            return {
-              label: m.nama_mapel,
-              value: m.id_mapel
-            }
-          })
-        },
-        readOnly: Boolean(view)
-      }),
-      field({
-        type: 'select',
         key: 'lembaga_type',
         label: 'Tipe',
         placeholder: 'Pilih Tipe',
@@ -269,7 +256,9 @@ const FormValidationBasic = () => {
             if (!e) return
 
             setValue('id_lembaga', null)
-            setState(state => ({ ...state, id_lembaga: null }))
+            setValue('id_mapel', null)
+            setValue('id_tingkat', null)
+            setState(state => ({ ...state, id_lembaga: null, id_mapel: null, id_tingkat: null }))
 
             if (e.value == 'FORMAL') {
               dispatch(fetchLembagaAll({}))
@@ -305,10 +294,29 @@ const FormValidationBasic = () => {
             if (!e) return
 
             setValue('id_tingkat', null)
-            setState(state => ({ ...state, id_tingkat: null }))
+            setValue('id_mapel', null)
+            setState(state => ({ ...state, id_tingkat: null, id_mapel: null }))
+
+            dispatch(fetchMataPelajaranAll({ id_lembaga: e.value }))
 
             dispatch(fetchTingkatAll({ type: state.lembaga_type?.value } as any))
           }
+        },
+        readOnly: Boolean(view)
+      }),
+      field({
+        type: 'select',
+        key: 'id_mapel',
+        label: 'Mata Pelajaran',
+        placeholder: 'Pilih Mata Pelajaran',
+        required: true,
+        options: {
+          values: storeMapel.datas.map(m => {
+            return {
+              label: m.nama_mapel,
+              value: m.id_mapel
+            }
+          })
         },
         readOnly: Boolean(view)
       }),

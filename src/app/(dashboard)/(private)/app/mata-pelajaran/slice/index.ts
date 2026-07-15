@@ -11,6 +11,8 @@ export interface FetchParams {
   perPage?: number
   q?: string
   parent?: string
+  lembaga_type?: string
+  id_lembaga?: string
 }
 
 export interface InitialState {
