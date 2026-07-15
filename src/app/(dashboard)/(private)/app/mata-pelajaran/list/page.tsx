@@ -256,7 +256,7 @@ const Table = () => {
           tableColumn('OPTION', 'act-x', 'left', renderOption as any),
           tableColumn('KODE', 'kode_mapel'),
           tableColumn('NAMA', 'nama_mapel'),
-          tableColumn('LEMBAGA', 'lembaga_formal'),
+          tableColumn('LEMBAGA', 'lembaga'),
           tableColumn('KELOMPOK', 'kelompok_pelajaran'),
           tableColumn('KKM', 'kkm'),
           tableColumn('KETERANGAN', 'keterangan'),
@@ -285,7 +285,7 @@ const Table = () => {
                 sx={{ textTransform: 'capitalize' }}
               />
             ),
-            lembaga_formal: row?.lembaga_formal?.nama_lembaga,
+            lembaga: row?.lembaga_formal ? row?.lembaga_formal?.nama_lembaga : row?.lembaga_kepesantrenan?.nama_lembaga,
             kelompok_pelajaran: row?.kelompok_pelajaran?.nama_kelpelajaran
           }
         }),
