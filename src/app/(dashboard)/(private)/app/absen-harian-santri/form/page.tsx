@@ -47,6 +47,7 @@ interface AbsenItemInput {
   nis: string
   status_kehadiran: 'Hadir' | 'Izin' | 'Sakit' | 'Alfa'
   keterangan: string
+  is_disabled?: boolean
 }
 
 // Interface untuk log data hasil Response API Scan QR
@@ -122,7 +123,8 @@ const PresensiFormPage = () => {
           fullname: s.santri?.fullname || s.fullname || '',
           nis: s.santri?.nis || s.nis || '',
           status_kehadiran: s.status_kehadiran || 'Hadir',
-          keterangan: s.keterangan || ''
+          keterangan: s.keterangan || '',
+          is_disabled: false
         }))
         setListSantriAbsen(formatted as AbsenItemInput[])
       } else if (!idAbsen && store.santriKamar) {
@@ -130,8 +132,9 @@ const PresensiFormPage = () => {
           id_santri: s.id_santri,
           fullname: s.fullname,
           nis: s.nis,
-          status_kehadiran: 'Hadir', // Default awal diset Hadir semua
-          keterangan: '' // Default keterangan kosong
+          status_kehadiran: s.status_kehadiran_default || 'Hadir', // Use default status returned by backend (Izin / Sakit / Hadir)
+          keterangan: s.keterangan || '', // Default keterangan from backend (Izin/Sakit description)
+          is_disabled: !!(s.status === 'Izin' || s.status === 'Sakit')
         }))
         setListSantriAbsen(formatted as AbsenItemInput[])
       }
@@ -514,7 +517,7 @@ const PresensiFormPage = () => {
                             <Select
                               value={santri.status_kehadiran}
                               onChange={e => handleStatusChange(santri.id_santri, e.target.value as any)}
-                              disabled={isViewOnly}
+                              disabled={isViewOnly || santri.is_disabled}
                               sx={{
                                 fontWeight: 600,
                                 color:
@@ -524,7 +527,25 @@ const PresensiFormPage = () => {
                                       ? 'info.main'
                                       : santri.status_kehadiran === 'Sakit'
                                         ? 'warning.main'
-                                        : 'error.main'
+                                        : 'error.main',
+                                '&.Mui-disabled': {
+                                  color:
+                                    santri.status_kehadiran === 'Hadir'
+                                      ? 'success.main'
+                                      : santri.status_kehadiran === 'Izin'
+                                        ? 'info.main'
+                                        : santri.status_kehadiran === 'Sakit'
+                                          ? 'warning.main'
+                                          : 'error.main',
+                                  WebkitTextFillColor:
+                                    santri.status_kehadiran === 'Hadir'
+                                      ? 'success.main'
+                                      : santri.status_kehadiran === 'Izin'
+                                        ? 'info.main'
+                                        : santri.status_kehadiran === 'Sakit'
+                                          ? 'warning.main'
+                                          : 'error.main'
+                                }
                               }}
                             >
                               <MenuItem value='Hadir'>Hadir</MenuItem>
