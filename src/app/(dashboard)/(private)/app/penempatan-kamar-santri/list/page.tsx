@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -12,7 +12,7 @@ import Grid from '@mui/material/Grid2'
 import Card from '@mui/material/Card'
 
 import CardHeader from '@mui/material/CardHeader'
-import { Avatar, Box, TextField, Toolbar, useMediaQuery, useTheme } from '@mui/material'
+import { Avatar, Box, TextField, Toolbar, useMediaQuery, useTheme, Autocomplete } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
@@ -23,6 +23,8 @@ import MenuItem from '@mui/material/MenuItem'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { deletePenempatanKamarSantri, fetchPenempatanKamarSantriPage, postExport, resetRedux } from '../slice/index'
+import { fetchTahunAjaranAll } from '../../tahun-ajaran/slice'
+import { fetchLocationAll } from '../../location/slice'
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
@@ -38,6 +40,17 @@ const statusObj: Record<string, { color: any; value: string }> = {
     value: 'Aktif'
   },
   'Non-Aktif': {
+    color: 'secondary',
+    value: 'Non-Aktif'
+  }
+}
+
+const statusObjSantri: Record<string, { color: any; value: string }> = {
+  '1': {
+    color: 'success',
+    value: 'Aktif'
+  },
+  '0': {
     color: 'secondary',
     value: 'Non-Aktif'
   }
@@ -155,6 +168,8 @@ const TablePenempatanKamarSantri = () => {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.penempatan_kamar_santri)
+  const storeLokasi = useAppSelector(state => state.location)
+  const storeTahunAjaran = useAppSelector(state => state.tahun_ajaran)
 
   const canCreate = useCan('create')
   const canImport = useCan('import')
@@ -165,23 +180,62 @@ const TablePenempatanKamarSantri = () => {
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
 
+  // Filters State
+  const [selectedLokasi, setSelectedLokasi] = useState<{ label: string; value: string } | null>({
+    label: 'Semua',
+    value: ''
+  })
+  const [selectedTahunAjaran, setSelectedTahunAjaran] = useState<{ label: string; value: string } | null>({
+    label: 'Semua',
+    value: ''
+  })
+  const [statusPenempatan, setStatusPenempatan] = useState<string>('Semua')
+  const [statusSantri, setStatusSantri] = useState<string>('Semua')
+
+  const executeFetchData = useCallback(
+    (overrides?: any) => {
+      dispatch(
+        fetchPenempatanKamarSantriPage({
+          page: overrides?.page !== undefined ? overrides.page : page,
+          perPage: overrides?.perPage !== undefined ? overrides.perPage : perPage,
+          q: overrides?.q !== undefined ? overrides.q : filter,
+          id_lokasi: overrides?.id_lokasi !== undefined ? overrides.id_lokasi : selectedLokasi?.value || '',
+          id_tahunajaran:
+            overrides?.id_tahunajaran !== undefined ? overrides.id_tahunajaran : selectedTahunAjaran?.value || '',
+          status:
+            overrides?.status !== undefined ? overrides.status : statusPenempatan !== 'Semua' ? statusPenempatan : '',
+          status_santri:
+            overrides?.status_santri !== undefined
+              ? overrides.status_santri
+              : statusSantri !== 'Semua'
+                ? statusSantri
+                : ''
+        })
+      )
+    },
+    [dispatch, page, perPage, filter, selectedLokasi, selectedTahunAjaran, statusPenempatan, statusSantri]
+  )
+
+  useEffect(() => {
+    dispatch(fetchLocationAll({ jenis_lokasi: 'Kamar' }))
+    dispatch(fetchTahunAjaranAll({}))
+  }, [dispatch])
+
   useEffect(() => {
     if (store.delete) {
-      dispatch(fetchPenempatanKamarSantriPage({ page: 1, perPage: perPage, q: filter }))
-
+      executeFetchData({ page: 1 })
       dispatch(resetRedux())
     }
-  }, [dispatch, filter, perPage, store.delete])
+  }, [dispatch, store.delete, executeFetchData])
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1)
-
-      dispatch(fetchPenempatanKamarSantriPage({ page: 1, perPage: perPage, q: filter }))
+      executeFetchData({ page: 1 })
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [dispatch, filter, perPage])
+  }, [filter, perPage, selectedLokasi, selectedTahunAjaran, statusPenempatan, statusSantri])
 
   const onAddForm = () => {
     router.replace('/app/penempatan-kamar-santri/form')
@@ -194,7 +248,15 @@ const TablePenempatanKamarSantri = () => {
   const onExport = async () => {
     try {
       setLoadingExport(true)
-      const res = await dispatch(postExport({ q: filter })).unwrap()
+      const res = await dispatch(
+        postExport({
+          q: filter,
+          id_lokasi: selectedLokasi?.value || '',
+          id_tahunajaran: selectedTahunAjaran?.value || '',
+          status: statusPenempatan !== 'Semua' ? statusPenempatan : '',
+          status_santri: statusSantri !== 'Semua' ? statusSantri : ''
+        })
+      ).unwrap()
 
       if (res?.status && res?.data) {
         const url = `${process.env.NEXT_PUBLIC_API_URL}${res.data}`
@@ -217,9 +279,31 @@ const TablePenempatanKamarSantri = () => {
     setFilter(event.target.value)
   }
 
+  const handleSearchSubmit = () => {
+    setPage(1)
+    executeFetchData({ page: 1 })
+  }
+
+  const handleResetFilter = () => {
+    setSelectedLokasi({ label: 'Semua', value: '' })
+    setSelectedTahunAjaran({ label: 'Semua', value: '' })
+    setStatusPenempatan('Semua')
+    setStatusSantri('Semua')
+    setFilter('')
+    setPage(1)
+    executeFetchData({
+      page: 1,
+      q: '',
+      id_lokasi: '',
+      id_tahunajaran: '',
+      status: '',
+      status_santri: ''
+    })
+  }
+
   const handleChangePage = (newPage: number) => {
     setPage(newPage)
-    dispatch(fetchPenempatanKamarSantriPage({ page: newPage, perPage: perPage, q: filter }))
+    executeFetchData({ page: newPage })
   }
 
   const handleChangePerPage = (event: any) => {
@@ -227,7 +311,7 @@ const TablePenempatanKamarSantri = () => {
 
     setPage(1)
     setPerPage(newPerPage)
-    dispatch(fetchPenempatanKamarSantriPage({ page: 1, perPage: newPerPage, q: filter }))
+    executeFetchData({ page: 1, perPage: newPerPage })
   }
 
   const renderOption = (row: any) => {
@@ -246,11 +330,11 @@ const TablePenempatanKamarSantri = () => {
           tableColumn('OPTION', 'act-x', 'left', renderOption as any),
           tableColumn('SANTRI', 'santri'),
           tableColumn('LOKASI', 'lokasi'),
-          tableColumn('TAHUN AJARAN', 'tahun_ajaran'),
-          tableColumn('MASUK', 'tanggal_masuk'),
-          tableColumn('KELUAR', 'tanggal_keluar'),
-          tableColumn('KETERANGAN', 'keterangan'),
+          tableColumn('AJARAN', 'tahun_ajaran'),
+          tableColumn('IN OUT', 'in_out'),
           tableColumn('STATUS', 'status'),
+          tableColumn('STATUS SANTRI', 'status_santri'),
+          tableColumn('KETERANGAN', 'keterangan'),
           tableColumn('TERAKHIR DIUBAH', 'updated_at')
         ],
         values: values?.map((row: any) => {
@@ -335,6 +419,21 @@ const TablePenempatanKamarSantri = () => {
                 color={statusObj[row.status]?.color}
                 sx={{ textTransform: 'capitalize' }}
               />
+            ),
+            status_santri: (
+              <CustomChip
+                round='true'
+                size='small'
+                label={statusObjSantri[row.santri?.status]?.value}
+                color={statusObjSantri[row.santri?.status]?.color}
+                sx={{ textTransform: 'capitalize' }}
+              />
+            ),
+            in_out: (
+              <Box>
+                <Typography variant='body2'>IN: {row.tanggal_masuk || '-'}</Typography>
+                <Typography variant='body2'>OUT: {row.tanggal_keluar || '-'}</Typography>
+              </Box>
             )
           }
         }),
@@ -352,6 +451,106 @@ const TablePenempatanKamarSantri = () => {
 
   return (
     <Grid container spacing={6} sx={{ width: '100%' }}>
+      <Grid size={12}>
+        <Card sx={{ p: 5 }}>
+          <Grid container spacing={4}>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua', value: '' },
+                  ...storeLokasi.datas.map((r: any) => ({
+                    label: r.nama_lokasi,
+                    value: r.id_lokasi
+                  }))
+                ]}
+                value={selectedLokasi}
+                onChange={(_, newValue) => setSelectedLokasi(newValue || { label: 'Semua', value: '' })}
+                getOptionLabel={option => option.label || ''}
+                getOptionKey={option => option.value}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Lokasi' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua', value: '' },
+                  ...storeTahunAjaran.datas.map((r: any) => ({
+                    label: r.tahun_ajaran,
+                    value: r.id_tahunajaran
+                  }))
+                ]}
+                value={selectedTahunAjaran}
+                onChange={(_, newValue) => setSelectedTahunAjaran(newValue || { label: 'Semua', value: '' })}
+                getOptionLabel={option => option.label || ''}
+                getOptionKey={option => option.value}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Tahun Ajaran' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua', value: 'Semua' },
+                  { label: 'Aktif', value: 'Aktif' },
+                  { label: 'Non-Aktif', value: 'Non-Aktif' }
+                ]}
+                value={
+                  statusPenempatan === 'Semua'
+                    ? { label: 'Semua', value: 'Semua' }
+                    : { label: statusPenempatan, value: statusPenempatan }
+                }
+                onChange={(_, newValue) => setStatusPenempatan(newValue ? newValue.value : 'Semua')}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Status Penempatan' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua', value: 'Semua' },
+                  { label: 'Aktif', value: '1' },
+                  { label: 'Non-Aktif', value: '0' }
+                ]}
+                value={
+                  statusSantri === 'Semua'
+                    ? { label: 'Semua', value: 'Semua' }
+                    : statusSantri === '1'
+                      ? { label: 'Aktif', value: '1' }
+                      : { label: 'Non-Aktif', value: '0' }
+                }
+                onChange={(_, newValue) => setStatusSantri(newValue ? newValue.value : 'Semua')}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Status Santri' />}
+              />
+            </Grid>
+          </Grid>
+          <Toolbar sx={{ px: '0px !important', gap: 2, flexWrap: 'wrap', minHeight: 'auto', mt: 4 }}>
+            <Button
+              variant='contained'
+              color='info'
+              startIcon={<i className='tabler-search' />}
+              onClick={handleSearchSubmit}
+            >
+              Cari
+            </Button>
+            <Button
+              variant='outlined'
+              color='secondary'
+              startIcon={<i className='tabler-refresh' />}
+              onClick={handleResetFilter}
+            >
+              Reset Filter
+            </Button>
+          </Toolbar>
+        </Card>
+      </Grid>
       <Grid size={12}>
         <Card>
           <CardHeader title='Penempatan Kamar Santri' sx={{ paddingBottom: 0 }} />

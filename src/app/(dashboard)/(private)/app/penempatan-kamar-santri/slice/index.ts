@@ -11,6 +11,10 @@ export interface FetchParams {
   perPage?: number
   q?: string
   parent?: string
+  id_lokasi?: string
+  id_tahunajaran?: string
+  status?: string
+  status_santri?: string
 }
 
 export interface InitialState {

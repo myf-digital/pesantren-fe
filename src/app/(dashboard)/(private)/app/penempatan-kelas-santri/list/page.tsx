@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -11,7 +11,7 @@ import Grid from '@mui/material/Grid2'
 import Card from '@mui/material/Card'
 
 import CardHeader from '@mui/material/CardHeader'
-import { Avatar, Box, TextField, Toolbar, useMediaQuery, useTheme } from '@mui/material'
+import { Avatar, Box, TextField, Toolbar, useMediaQuery, useTheme, Autocomplete } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
@@ -22,6 +22,9 @@ import MenuItem from '@mui/material/MenuItem'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { deletePenempatanKelasSantri, fetchPenempatanKelasSantriPage, postExport, resetRedux } from '../slice/index'
+import { fetchTahunAjaranAll } from '../../tahun-ajaran/slice'
+import { fetchKelasFormalAll } from '../../kelas-formal/slice'
+import { fetchKelasMdaAll } from '../../kelas-mda/slice'
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
 import DialogDelete from '@views/onevour/components/dialog-delete'
@@ -42,6 +45,17 @@ const statusObj: Record<string, { color: any; value: string }> = {
   'Tidak Aktif': {
     color: 'secondary',
     value: 'Tidak Aktif'
+  }
+}
+
+const statusObjSantri: Record<string, { color: any; value: string }> = {
+  '1': {
+    color: 'success',
+    value: 'Aktif'
+  },
+  '0': {
+    color: 'secondary',
+    value: 'Non-Aktif'
   }
 }
 
@@ -154,6 +168,9 @@ const TablePenempatanKelasSantri = () => {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.penempatan_kelas_santri)
+  const storeTahunAjaran = useAppSelector(state => state.tahun_ajaran)
+  const storeKelasFormal = useAppSelector(state => state.kelas_formal)
+  const storeKelasMda = useAppSelector(state => state.kelas_mda)
 
   const canCreate = useCan('create')
   const canImport = useCan('import')
@@ -164,23 +181,79 @@ const TablePenempatanKelasSantri = () => {
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
 
+  // Filters State
+  const [selectedTahunAjaran, setSelectedTahunAjaran] = useState<{ label: string; value: string } | null>({
+    label: 'Semua',
+    value: ''
+  })
+  const [selectedKelasFormal, setSelectedKelasFormal] = useState<{ label: string; value: string } | null>({
+    label: 'Semua',
+    value: ''
+  })
+  const [selectedKelasMda, setSelectedKelasMda] = useState<{ label: string; value: string } | null>({
+    label: 'Semua',
+    value: ''
+  })
+  const [statusPenempatan, setStatusPenempatan] = useState<string>('Semua')
+  const [statusSantri, setStatusSantri] = useState<string>('Semua')
+
+  const executeFetchData = useCallback(
+    (overrides?: any) => {
+      dispatch(
+        fetchPenempatanKelasSantriPage({
+          page: overrides?.page !== undefined ? overrides.page : page,
+          perPage: overrides?.perPage !== undefined ? overrides.perPage : perPage,
+          q: overrides?.q !== undefined ? overrides.q : filter,
+          id_tahun_ajaran:
+            overrides?.id_tahun_ajaran !== undefined ? overrides.id_tahun_ajaran : selectedTahunAjaran?.value || '',
+          id_kelas_formal:
+            overrides?.id_kelas_formal !== undefined ? overrides.id_kelas_formal : selectedKelasFormal?.value || '',
+          id_kelas_mda: overrides?.id_kelas_mda !== undefined ? overrides.id_kelas_mda : selectedKelasMda?.value || '',
+          status:
+            overrides?.status !== undefined ? overrides.status : statusPenempatan !== 'Semua' ? statusPenempatan : '',
+          status_santri:
+            overrides?.status_santri !== undefined
+              ? overrides.status_santri
+              : statusSantri !== 'Semua'
+                ? statusSantri
+                : ''
+        })
+      )
+    },
+    [
+      dispatch,
+      page,
+      perPage,
+      filter,
+      selectedTahunAjaran,
+      selectedKelasFormal,
+      selectedKelasMda,
+      statusPenempatan,
+      statusSantri
+    ]
+  )
+
+  useEffect(() => {
+    dispatch(fetchTahunAjaranAll({}))
+    dispatch(fetchKelasFormalAll({}))
+    dispatch(fetchKelasMdaAll({}))
+  }, [dispatch])
+
   useEffect(() => {
     if (store.delete) {
-      dispatch(fetchPenempatanKelasSantriPage({ page: 1, perPage: perPage, q: filter }))
-
+      executeFetchData({ page: 1 })
       dispatch(resetRedux())
     }
-  }, [dispatch, filter, perPage, store.delete])
+  }, [dispatch, store.delete, executeFetchData])
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1)
-
-      dispatch(fetchPenempatanKelasSantriPage({ page: 1, perPage: perPage, q: filter }))
+      executeFetchData({ page: 1 })
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [dispatch, filter, perPage])
+  }, [filter, perPage, selectedTahunAjaran, selectedKelasFormal, selectedKelasMda, statusPenempatan, statusSantri])
 
   const onAddForm = () => {
     router.replace('/app/penempatan-kelas-santri/form')
@@ -193,7 +266,16 @@ const TablePenempatanKelasSantri = () => {
   const onExport = async () => {
     try {
       setLoadingExport(true)
-      const res = await dispatch(postExport({ q: filter })).unwrap()
+      const res = await dispatch(
+        postExport({
+          q: filter,
+          id_tahun_ajaran: selectedTahunAjaran?.value || '',
+          id_kelas_formal: selectedKelasFormal?.value || '',
+          id_kelas_mda: selectedKelasMda?.value || '',
+          status: statusPenempatan !== 'Semua' ? statusPenempatan : '',
+          status_santri: statusSantri !== 'Semua' ? statusSantri : ''
+        })
+      ).unwrap()
 
       if (res?.status && res?.data) {
         const url = `${process.env.NEXT_PUBLIC_API_URL}${res.data}`
@@ -216,9 +298,33 @@ const TablePenempatanKelasSantri = () => {
     setFilter(event.target.value)
   }
 
+  const handleSearchSubmit = () => {
+    setPage(1)
+    executeFetchData({ page: 1 })
+  }
+
+  const handleResetFilter = () => {
+    setSelectedTahunAjaran({ label: 'Semua', value: '' })
+    setSelectedKelasFormal({ label: 'Semua', value: '' })
+    setSelectedKelasMda({ label: 'Semua', value: '' })
+    setStatusPenempatan('Semua')
+    setStatusSantri('Semua')
+    setFilter('')
+    setPage(1)
+    executeFetchData({
+      page: 1,
+      q: '',
+      id_tahun_ajaran: '',
+      id_kelas_formal: '',
+      id_kelas_mda: '',
+      status: '',
+      status_santri: ''
+    })
+  }
+
   const handleChangePage = (newPage: number) => {
     setPage(newPage)
-    dispatch(fetchPenempatanKelasSantriPage({ page: newPage, perPage: perPage, q: filter }))
+    executeFetchData({ page: newPage })
   }
 
   const handleChangePerPage = (event: any) => {
@@ -226,7 +332,7 @@ const TablePenempatanKelasSantri = () => {
 
     setPage(1)
     setPerPage(newPerPage)
-    dispatch(fetchPenempatanKelasSantriPage({ page: 1, perPage: newPerPage, q: filter }))
+    executeFetchData({ page: 1, perPage: newPerPage })
   }
 
   const renderOption = (row: any) => {
@@ -244,12 +350,12 @@ const TablePenempatanKelasSantri = () => {
         fields: [
           tableColumn('OPTION', 'act-x', 'left', renderOption as any),
           tableColumn('SANTRI', 'santri'),
-          tableColumn('KELAS MDA', 'kelas_mda'),
-          tableColumn('KELAS FORMAL', 'kelas_formal'),
-          tableColumn('TAHUN AJARAN', 'tahun_ajaran'),
-          tableColumn('MASUK', 'tanggal_masuk'),
-          tableColumn('KELUAR', 'tanggal_keluar'),
+          tableColumn('KELAS', 'kelas'),
+          tableColumn('AJARAN', 'tahun_ajaran'),
+          tableColumn('IN OUT', 'in_out'),
           tableColumn('STATUS', 'status'),
+          tableColumn('STATUS SANTRI', 'status_santri'),
+          tableColumn('KETERANGAN', 'keterangan'),
           tableColumn('TERAKHIR DIUBAH', 'updated_at')
         ],
         values: values?.map((row: any) => {
@@ -310,14 +416,10 @@ const TablePenempatanKelasSantri = () => {
                 </Box>
               </Box>
             ),
-            kelas_mda: (
+            kelas: (
               <Box>
-                <Typography variant='body2'>{row.kelasMda?.nama_kelas_mda || '-'}</Typography>
-              </Box>
-            ),
-            kelas_formal: (
-              <Box>
-                <Typography variant='body2'>{row.kelasFormal?.nama_kelas || '-'}</Typography>
+                <Typography variant='body2'>Formal: {row.kelasFormal?.nama_kelas || '-'}</Typography>
+                <Typography variant='body2'>MDA: {row.kelasMda?.nama_kelas_mda || '-'}</Typography>
               </Box>
             ),
             tahun_ajaran: (
@@ -336,6 +438,21 @@ const TablePenempatanKelasSantri = () => {
                 color={statusObj[row.status]?.color || 'primary'}
                 sx={{ textTransform: 'capitalize' }}
               />
+            ),
+            status_santri: (
+              <CustomChip
+                round='true'
+                size='small'
+                label={statusObjSantri[row.santri?.status]?.value}
+                color={statusObjSantri[row.santri?.status]?.color}
+                sx={{ textTransform: 'capitalize' }}
+              />
+            ),
+            in_out: (
+              <Box>
+                <Typography variant='body2'>IN: {row.tanggal_masuk || '-'}</Typography>
+                <Typography variant='body2'>OUT: {row.tanggal_keluar || '-'}</Typography>
+              </Box>
             )
           }
         }),
@@ -353,6 +470,125 @@ const TablePenempatanKelasSantri = () => {
 
   return (
     <Grid container spacing={6} sx={{ width: '100%' }}>
+      <Grid size={12}>
+        <Card sx={{ p: 5 }}>
+          <Grid container spacing={4}>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua', value: '' },
+                  ...storeTahunAjaran.datas.map((r: any) => ({
+                    label: r.tahun_ajaran,
+                    value: r.id_tahunajaran
+                  }))
+                ]}
+                value={selectedTahunAjaran}
+                onChange={(_, newValue) => setSelectedTahunAjaran(newValue || { label: 'Semua', value: '' })}
+                getOptionLabel={option => option.label || ''}
+                getOptionKey={option => option.value}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Tahun Ajaran' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua', value: '' },
+                  ...storeKelasFormal.datas.map((r: any) => ({
+                    label: r.nama_kelas,
+                    value: r.id_kelas
+                  }))
+                ]}
+                value={selectedKelasFormal}
+                onChange={(_, newValue) => setSelectedKelasFormal(newValue || { label: 'Semua', value: '' })}
+                getOptionLabel={option => option.label || ''}
+                getOptionKey={option => option.value}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Kelas Formal' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua', value: '' },
+                  ...storeKelasMda.datas.map((r: any) => ({
+                    label: r.nama_kelas_mda,
+                    value: r.id_kelas_mda
+                  }))
+                ]}
+                value={selectedKelasMda}
+                onChange={(_, newValue) => setSelectedKelasMda(newValue || { label: 'Semua', value: '' })}
+                getOptionLabel={option => option.label || ''}
+                getOptionKey={option => option.value}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Kelas MDA' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua', value: 'Semua' },
+                  { label: 'Aktif', value: 'Aktif' },
+                  { label: 'Alumni', value: 'Alumni' },
+                  { label: 'Tidak Aktif', value: 'Tidak Aktif' }
+                ]}
+                value={
+                  statusPenempatan === 'Semua'
+                    ? { label: 'Semua', value: 'Semua' }
+                    : { label: statusPenempatan, value: statusPenempatan }
+                }
+                onChange={(_, newValue) => setStatusPenempatan(newValue ? newValue.value : 'Semua')}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Status Penempatan' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua', value: 'Semua' },
+                  { label: 'Aktif', value: '1' },
+                  { label: 'Non-Aktif', value: '0' }
+                ]}
+                value={
+                  statusSantri === 'Semua'
+                    ? { label: 'Semua', value: 'Semua' }
+                    : statusSantri === '1'
+                      ? { label: 'Aktif', value: '1' }
+                      : { label: 'Non-Aktif', value: '0' }
+                }
+                onChange={(_, newValue) => setStatusSantri(newValue ? newValue.value : 'Semua')}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Status Santri' />}
+              />
+            </Grid>
+          </Grid>
+          <Toolbar sx={{ px: '0px !important', gap: 2, flexWrap: 'wrap', minHeight: 'auto', mt: 4 }}>
+            <Button
+              variant='contained'
+              color='info'
+              startIcon={<i className='tabler-search' />}
+              onClick={handleSearchSubmit}
+            >
+              Cari
+            </Button>
+            <Button
+              variant='outlined'
+              color='secondary'
+              startIcon={<i className='tabler-refresh' />}
+              onClick={handleResetFilter}
+            >
+              Reset Filter
+            </Button>
+          </Toolbar>
+        </Card>
+      </Grid>
       <Grid size={12}>
         <Card>
           <CardHeader title='Penempatan Kelas Santri' sx={{ paddingBottom: 0 }} />

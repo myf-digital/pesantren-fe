@@ -48,7 +48,7 @@ const initialState: InitialState = {
 --------------------------- */
 
 export interface FetchParamAlls {
-  status: string
+  status?: string
 }
 
 export const fetchTahunAjaranAll = createAsyncThunk<any, FetchParamAlls>(
