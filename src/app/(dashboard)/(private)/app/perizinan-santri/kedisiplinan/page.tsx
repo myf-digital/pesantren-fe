@@ -49,7 +49,7 @@ const RowAction = ({ row, currentUserRole }: { row: any; currentUserRole: string
 
   // Aturan Visibilitas Tombol Berdasarkan Spesifikasi Role & Status
   const isParentOrWali = ['orang_tua_wali', 'wali_asuh', 'administrator'].includes(currentUserRole)
-  const isKedisiplinan = ['petugas_kedisiplinan', 'administrator'].includes(currentUserRole)
+  const isKedisiplinan = ['petugas_kedisiplinan', 'wali_asuh', 'administrator'].includes(currentUserRole)
   const isStatusMenunggu = row.status_approval === 'Menunggu' && !row.is_canceled
   const isStatusRequestCanceled = row.is_request_canceled && !row.is_canceled
 
