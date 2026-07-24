@@ -27,7 +27,8 @@ import {
   FormControlLabel,
   Radio,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Autocomplete
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -47,6 +48,7 @@ import { useCan } from '@/hooks/useCan'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { useSession } from 'next-auth/react'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
+import { fetchLocationPage } from '../../location/slice'
 
 // Komponen Aksi Baris Tabel Dinamis Berdasarkan Struktur Akses & State Dokumen
 const RowAction = ({
@@ -63,8 +65,8 @@ const RowAction = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
   // Aturan Visibilitas Tombol Berdasarkan Spesifikasi Role & Status
-  const isParentOrWali = ['orang_tua_wali', 'wali_asuh', 'administrator'].includes(currentUserRole)
-  const isKedisiplinan = ['pegawai_kedisiplinan', 'administrator'].includes(currentUserRole)
+  const isParentOrWali = ['orang_tua_wali', 'administrator'].includes(currentUserRole)
+  const isKedisiplinan = ['pegawai_kedisiplinan', 'wali_asuh', 'administrator'].includes(currentUserRole)
   const isStatusMenunggu = row.status_approval === 'Menunggu' && !row.is_canceled
   const isStatusRequestCanceled = row.is_request_canceled && !row.is_canceled
 
@@ -122,11 +124,15 @@ const PerizinanSantriList = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
 
+  // State Options Master Data Dropdown
+  const [optKamar, setOptKamar] = useState<any[]>([])
+
   // State Utama Filter Range Date & Kategori Data
   const [tanggalAwal, setTanggalAwal] = useState<Date | null>(null)
   const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(null)
   const [statusApproval, setStatusApproval] = useState('Semua')
   const [jenisIzin, setJenisIzin] = useState('Semua')
+  const [idLokasiKamar, setIdLokasiKamar] = useState('Semua')
   const [searchQuery, setSearchQuery] = useState('')
 
   // State Snapshot Sinkronisasi Fetcher
@@ -135,6 +141,7 @@ const PerizinanSantriList = () => {
     endDate: null, // format(endOfMonth(new Date()), 'yyyy-MM-dd'),
     statusApproval: 'Semua',
     jenisIzin: 'Semua',
+    idLokasiKamar: 'Semua',
     searchQuery: ''
   })
   const [isFilterApplied, setIsFilterApplied] = useState(true)
@@ -159,6 +166,24 @@ const PerizinanSantriList = () => {
   const [pdfUrl, setPdfUrl] = useState('')
   const [pdfTitle, setPdfTitle] = useState('')
 
+  // Fetch Master Data Lokasi Kamar untuk Dropdown Filter
+  useEffect(() => {
+    const fetchMasterKamar = async () => {
+      try {
+        const resKamar = await dispatch(fetchLocationPage({ perPage: 1000, keyword: 'Kamar' })).unwrap()
+        const kamarOptions = (resKamar?.data?.values || []).map((item: any) => ({
+          label: `${item.nama_lokasi} (${item.parent?.nama_lokasi || 'Asrama'})`,
+          value: item.id_lokasi
+        }))
+        setOptKamar(kamarOptions)
+      } catch (err) {
+        toast.error('Gagal memuat master lokasi kamar')
+      }
+    }
+
+    fetchMasterKamar()
+  }, [dispatch])
+
   // Core API Caller Page Fetcher
   const executeFetchData = useCallback(
     (currentPage: number, currentPerPage: number, filters: any) => {
@@ -171,6 +196,7 @@ const PerizinanSantriList = () => {
           end_date: filters.endDate || undefined,
           status_approval: filters.statusApproval !== 'Semua' ? filters.statusApproval : undefined,
           jenis_izin: filters.jenisIzin !== 'Semua' ? filters.jenisIzin : undefined,
+          id_lokasi: filters.idLokasiKamar !== 'Semua' ? filters.idLokasiKamar : undefined,
           q: filters.searchQuery || undefined
         })
       )
@@ -209,6 +235,7 @@ const PerizinanSantriList = () => {
       endDate: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : '',
       statusApproval,
       jenisIzin,
+      idLokasiKamar,
       searchQuery
     }
     setPage(1)
@@ -225,7 +252,7 @@ const PerizinanSantriList = () => {
     setTanggalAkhir(null)
     setStatusApproval('Semua')
     setJenisIzin('Semua')
-    setSearchQuery('')
+    setIdLokasiKamar('Semua'), setSearchQuery('')
     setPage(1)
     setIsFilterApplied(true)
 
@@ -234,6 +261,7 @@ const PerizinanSantriList = () => {
       endDate: null,
       statusApproval: 'Semua',
       jenisIzin: 'Semua',
+      idLokasiKamar: 'Semua',
       searchQuery: ''
     }
     setCurrentFilters(baseFilters)
@@ -281,6 +309,7 @@ const PerizinanSantriList = () => {
           end_date: currentFilters.endDate,
           status_approval: currentFilters.statusApproval !== 'Semua' ? currentFilters.statusApproval : undefined,
           jenis_izin: currentFilters.jenisIzin !== 'Semua' ? currentFilters.jenisIzin : undefined,
+          id_lokasi: currentFilters.idLokasiKamar !== 'Semua' ? currentFilters.idLokasiKamar : undefined,
           q: currentFilters.searchQuery || undefined
         })
       ).unwrap()
@@ -461,8 +490,9 @@ const PerizinanSantriList = () => {
       <Grid size={12}>
         <Card sx={{ p: 5, mb: 4, overflow: 'visible' }}>
           {/* LAYOUT GRID RESPONSIF: Menyesuaikan kolom berdasarkan ukuran perangkat */}
-          <Grid container spacing={4} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+          <Grid container spacing={2} sx={{ mb: 4, alignItems: 'center' }}>
+            {/* Tanggal Awal */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.7 }}>
               <AppReactDatepicker
                 selected={tanggalAwal}
                 onChange={(date: Date | null) => setTanggalAwal(date)}
@@ -476,7 +506,8 @@ const PerizinanSantriList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            {/* Tanggal Akhir */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.7 }}>
               <AppReactDatepicker
                 selected={tanggalAkhir}
                 onChange={(date: Date | null) => setTanggalAkhir(date)}
@@ -490,8 +521,8 @@ const PerizinanSantriList = () => {
               />
             </Grid>
 
-            {/* Dropdown Filter Status Approval */}
-            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+            {/* Status Approval */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.8 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Status Approval</InputLabel>
                 <Select
@@ -507,8 +538,8 @@ const PerizinanSantriList = () => {
               </FormControl>
             </Grid>
 
-            {/* Dropdown Filter Jenis Perizinan */}
-            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+            {/* Jenis Perizinan */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.8 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Jenis Perizinan</InputLabel>
                 <Select label='Jenis Perizinan' value={jenisIzin} onChange={e => setJenisIzin(e.target.value)}>
@@ -519,13 +550,30 @@ const PerizinanSantriList = () => {
               </FormControl>
             </Grid>
 
-            {/* Multi Filter Free Text input */}
-            <Grid size={{ xs: 12, md: 4 }}>
+            {/* Autocomplete Lokasi Kamar */}
+            <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
+              <Autocomplete
+                size='small'
+                options={[{ label: 'Semua Kamar', value: 'Semua' }, ...optKamar]}
+                value={
+                  idLokasiKamar === 'Semua'
+                    ? { label: 'Semua Kamar', value: 'Semua' }
+                    : optKamar.find(item => item.value === idLokasiKamar) || { label: 'Semua Kamar', value: 'Semua' }
+                }
+                onChange={(_, newValue) => setIdLokasiKamar(newValue ? newValue.value : 'Semua')}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Lokasi Kamar' />}
+              />
+            </Grid>
+
+            {/* 6. Pencarian Free Text */}
+            <Grid size={{ xs: 12, md: 2.5 }}>
               <TextField
                 fullWidth
                 label='Pencarian Nama/NIS/kamar'
                 size='small'
-                placeholder='Ketik nama santri, NIS, atau kamar...'
+                placeholder='Cari nama, NIS, kamar...'
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
@@ -533,7 +581,6 @@ const PerizinanSantriList = () => {
             </Grid>
           </Grid>
 
-          {/* UTILITY BUTTONS BAR: Menggunakan Flex Wrap demi menjaga kerapihan tampilan Mobile */}
           {/* BARIS UTILITY BUTTONS */}
           <Toolbar
             sx={{

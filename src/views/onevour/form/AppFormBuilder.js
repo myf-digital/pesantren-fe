@@ -29,7 +29,6 @@ import Cleave from 'cleave.js/react'
 import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
 
-
 import Box from '@mui/material/Box'
 
 import {
@@ -79,6 +78,7 @@ export function field(props) {
     options,
     callback,
     onChange,
+    onInputChange,
     ref,
     checked = false,
     startAdornment = null,
@@ -124,6 +124,7 @@ export function field(props) {
     interval,
     base64,
     onChange,
+    onInputChange,
     accept,
     helperText
   }
@@ -343,7 +344,13 @@ export function formColumnDetailField(form) {
               Print
             </Button>
           ) : (
-            <Button size='medium' type='button' variant='contained' onClick={props.onClick} disabled={props.disabled || props.loading}>
+            <Button
+              size='medium'
+              type='button'
+              variant='contained'
+              onClick={props.onClick}
+              disabled={props.disabled || props.loading}
+            >
               {props?.loading ? (
                 <CircularProgress
                   sx={{
@@ -1368,17 +1375,37 @@ const selectField = form => {
         }
       }}
       render={({ field: { value, onChange } }) => {
+        const rawValue = value ?? session?.state?.[props.key] ?? null
+
+        let selectedOption = null
+        if (rawValue) {
+          if (typeof rawValue === 'object') {
+            selectedOption = props.options.values.find(e => String(e.value) === String(rawValue.value)) || rawValue
+          } else {
+            selectedOption = props.options.values.find(e => String(e.value) === String(rawValue)) || null
+          }
+        }
+
         return (
           <Autocomplete
             size='small'
             autoHighlight
-            value={value ?? null}
+            value={selectedOption || null}
             defaultValue={null}
+            filterOptions={x => x}
             getOptionLabel={option => {
               return option.label || ''
             }}
             isOptionEqualToValue={(option, val) => {
-              return option.value === val.value
+              if (!val) return false
+              const optionVal = option?.value
+              const currentVal = typeof val === 'object' ? val.value : val
+              return String(optionVal) === String(currentVal)
+            }}
+            onInputChange={(event, value, reason) => {
+              if (typeof props.onInputChange === 'function') {
+                props.onInputChange(event, value, reason)
+              }
             }}
             onChange={(event, newValue) => {
               onChange(newValue) // Update the Controller's value
@@ -1471,7 +1498,7 @@ const selectMultiField = form => {
     <Controller
       control={control}
       name={props.key}
-      value={Array.isArray(selected) ? selected : (selected ? [selected] : [])}
+      value={Array.isArray(selected) ? selected : selected ? [selected] : []}
       defaultValue={[]}
       rules={{
         validate: value => {
@@ -1489,7 +1516,7 @@ const selectMultiField = form => {
             multiple
             autoHighlight
             filterSelectedOptions
-            value={Array.isArray(value) ? value : (value ? [value] : [])}
+            value={Array.isArray(value) ? value : value ? [value] : []}
             defaultValue={[]}
             getOptionLabel={option => {
               return option.label || ''
