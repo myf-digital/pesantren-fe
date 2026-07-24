@@ -1,3 +1,5 @@
+import { useCallback, useRef } from "react"
+
 export const getAllTablerIcons = (): string[] => {
   const icons = new Set<string>()
 
@@ -31,4 +33,26 @@ export const getAllTablerIcons = (): string[] => {
   }
 
   return Array.from(icons).sort()
+}
+
+// Custom Hook untuk Debounce
+export function useDebounce(callback: any, delay = 500) {
+  const timer: any = useRef(null)
+
+  const debouncedFunction = useCallback(
+    (...args: any) => {
+      // Hapus timer sebelumnya jika user masih mengetik
+      if (timer.current) {
+        clearTimeout(timer.current)
+      }
+
+      // Buat timer baru
+      timer.current = setTimeout(() => {
+        callback(...args)
+      }, delay)
+    },
+    [callback, delay]
+  )
+
+  return debouncedFunction
 }

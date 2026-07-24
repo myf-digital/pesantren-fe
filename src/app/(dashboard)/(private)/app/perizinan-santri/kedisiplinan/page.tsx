@@ -40,6 +40,7 @@ import { useCan } from '@/hooks/useCan'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { useSession } from 'next-auth/react'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
+import { fetchLocationPage } from '../../location/slice'
 
 // ==========================================
 // KOMPONEN AKSI BARIS TABEL (ROW ACTION)
@@ -114,11 +115,15 @@ const PerizinanSantriTabsList = () => {
   // 💡 State Managing 2 Tab: 0 = Perizinan Santri, 1 = Request Pembatalan
   const [activeTab, setActiveTab] = useState<number>(0)
 
+  // State Options Master Data Dropdown
+  const [optKamar, setOptKamar] = useState<any[]>([])
+
   // State Filter Utama
   const [tanggalAwal, setTanggalAwal] = useState<Date | null>(null)
   const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(null)
   const [statusApproval, setStatusApproval] = useState('Semua')
   const [jenisIzin, setJenisIzin] = useState('Semua')
+  const [idLokasiKamar, setIdLokasiKamar] = useState('Semua')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Snapshot filter state
@@ -127,6 +132,7 @@ const PerizinanSantriTabsList = () => {
     endDate: null, // format(endOfMonth(new Date()), 'yyyy-MM-dd'),
     statusApproval: 'Semua',
     jenisIzin: 'Semua',
+    idLokasiKamar: 'Semua',
     searchQuery: ''
   })
 
@@ -139,6 +145,24 @@ const PerizinanSantriTabsList = () => {
   const [openPdf, setOpenPdf] = useState(false)
   const [pdfUrl, setPdfUrl] = useState('')
   const [pdfTitle, setPdfTitle] = useState('')
+
+  // Fetch Master Data Lokasi Kamar untuk Dropdown Filter
+  useEffect(() => {
+    const fetchMasterKamar = async () => {
+      try {
+        const resKamar = await dispatch(fetchLocationPage({ perPage: 1000, keyword: 'Kamar' })).unwrap()
+        const kamarOptions = (resKamar?.data?.values || []).map((item: any) => ({
+          label: `${item.nama_lokasi} (${item.parent?.nama_lokasi || 'Asrama'})`,
+          value: item.id_lokasi
+        }))
+        setOptKamar(kamarOptions)
+      } catch (err) {
+        toast.error('Gagal memuat master lokasi kamar')
+      }
+    }
+
+    fetchMasterKamar()
+  }, [dispatch])
 
   // Core API Fetcher
   const executeFetchData = useCallback(
@@ -155,6 +179,7 @@ const PerizinanSantriTabsList = () => {
           jenis_izin: filters.jenisIzin !== 'Semua' ? filters.jenisIzin : undefined,
           q: filters.searchQuery || undefined,
           is_request_canceled: tabIndex === 1 ? true : false,
+          id_lokasi: filters.idLokasiKamar !== 'Semua' ? filters.idLokasiKamar : undefined,
           is_canceled: false
         })
       )
@@ -195,6 +220,7 @@ const PerizinanSantriTabsList = () => {
       endDate: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : '',
       statusApproval,
       jenisIzin,
+      idLokasiKamar,
       searchQuery
     }
     setPage(1)
@@ -211,7 +237,7 @@ const PerizinanSantriTabsList = () => {
     setStatusApproval('Semua')
     setJenisIzin('Semua')
     setSearchQuery('')
-    setPage(1)
+    setIdLokasiKamar('Semua'), setPage(1)
     setIsFilterApplied(true)
 
     const baseFilters = {
@@ -219,6 +245,7 @@ const PerizinanSantriTabsList = () => {
       endDate: null,
       statusApproval: 'Semua',
       jenisIzin: 'Semua',
+      idLokasiKamar: 'Semua',
       searchQuery: ''
     }
     setCurrentFilters(baseFilters)
@@ -239,7 +266,8 @@ const PerizinanSantriTabsList = () => {
           status_approval: currentFilters.statusApproval !== 'Semua' ? currentFilters.statusApproval : undefined,
           jenis_izin: currentFilters.jenisIzin !== 'Semua' ? currentFilters.jenisIzin : undefined,
           q: currentFilters.searchQuery || undefined,
-          is_request_canceled: activeTab === 1 ? true : undefined
+          is_request_canceled: activeTab === 1 ? true : undefined,
+          id_lokasi: currentFilters.idLokasiKamar !== 'Semua' ? currentFilters.idLokasiKamar : undefined
         })
       ).unwrap()
 
@@ -416,7 +444,7 @@ const PerizinanSantriTabsList = () => {
         {/* CONTAINER PANEL FILTER (SHARED FOR BOTH TABS) */}
         <Card sx={{ p: 5, mb: 4, overflow: 'visible' }}>
           <Grid container spacing={4} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 2.2 }}>
               <AppReactDatepicker
                 selected={tanggalAwal}
                 onChange={(date: Date | null) => setTanggalAwal(date)}
@@ -430,7 +458,7 @@ const PerizinanSantriTabsList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 2.2 }}>
               <AppReactDatepicker
                 selected={tanggalAkhir}
                 onChange={(date: Date | null) => setTanggalAkhir(date)}
@@ -471,7 +499,22 @@ const PerizinanSantriTabsList = () => {
               </FormControl>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 4 }}>
+            {/* Dropdown Filter Lokasi Kamar */}
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+              <FormControl fullWidth size='small'>
+                <InputLabel>Lokasi Kamar</InputLabel>
+                <Select label='Lokasi Kamar' value={idLokasiKamar} onChange={e => setIdLokasiKamar(e.target.value)}>
+                  <MenuItem value='Semua'>Semua Kamar</MenuItem>
+                  {optKamar.map((item: any) => (
+                    <MenuItem key={item.value} value={item.value}>
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 fullWidth
                 label='Pencarian Nama/NIS/kamar'

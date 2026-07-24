@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardHeader, CardContent, Grid, Button, CircularProgress, Box, Typography } from '@mui/material'
+import { Card, CardHeader, CardContent, Grid, Button, CircularProgress, Box, Typography, debounce } from '@mui/material'
 import { toast } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 
@@ -16,6 +16,7 @@ import { fetchLocationPage } from '../../location/slice/index'
 import { field, formColumn } from '@views/onevour/form/AppFormBuilder'
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog'
 import { format, isValid } from 'date-fns'
+import { useDebounce } from '@/@core/utils/globalHelpers'
 
 const FormPerizinanSantriPage = () => {
   const router = useRouter()
@@ -51,6 +52,8 @@ const FormPerizinanSantriPage = () => {
 
   const {
     control,
+    setValue,
+    getValues,
     handleSubmit,
     formState: { errors }
   } = useForm({ values: state })
@@ -58,14 +61,11 @@ const FormPerizinanSantriPage = () => {
   const initForm = useCallback(async () => {
     try {
       const [resSantri, resKamar] = await Promise.all([
-        dispatch(fetchSantriPage({ perPage: 1000 })).unwrap(),
+        dispatch(fetchSantriPage({ perPage: 20 })).unwrap(),
         dispatch(fetchLocationPage({ perPage: 1000, keyword: 'Kamar' })).unwrap()
       ])
 
-      const santriOptions = (resSantri?.data?.values || []).map((item: any) => ({
-        label: `${item.fullname} (${item.nis || '-'})`,
-        value: item.id_santri
-      }))
+      const santriOptions = (resSantri?.data?.values || []).map(mapSantriToOption)
 
       const kamarOptions = (resKamar?.data?.values || []).map((item: any) => ({
         label: `${item.nama_lokasi} (${item.parent?.nama_lokasi || 'Asrama'})`,
@@ -98,6 +98,43 @@ const FormPerizinanSantriPage = () => {
       setFileObject(null)
     }
   }, [state.file_izin])
+
+  const mapSantriToOption = (item: any) => {
+    console.log(item)
+    const idLokasiKamar = item.penempatanKamar?.[0]?.id_lokasi || item.id_lokasi || null
+
+    return {
+      label: `${item.fullname} (${item.nis || '-'})`,
+      value: item.id_santri,
+      id_lokasi: idLokasiKamar
+    }
+  }
+
+  const searchSantri = useCallback(
+    async (keyword: string) => {
+      try {
+        const res = await dispatch(fetchSantriPage({ perPage: 20, keyword })).unwrap()
+        const rawList = res?.data?.values || res?.values || res?.data || []
+        const newOptions = Array.isArray(rawList) ? rawList.map(mapSantriToOption) : []
+
+        setOpt(prev => {
+          const currentSelected = prev.santri.find(s => s.value === state.id_santri)
+
+          if (currentSelected && !newOptions.some(item => item.value === currentSelected.value)) {
+            return { ...prev, santri: [currentSelected, ...newOptions] }
+          }
+
+          return { ...prev, santri: newOptions }
+        })
+      } catch (err) {
+        console.error('Fetch Santri Error:', err)
+      }
+    },
+    [dispatch, mapSantriToOption]
+  )
+
+  // Pasang Debounce Manual (Delay 500ms)
+  const debouncedSearchSantri = useDebounce(searchSantri, 500)
 
   const onSubmitPreValidate = () => {
     if (
@@ -163,7 +200,35 @@ const FormPerizinanSantriPage = () => {
       label: 'Santri',
       placeholder: 'Pilih Santri',
       options: { values: opt.santri },
-      required: true
+      required: true,
+      onInputChange: (event: any, value: any, reason: string) => {
+        if (reason === 'input' && value.trim() !== '') {
+          debouncedSearchSantri(value)
+        }
+      },
+      onChange: (selectedOption: any) => {
+        const id_santri = selectedOption?.value ?? null
+        const id_lokasi = selectedOption?.id_lokasi ?? null
+
+        const lokasiKamarObj = id_lokasi
+          ? opt.kamar.find(k => String(k.value) === String(id_lokasi)) || { label: '', value: id_lokasi }
+          : null
+
+        if (typeof setValue === 'function') {
+          setValue('id_santri', selectedOption)
+          setValue('id_lokasi_kamar', lokasiKamarObj)
+        }
+
+        setState((prev: any) => ({
+          ...prev,
+          id_santri: id_santri,
+          id_lokasi_kamar: id_lokasi
+        }))
+
+        if (selectedOption && !id_lokasi) {
+          toast.warning('Santri belum memiliki penempatan kamar.')
+        }
+      }
     }),
     field({
       type: 'select',
