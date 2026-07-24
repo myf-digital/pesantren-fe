@@ -1,19 +1,16 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
+
 import { useSearchParams, useRouter } from 'next/navigation'
+
 import { Card, CardHeader, CardContent, Grid } from '@mui/material'
 import { toast } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import {
-  fetchLembagaFormalById,
-  postLembagaFormal,
-  postLembagaFormalUpdate,
-  resetRedux
-} from '../slice/index'
-import { fetchCabangPage } from '../../cabang/slice/index'
+import { fetchLembagaFormalById, postLembagaFormal, postLembagaFormalUpdate, resetRedux } from '../slice/index'
+import { fetchCabangAll } from '../../cabang/slice/index'
 import api from '@/libs/axios'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
@@ -32,10 +29,14 @@ const LembagaFormalForm = () => {
     cabang: [] as any[],
     institution: [] as any[],
     jenis: [
-      { label: 'SD', value: 'SD' }, { label: 'MI', value: 'MI' },
-      { label: 'SMP', value: 'SMP' }, { label: 'MTs', value: 'MTs' },
-      { label: 'SMA', value: 'SMA' }, { label: 'MA', value: 'MA' },
-      { label: 'SMK', value: 'SMK' }, { label: 'Diniyah', value: 'Diniyah' },
+      { label: 'SD', value: 'SD' },
+      { label: 'MI', value: 'MI' },
+      { label: 'SMP', value: 'SMP' },
+      { label: 'MTs', value: 'MTs' },
+      { label: 'SMA', value: 'SMA' },
+      { label: 'MA', value: 'MA' },
+      { label: 'SMK', value: 'SMK' },
+      { label: 'Diniyah', value: 'Diniyah' },
       { label: 'Perguruan Tinggi', value: 'Perguruan Tinggi' }
     ],
     akreditasi: [
@@ -56,7 +57,12 @@ const LembagaFormalForm = () => {
     keterangan: ''
   })
 
-  const { control, handleSubmit, formState: { errors }, reset } = useForm({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset
+  } = useForm({
     values: state
   })
 
@@ -66,16 +72,22 @@ const LembagaFormalForm = () => {
   const initForm = useCallback(async () => {
     try {
       // Fetch Cabang
-      const resCabang = await dispatch(fetchCabangPage({ perPage: 1000 })).unwrap()
-      const cabangOptions = (resCabang?.data?.values || [])
-        .map((item: any) => ({ label: item.nama_cabang, value: item.id_cabang }))
+      const resCabang = await dispatch(fetchCabangAll({ perPage: 1000 })).unwrap()
+
+      const cabangOptions = (resCabang?.data || []).map((item: any) => ({
+        label: item.nama_cabang,
+        value: item.id_cabang
+      }))
 
       setOpt(prev => ({ ...prev, cabang: cabangOptions }))
 
       // Fetch Institution
       const resInstitution = await api.get('/app/institution/all-data')
-      const institutionOptions = (resInstitution?.data?.data || [])
-        .map((item: any) => ({ label: item.institution_name, value: item.institution_id_sitrendi }))
+
+      const institutionOptions = (resInstitution?.data?.data || []).map((item: any) => ({
+        label: item.institution_name,
+        value: item.institution_id_sitrendi
+      }))
 
       setOpt(prev => ({ ...prev, institution: institutionOptions }))
 
@@ -88,16 +100,19 @@ const LembagaFormalForm = () => {
           const formatted = {
             ...d,
             id_cabang: d.id_cabang ? cabangOptions.find((o: any) => o.value === d.id_cabang) : null,
-            institution_id_sitrendi: d.institution_id_sitrendi ? institutionOptions.find((o: any) => o.value === d.institution_id_sitrendi) : null,
+            institution_id_sitrendi: d.institution_id_sitrendi
+              ? institutionOptions.find((o: any) => o.value === d.institution_id_sitrendi)
+              : null,
             jenis_lembaga: d.jenis_lembaga ? { label: d.jenis_lembaga, value: d.jenis_lembaga } : null,
-            status_akreditasi: d.status_akreditasi ? { label: d.status_akreditasi, value: d.status_akreditasi } : null,
+            status_akreditasi: d.status_akreditasi ? { label: d.status_akreditasi, value: d.status_akreditasi } : null
           }
+
           setState(formatted)
           reset(formatted)
         }
       }
     } catch (err) {
-      toast.error("Gagal memuat referensi data")
+      toast.error('Gagal memuat referensi data')
     }
   }, [id, dispatch, reset])
 
@@ -125,7 +140,7 @@ const LembagaFormalForm = () => {
       id_cabang: state.id_cabang?.value || null,
       institution_id_sitrendi: state.institution_id_sitrendi?.value || null,
       jenis_lembaga: state.jenis_lembaga?.value || null,
-      status_akreditasi: state.status_akreditasi?.value || null,
+      status_akreditasi: state.status_akreditasi?.value || null
     }
 
     if (id) {

@@ -232,7 +232,7 @@ const Table = () => {
       dispatch(resetRedux())
     }
 
-    dispatch(fetchLocationAll({}))
+    dispatch(fetchLocationAll({ orderWithParent: true }))
   }, [dispatch, filter, perPage, store.delete])
 
   useEffect(() => {

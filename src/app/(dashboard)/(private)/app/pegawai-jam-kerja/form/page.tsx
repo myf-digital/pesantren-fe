@@ -10,8 +10,8 @@ import { useForm } from 'react-hook-form'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchJamKerjaById, postJamKerja, postJamKerjaUpdate, resetRedux } from '../slice/index'
-import { fetchPegawaiPage } from '../../pegawai/slice/index'
-import { fetchLocationPage } from '../../location/slice/index'
+import { fetchPegawaiAll } from '../../pegawai/slice/index'
+import { fetchLocationAll } from '../../location/slice/index'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
 
@@ -52,16 +52,16 @@ const JamKerjaForm = () => {
     try {
       // Mengambil referensi data All Pegawai & All Lokasi Kerja global tanpa paginasi
       const [resPegawai, resLokasi] = await Promise.all([
-        dispatch(fetchPegawaiPage({ perPage: 1000, status_pegawai: 'Aktif' })).unwrap(),
-        dispatch(fetchLocationPage({ perPage: 1000 })).unwrap()
+        dispatch(fetchPegawaiAll({ perPage: 1000, status_pegawai: 'Aktif' })).unwrap(),
+        dispatch(fetchLocationAll({ perPage: 1000 })).unwrap()
       ])
 
-      const pegawaiOpts = (resPegawai?.data?.values || []).map((i: any) => ({
+      const pegawaiOpts = (resPegawai?.data || []).map((i: any) => ({
         label: `${i.nama_lengkap} (NIK: ${i.nik || '-'})`,
         value: i.id_pegawai
       }))
 
-      const lokasiOpts = (resLokasi?.data?.values || []).map((i: any) => ({
+      const lokasiOpts = (resLokasi?.data || []).map((i: any) => ({
         label: `${i.nama_lokasi}`,
         value: i.id_lokasi
       }))
@@ -80,6 +80,7 @@ const JamKerjaForm = () => {
 
             // Buat objek Date tiruan menggunakan tanggal hari ini namun dengan Jam & Menit yang sesuai
             const dummyDate = new Date()
+
             dummyDate.setHours(parseInt(hours, 10))
             dummyDate.setMinutes(parseInt(minutes, 10))
             dummyDate.setSeconds(0)
@@ -147,6 +148,7 @@ const JamKerjaForm = () => {
       if (timeValue instanceof Date) {
         const hours = String(timeValue.getHours()).padStart(2, '0')
         const minutes = String(timeValue.getMinutes()).padStart(2, '0')
+
         return `${hours}:${minutes}`
       }
 
@@ -190,6 +192,7 @@ const JamKerjaForm = () => {
     }),
 
     { section: 'Konfigurasi Waktu Operasional' },
+
     // Menggunakan type 'text' dengan placeholder format jam jika komponen clock khusus belum di-binding global
     field({
       type: 'time',

@@ -233,7 +233,7 @@ const FormValidationBasic = () => {
 
     dispatch(fetchCabangAll({}))
 
-    dispatch(fetchLocationAll({}))
+    dispatch(fetchLocationAll({ orderWithParent: true }))
 
     dispatch(fetchMasterSlotWaktuAll({ is_active: true }))
 

@@ -1,14 +1,16 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
+
 import { useSearchParams, useRouter } from 'next/navigation'
+
 import { Card, CardHeader, CardContent, Grid } from '@mui/material'
 import { toast } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { fetchOrgUnitById, fetchOrgUnitPage, postOrgUnit, postOrgUnitUpdate, resetRedux } from '../slice/index'
-import { fetchCabangPage } from '../../cabang/slice/index'
+import { fetchOrgUnitById, fetchOrgUnitAll, postOrgUnit, postOrgUnitUpdate, resetRedux } from '../slice/index'
+import { fetchCabangAll } from '../../cabang/slice/index'
 import { fetchLembagaFormalAll } from '../../lembaga-formal/slice/index'
 import { fetchLembagaAll as fetchLembagaKepesantrenanAll } from '../../lembaga-kepesantrenan/slice/index'
 
@@ -61,17 +63,17 @@ const OrganizationUnitForm = () => {
   const initForm = useCallback(async () => {
     try {
       const [resParent, resCabang, resFormal, resPesantren] = await Promise.all([
-        dispatch(fetchOrgUnitPage({ perPage: 1000 })).unwrap(),
-        dispatch(fetchCabangPage({ perPage: 1000 })).unwrap(),
+        dispatch(fetchOrgUnitAll({ perPage: 1000 })).unwrap(),
+        dispatch(fetchCabangAll({ perPage: 1000 })).unwrap(),
         dispatch(fetchLembagaFormalAll({})).unwrap(),
         dispatch(fetchLembagaKepesantrenanAll({})).unwrap()
       ])
 
-      const parentOptions = (resParent?.data?.values || [])
+      const parentOptions = (resParent?.data || [])
         .filter((item: any) => item.id_orgunit !== id)
         .map((item: any) => ({ label: item.nama_orgunit, value: item.id_orgunit }))
 
-      const cabangOptions = (resCabang?.data?.values || []).map((item: any) => ({
+      const cabangOptions = (resCabang?.data || []).map((item: any) => ({
         label: item.nama_cabang,
         value: item.id_cabang
       }))
@@ -101,10 +103,13 @@ const OrganizationUnitForm = () => {
           const formatted = {
             ...d,
             jenis_orgunit: d.jenis_orgunit ? { label: d.jenis_orgunit, value: d.jenis_orgunit } : null,
+
             // Mapping ID Cabang dari nama_cabang BE
             id_cabang: d.id_cabang ? { label: d.nama_cabang, value: d.id_cabang } : null,
+
             // Mapping Parent ID dari parent_nama BE
             parent_id: d.parent_id ? { label: d.parent_nama, value: d.parent_id } : null,
+
             // Mapping Lembaga dari json_build_object BE
             id_lembaga: d.lembaga?.id_lembaga
               ? {
@@ -115,6 +120,7 @@ const OrganizationUnitForm = () => {
                 }
               : null
           }
+
           setState(formatted)
           reset(formatted)
         }
@@ -132,6 +138,7 @@ const OrganizationUnitForm = () => {
 
     if (selectedCabangId) {
       const filtered = opt.lembaga.filter((l: any) => l.id_cabang === selectedCabangId)
+
       setFilteredLembaga(filtered)
 
       if (state.id_lembaga && state.id_lembaga.id_cabang !== selectedCabangId) {

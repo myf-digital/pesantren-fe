@@ -1,18 +1,19 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
+
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Card, CardHeader, CardContent, Grid, Button, CircularProgress, Divider, Box, IconButton } from '@mui/material'
+
+import { Card, CardHeader, CardContent, Grid, Button, CircularProgress, IconButton } from '@mui/material'
 import { toast } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { fetchLocationById, fetchLocationPage, postLocation, postLocationUpdate, resetRedux } from '../slice/index'
-import { fetchCabangPage } from '../../cabang/slice/index'
+import { fetchLocationById, fetchLocationAll, postLocation, postLocationUpdate, resetRedux } from '../slice/index'
+import { fetchCabangAll } from '../../cabang/slice/index'
 
-import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
+import { field, formColumn } from '@views/onevour/form/AppFormBuilder'
 import QrPrintModal from './QrPrintModal'
-import dynamic from 'next/dynamic'
 import GeoLocation from './GeoLocation'
 
 const LocationForm = () => {
@@ -98,15 +99,15 @@ const LocationForm = () => {
     try {
       // Fetch Parent dan Cabang secara paralel
       const [resParent, resCabang] = await Promise.all([
-        dispatch(fetchLocationPage({ perPage: 1000 })).unwrap(),
-        dispatch(fetchCabangPage({ perPage: 1000 })).unwrap()
+        dispatch(fetchLocationAll({ perPage: 1000 })).unwrap(),
+        dispatch(fetchCabangAll({ perPage: 1000 })).unwrap()
       ])
 
-      const parentOptions = (resParent?.data?.values || [])
+      const parentOptions = (resParent?.data || [])
         .filter((item: any) => item.id_lokasi !== id) // Hindari circular reference
         .map((item: any) => ({ label: item.nama_lokasi, value: item.id_lokasi }))
 
-      const cabangOptions = (resCabang?.data?.values || []).map((item: any) => ({
+      const cabangOptions = (resCabang?.data || []).map((item: any) => ({
         label: item.nama_cabang,
         value: item.id_cabang
       }))
@@ -127,6 +128,7 @@ const LocationForm = () => {
             latitude: d.latitude ?? '',
             longitude: d.longitude ?? ''
           }
+
           setState(formatted)
           reset(formatted)
         }

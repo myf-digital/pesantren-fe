@@ -262,7 +262,7 @@ const TableInspeksi = () => {
     }
 
     dispatch(fetchCabangAll({}))
-    dispatch(fetchLocationAll({}))
+    dispatch(fetchLocationAll({ orderWithParent: true }))
   }, [dispatch, filter, perPage, store.delete])
 
   useEffect(() => {

@@ -13,12 +13,12 @@ import { fetchBobotPenilaianById, postBobotPenilaian, postBobotPenilaianUpdate, 
 
 // Import Thunks dari modul lain untuk kebutuhan dropdown
 import { fetchJenisPenilaianList } from '../../jenis-penilaian/slice'
-import { fetchTingkatPage } from '../../tingkat/slice'
-import { fetchTahunAjaranPage } from '../../tahun-ajaran/slice'
+import { fetchTingkatAll } from '../../tingkat/slice'
+import { fetchTahunAjaranAll } from '../../tahun-ajaran/slice'
 
 // Asumsi service/thunk untuk lembaga (Formal & Pesantren)
-import { fetchLembagaFormalPage } from '../../lembaga-formal/slice'
-import { fetchLembagaPage } from '../../lembaga-kepesantrenan/slice'
+import { fetchLembagaFormalAll } from '../../lembaga-formal/slice'
+import { fetchLembagaAll } from '../../lembaga-kepesantrenan/slice'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
 
@@ -69,12 +69,12 @@ const JenisPenilaianBobotForm = () => {
         let res: any
 
         if (type === 'FORMAL') {
-          res = await dispatch(fetchLembagaFormalPage({ perPage: 1000 })).unwrap()
+          res = await dispatch(fetchLembagaFormalAll({ perPage: 1000 })).unwrap()
         } else {
-          res = await dispatch(fetchLembagaPage({ perPage: 1000 })).unwrap()
+          res = await dispatch(fetchLembagaAll({ perPage: 1000 })).unwrap()
         }
 
-        const options = (res?.data?.values || []).map((i: any) => ({
+        const options = (res?.data || []).map((i: any) => ({
           label: i.nama_lembaga,
           value: i.id_lembaga
         }))
@@ -92,11 +92,9 @@ const JenisPenilaianBobotForm = () => {
   const fetchTingkatOptions = useCallback(
     async (q: string) => {
       try {
-        let res: any
+        const res = await dispatch(fetchTingkatAll({ type: q })).unwrap()
 
-        res = await dispatch(fetchTingkatPage({ q, perPage: 1000 })).unwrap()
-
-        const options = (res?.data?.values || []).map((i: any) => ({
+        const options = (res?.data || []).map((i: any) => ({
           label: i.tingkat,
           value: i.id_tingkat
         }))
@@ -116,8 +114,8 @@ const JenisPenilaianBobotForm = () => {
       // 1. Fetch Referensi Umum (Paralel)
       const [resJP, resTingkat, resTA] = await Promise.all([
         dispatch(fetchJenisPenilaianList({})).unwrap(),
-        dispatch(fetchTingkatPage({ perPage: 1000 })).unwrap(),
-        dispatch(fetchTahunAjaranPage({ perPage: 1000 })).unwrap()
+        dispatch(fetchTingkatAll({ type: state.lembaga_type.value })).unwrap(),
+        dispatch(fetchTahunAjaranAll({ status: 'Aktif' })).unwrap()
       ])
 
       const jpOpts = (resJP?.data || []).map((i: any) => ({
@@ -125,8 +123,9 @@ const JenisPenilaianBobotForm = () => {
         value: i.id_penilaian,
         rawLembagaType: i.lembaga_type
       }))
-      const tingkatOpts = (resTingkat?.data?.values || []).map((i: any) => ({ label: i.tingkat, value: i.id_tingkat }))
-      const taOpts = (resTA?.data?.values || []).map((i: any) => ({ label: i.tahun_ajaran, value: i.id_tahunajaran }))
+
+      const tingkatOpts = (resTingkat?.data || []).map((i: any) => ({ label: i.tingkat, value: i.id_tingkat }))
+      const taOpts = (resTA?.data || []).map((i: any) => ({ label: i.tahun_ajaran, value: i.id_tahunajaran }))
 
       setOpt((prev: any) => ({
         ...prev,
@@ -205,6 +204,7 @@ const JenisPenilaianBobotForm = () => {
   useEffect(() => {
     if (state.lembaga_type?.value && !id) {
       fetchLembagaOptions(state.lembaga_type.value)
+      fetchTingkatOptions(state.lembaga_type.value)
     }
   }, [state.lembaga_type, fetchLembagaOptions, id])
 

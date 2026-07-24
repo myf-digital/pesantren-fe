@@ -250,7 +250,7 @@ const TableTemuan = () => {
     }
 
     dispatch(fetchCabangAll({}))
-    dispatch(fetchLocationAll({}))
+    dispatch(fetchLocationAll({ orderWithParent: true }))
     dispatch(fetchPegawaiAll({}))
   }, [dispatch, filter, perPage, store.delete])
 

@@ -1,19 +1,16 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
+
 import { useSearchParams, useRouter } from 'next/navigation'
+
 import { Card, CardHeader, CardContent, Grid } from '@mui/material'
 import { toast } from 'react-toastify'
 import { useForm } from 'react-hook-form'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import {
-  fetchLembagaById,
-  postLembaga,
-  postLembagaUpdate,
-  resetRedux
-} from '../slice/index'
-import { fetchCabangPage } from '../../cabang/slice/index'
+import { fetchLembagaById, postLembaga, postLembagaUpdate, resetRedux } from '../slice/index'
+import { fetchCabangAll } from '../../cabang/slice/index'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
 
@@ -37,7 +34,12 @@ const LembagaKepesantrenanForm = () => {
     keterangan: ''
   })
 
-  const { control, handleSubmit, formState: { errors }, reset } = useForm({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset
+  } = useForm({
     values: state
   })
 
@@ -47,9 +49,12 @@ const LembagaKepesantrenanForm = () => {
   const initForm = useCallback(async () => {
     try {
       // Fetch Cabang untuk referensi id_cabang
-      const resCabang = await dispatch(fetchCabangPage({ perPage: 1000 })).unwrap()
-      const cabangOptions = (resCabang?.data?.values || [])
-        .map((item: any) => ({ label: item.nama_cabang, value: item.id_cabang }))
+      const resCabang = await dispatch(fetchCabangAll({ perPage: 1000 })).unwrap()
+
+      const cabangOptions = (resCabang?.data || []).map((item: any) => ({
+        label: item.nama_cabang,
+        value: item.id_cabang
+      }))
 
       setOpt(prev => ({ ...prev, cabang: cabangOptions }))
 
@@ -61,15 +66,17 @@ const LembagaKepesantrenanForm = () => {
         if (d) {
           const formatted = {
             ...d,
+
             // Format id_cabang agar terbaca oleh component Select
-            id_cabang: d.id_cabang ? cabangOptions.find((o: any) => o.value === d.id_cabang) : null,
+            id_cabang: d.id_cabang ? cabangOptions.find((o: any) => o.value === d.id_cabang) : null
           }
+
           setState(formatted)
           reset(formatted)
         }
       }
     } catch (err) {
-      toast.error("Gagal memuat referensi data")
+      toast.error('Gagal memuat referensi data')
     }
   }, [id, dispatch, reset])
 
