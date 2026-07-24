@@ -26,7 +26,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Autocomplete
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -433,7 +434,7 @@ const PerizinanSantriTabsList = () => {
   return (
     <Grid container spacing={6}>
       <Grid size={12}>
-        {/* 💡 IMPLEMENTASI TABS NAVIGATION CONTROLLER */}
+        {/* IMPLEMENTASI TABS NAVIGATION CONTROLLER */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
           <Tabs value={activeTab} onChange={handleTabChange} aria-label='Perizinan Tabs'>
             <Tab label='Pengajuan Izin' id='tab-perizinan' />
@@ -443,8 +444,9 @@ const PerizinanSantriTabsList = () => {
 
         {/* CONTAINER PANEL FILTER (SHARED FOR BOTH TABS) */}
         <Card sx={{ p: 5, mb: 4, overflow: 'visible' }}>
-          <Grid container spacing={4} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, sm: 2.2 }}>
+          <Grid container spacing={2} sx={{ mb: 4, alignItems: 'center' }}>
+            {/* Tanggal Awal */}
+            <Grid size={{ xs: 12, sm: 6, md: 2.2 }}>
               <AppReactDatepicker
                 selected={tanggalAwal}
                 onChange={(date: Date | null) => setTanggalAwal(date)}
@@ -458,7 +460,8 @@ const PerizinanSantriTabsList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 2.2 }}>
+            {/* 2. Tanggal Akhir */}
+            <Grid size={{ xs: 12, sm: 6, md: 2.2 }}>
               <AppReactDatepicker
                 selected={tanggalAkhir}
                 onChange={(date: Date | null) => setTanggalAkhir(date)}
@@ -472,22 +475,7 @@ const PerizinanSantriTabsList = () => {
               />
             </Grid>
 
-            {/* <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-              <FormControl fullWidth size='small' disabled={true}>
-                <InputLabel>Status Approval</InputLabel>
-                <Select
-                  label='Status Approval'
-                  value={activeTab === 1 ? 'Menunggu' : statusApproval}
-                  onChange={e => setStatusApproval(e.target.value)}
-                >
-                  <MenuItem value='Semua'>Semua Status</MenuItem>
-                  <MenuItem value='Menunggu'>Menunggu</MenuItem>
-                  <MenuItem value='Disetujui'>Disetujui</MenuItem>
-                  <MenuItem value='Ditolak'>Ditolak</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid> */}
-
+            {/* Jenis Perizinan */}
             <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Jenis Perizinan</InputLabel>
@@ -499,21 +487,24 @@ const PerizinanSantriTabsList = () => {
               </FormControl>
             </Grid>
 
-            {/* Dropdown Filter Lokasi Kamar */}
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-              <FormControl fullWidth size='small'>
-                <InputLabel>Lokasi Kamar</InputLabel>
-                <Select label='Lokasi Kamar' value={idLokasiKamar} onChange={e => setIdLokasiKamar(e.target.value)}>
-                  <MenuItem value='Semua'>Semua Kamar</MenuItem>
-                  {optKamar.map((item: any) => (
-                    <MenuItem key={item.value} value={item.value}>
-                      {item.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+            {/* Autocomplete Lokasi Kamar */}
+            <Grid size={{ xs: 12, sm: 6, md: 2.6 }}>
+              <Autocomplete
+                size='small'
+                options={[{ label: 'Semua Kamar', value: 'Semua' }, ...optKamar]}
+                value={
+                  idLokasiKamar === 'Semua'
+                    ? { label: 'Semua Kamar', value: 'Semua' }
+                    : optKamar.find(item => item.value === idLokasiKamar) || { label: 'Semua Kamar', value: 'Semua' }
+                }
+                onChange={(_, newValue) => setIdLokasiKamar(newValue ? newValue.value : 'Semua')}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Lokasi Kamar' />}
+              />
             </Grid>
 
+            {/* Pencarian Free Text */}
             <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 fullWidth
@@ -590,9 +581,7 @@ const PerizinanSantriTabsList = () => {
 
         {/* LOG DATA UTAMA TABLE RENDERING */}
         <Card sx={{ overflowX: 'auto' }}>
-          <CardHeader
-            title={activeTab === 0 ? 'Daftar Riwayat Perizinan Santri' : 'Daftar Permintaan Pembatalan Izin'}
-          />
+          <CardHeader title={activeTab === 0 ? 'Daftar Perizinan Santri' : 'Daftar Permintaan Pembatalan Izin'} />
           <TableView changeSort={() => {}} model={buildTable()} />
         </Card>
       </Grid>

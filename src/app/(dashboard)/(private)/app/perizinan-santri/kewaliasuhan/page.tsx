@@ -27,7 +27,8 @@ import {
   FormControlLabel,
   Radio,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Autocomplete
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -489,8 +490,9 @@ const PerizinanSantriList = () => {
       <Grid size={12}>
         <Card sx={{ p: 5, mb: 4, overflow: 'visible' }}>
           {/* LAYOUT GRID RESPONSIF: Menyesuaikan kolom berdasarkan ukuran perangkat */}
-          <Grid container spacing={4} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+          <Grid container spacing={2} sx={{ mb: 4, alignItems: 'center' }}>
+            {/* Tanggal Awal */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.7 }}>
               <AppReactDatepicker
                 selected={tanggalAwal}
                 onChange={(date: Date | null) => setTanggalAwal(date)}
@@ -504,7 +506,8 @@ const PerizinanSantriList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            {/* Tanggal Akhir */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.7 }}>
               <AppReactDatepicker
                 selected={tanggalAkhir}
                 onChange={(date: Date | null) => setTanggalAkhir(date)}
@@ -518,8 +521,8 @@ const PerizinanSantriList = () => {
               />
             </Grid>
 
-            {/* Dropdown Filter Status Approval */}
-            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+            {/* Status Approval */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.8 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Status Approval</InputLabel>
                 <Select
@@ -535,8 +538,8 @@ const PerizinanSantriList = () => {
               </FormControl>
             </Grid>
 
-            {/* Dropdown Filter Jenis Perizinan */}
-            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+            {/* Jenis Perizinan */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.8 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Jenis Perizinan</InputLabel>
                 <Select label='Jenis Perizinan' value={jenisIzin} onChange={e => setJenisIzin(e.target.value)}>
@@ -547,28 +550,30 @@ const PerizinanSantriList = () => {
               </FormControl>
             </Grid>
 
-            {/* Dropdown Filter Lokasi Kamar */}
-            <Grid size={{ xs: 12, sm: 6, md: 3.2 }}>
-              <FormControl fullWidth size='small'>
-                <InputLabel>Lokasi Kamar</InputLabel>
-                <Select label='Lokasi Kamar' value={idLokasiKamar} onChange={e => setIdLokasiKamar(e.target.value)}>
-                  <MenuItem value='Semua'>Semua Kamar</MenuItem>
-                  {optKamar.map((item: any) => (
-                    <MenuItem key={item.value} value={item.value}>
-                      {item.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+            {/* Autocomplete Lokasi Kamar */}
+            <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
+              <Autocomplete
+                size='small'
+                options={[{ label: 'Semua Kamar', value: 'Semua' }, ...optKamar]}
+                value={
+                  idLokasiKamar === 'Semua'
+                    ? { label: 'Semua Kamar', value: 'Semua' }
+                    : optKamar.find(item => item.value === idLokasiKamar) || { label: 'Semua Kamar', value: 'Semua' }
+                }
+                onChange={(_, newValue) => setIdLokasiKamar(newValue ? newValue.value : 'Semua')}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Lokasi Kamar' />}
+              />
             </Grid>
 
-            {/* Multi Filter Free Text input */}
-            <Grid size={{ xs: 12, md: 4 }}>
+            {/* 6. Pencarian Free Text */}
+            <Grid size={{ xs: 12, md: 2.5 }}>
               <TextField
                 fullWidth
                 label='Pencarian Nama/NIS/kamar'
                 size='small'
-                placeholder='Ketik nama santri, NIS, atau kamar...'
+                placeholder='Cari nama, NIS, kamar...'
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
@@ -576,7 +581,6 @@ const PerizinanSantriList = () => {
             </Grid>
           </Grid>
 
-          {/* UTILITY BUTTONS BAR: Menggunakan Flex Wrap demi menjaga kerapihan tampilan Mobile */}
           {/* BARIS UTILITY BUTTONS */}
           <Toolbar
             sx={{

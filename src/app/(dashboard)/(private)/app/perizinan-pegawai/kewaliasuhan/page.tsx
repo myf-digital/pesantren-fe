@@ -27,7 +27,8 @@ import {
   FormControlLabel,
   Radio,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Autocomplete
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -47,6 +48,8 @@ import { useCan } from '@/hooks/useCan'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { useSession } from 'next-auth/react'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
+import { fetchLembagaPage } from '../../lembaga-kepesantrenan/slice'
+import { fetchLembagaFormalPage } from '../../lembaga-formal/slice'
 
 // Komponen Aksi Baris Tabel Dinamis Berdasarkan Struktur Akses & State Dokumen
 const RowAction = ({
@@ -121,11 +124,15 @@ const PerizinanPegawaiList = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
+  // State Options Master Data Dropdown
+  const [optLembaga, setOptLembaga] = useState<any[]>([])
+
   // State Utama Filter Range Date & Kategori Data
   const [tanggalAwal, setTanggalAwal] = useState<Date | null>(null)
   const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(null)
   const [statusApproval, setStatusApproval] = useState('Semua')
   const [jenisIzin, setJenisIzin] = useState('Semua')
+  const [idLembaga, setIdLembaga] = useState('Semua')
   const [searchQuery, setSearchQuery] = useState('')
 
   // State Snapshot Sinkronisasi Fetcher dengan bendera is_pegawai
@@ -134,6 +141,7 @@ const PerizinanPegawaiList = () => {
     endDate: null, // format(endOfMonth(new Date()), 'yyyy-MM-dd'),
     statusApproval: 'Semua',
     jenisIzin: 'Semua',
+    idLembaga: 'Semua',
     searchQuery: '',
     is_pegawai: true
   })
@@ -158,6 +166,38 @@ const PerizinanPegawaiList = () => {
   const [pdfUrl, setPdfUrl] = useState('')
   const [pdfTitle, setPdfTitle] = useState('')
 
+  // Fetch Master Data Lebaga untuk Dropdown Filter
+  useEffect(() => {
+    const fetchMasterLembaga = async () => {
+      try {
+        const [resLembaga, resLembagaFormal] = await Promise.all([
+          dispatch(fetchLembagaPage({ perPage: 1000 })).unwrap(),
+          dispatch(fetchLembagaFormalPage({ perPage: 1000 })).unwrap()
+        ])
+
+        const listLembaga = (resLembaga?.data?.values || []).map((item: any) => ({
+          label: item.nama_lembaga,
+          value: item.id_lembaga
+        }))
+
+        const listLembagaFormal = (resLembagaFormal?.data?.values || []).map((item: any) => ({
+          label: item.nama_lembaga,
+          value: item.id_lembaga
+        }))
+
+        const combined = [...listLembaga, ...listLembagaFormal]
+
+        combined.sort((a, b) => a.label.localeCompare(b.label, 'id', { sensitivity: 'base' }))
+
+        setOptLembaga(combined)
+      } catch (err) {
+        toast.error('Gagal memuat master data Lembaga')
+      }
+    }
+
+    fetchMasterLembaga()
+  }, [dispatch])
+
   // Core API Caller Page Fetcher (Ditambahkan is_pegawai: true agar backend memfilter data pegawai)
   const executeFetchData = useCallback(
     (currentPage: number, currentPerPage: number, filters: any) => {
@@ -170,6 +210,7 @@ const PerizinanPegawaiList = () => {
           end_date: filters.endDate || undefined,
           status_approval: filters.statusApproval !== 'Semua' ? filters.statusApproval : undefined,
           jenis_izin: filters.jenisIzin !== 'Semua' ? filters.jenisIzin : undefined,
+          id_lembaga: filters.idLembaga !== 'Semua' ? filters.idLembaga : undefined,
           q: filters.searchQuery || undefined,
           is_pegawai: true
         })
@@ -209,6 +250,7 @@ const PerizinanPegawaiList = () => {
       endDate: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : '',
       statusApproval,
       jenisIzin,
+      idLembaga,
       searchQuery,
       is_pegawai: true
     }
@@ -226,6 +268,7 @@ const PerizinanPegawaiList = () => {
     setTanggalAkhir(null)
     setStatusApproval('Semua')
     setJenisIzin('Semua')
+    setIdLembaga('Semua')
     setSearchQuery('')
     setPage(1)
     setIsFilterApplied(true)
@@ -235,6 +278,7 @@ const PerizinanPegawaiList = () => {
       endDate: null,
       statusApproval: 'Semua',
       jenisIzin: 'Semua',
+      idLembaga: 'Semua',
       searchQuery: '',
       is_pegawai: true
     }
@@ -283,6 +327,7 @@ const PerizinanPegawaiList = () => {
           end_date: currentFilters.endDate,
           status_approval: currentFilters.statusApproval !== 'Semua' ? currentFilters.statusApproval : undefined,
           jenis_izin: currentFilters.jenisIzin !== 'Semua' ? currentFilters.jenisIzin : undefined,
+          id_lembaga: currentFilters.idLembaga !== 'Semua' ? currentFilters.idLembaga : undefined,
           q: currentFilters.searchQuery || undefined,
           is_pegawai: true
         })
@@ -443,8 +488,9 @@ const PerizinanPegawaiList = () => {
       <Grid size={12}>
         <Card sx={{ p: 5, mb: 4, overflow: 'visible' }}>
           {/* LAYOUT GRID RESPONSIF FILTER */}
-          <Grid container spacing={4} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+          <Grid container spacing={2} alignItems='center' sx={{ mb: 4 }}>
+            {/* Tanggal Awal */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.5 }}>
               <AppReactDatepicker
                 selected={tanggalAwal}
                 onChange={(date: Date | null) => setTanggalAwal(date)}
@@ -458,7 +504,8 @@ const PerizinanPegawaiList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            {/* Tanggal Akhir */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.5 }}>
               <AppReactDatepicker
                 selected={tanggalAkhir}
                 onChange={(date: Date | null) => setTanggalAkhir(date)}
@@ -472,7 +519,8 @@ const PerizinanPegawaiList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+            {/* Status Approval */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.75 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Status Approval</InputLabel>
                 <Select
@@ -488,7 +536,8 @@ const PerizinanPegawaiList = () => {
               </FormControl>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+            {/* Jenis Perizinan */}
+            <Grid size={{ xs: 12, sm: 6, md: 1.75 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Jenis Perizinan</InputLabel>
                 <Select label='Jenis Perizinan' value={jenisIzin} onChange={e => setJenisIzin(e.target.value)}>
@@ -499,12 +548,30 @@ const PerizinanPegawaiList = () => {
               </FormControl>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 4 }}>
+            {/* Dropdown Filter Lembaga */}
+            <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
+              <Autocomplete
+                size='small'
+                options={[{ label: 'Semua Lembaga', value: 'Semua' }, ...optLembaga]}
+                value={
+                  idLembaga === 'Semua'
+                    ? { label: 'Semua Lembaga', value: 'Semua' }
+                    : optLembaga.find(item => item.value === idLembaga) || { label: 'Semua Lembaga', value: 'Semua' }
+                }
+                onChange={(_, newValue) => setIdLembaga(newValue ? newValue.value : 'Semua')}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Lembaga' />}
+              />
+            </Grid>
+
+            {/*  Pencarian */}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <TextField
                 fullWidth
                 label='Pencarian Nama/NIP/Lokasi'
                 size='small'
-                placeholder='Ketik nama pegawai, NIP, atau lokasi kerja...'
+                placeholder='Nama / NIP / Lokasi...'
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}

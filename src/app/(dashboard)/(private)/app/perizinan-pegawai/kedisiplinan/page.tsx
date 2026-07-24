@@ -26,7 +26,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Autocomplete
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -40,6 +41,8 @@ import { useCan } from '@/hooks/useCan'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { useSession } from 'next-auth/react'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
+import { fetchLembagaPage } from '../../lembaga-kepesantrenan/slice'
+import { fetchLembagaFormalPage } from '../../lembaga-formal/slice'
 
 // ==========================================
 // KOMPONEN AKSI BARIS TABEL (ROW ACTION)
@@ -111,6 +114,9 @@ const PerizinanPegawaiTabsList = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
+  // State Options Master Data Dropdown
+  const [optLembaga, setOptLembaga] = useState<any[]>([])
+
   // State Managing 2 Tab: 0 = Perizinan Pegawai, 1 = Request Pembatalan Izin
   const [activeTab, setActiveTab] = useState<number>(0)
 
@@ -119,6 +125,7 @@ const PerizinanPegawaiTabsList = () => {
   const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(null)
   const [statusApproval, setStatusApproval] = useState('Semua')
   const [jenisIzin, setJenisIzin] = useState('Semua')
+  const [idLembaga, setIdLembaga] = useState('Semua')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Snapshot filter state
@@ -127,6 +134,7 @@ const PerizinanPegawaiTabsList = () => {
     endDate: null, // format(endOfMonth(new Date()), 'yyyy-MM-dd'),
     statusApproval: 'Semua',
     jenisIzin: 'Semua',
+    idLembaga: 'Semua',
     searchQuery: ''
   })
 
@@ -139,6 +147,38 @@ const PerizinanPegawaiTabsList = () => {
   const [openPdf, setOpenPdf] = useState(false)
   const [pdfUrl, setPdfUrl] = useState('')
   const [pdfTitle, setPdfTitle] = useState('')
+
+  // Fetch Master Data Lebaga untuk Dropdown Filter
+  useEffect(() => {
+    const fetchMasterLembaga = async () => {
+      try {
+        const [resLembaga, resLembagaFormal] = await Promise.all([
+          dispatch(fetchLembagaPage({ perPage: 1000 })).unwrap(),
+          dispatch(fetchLembagaFormalPage({ perPage: 1000 })).unwrap()
+        ])
+
+        const listLembaga = (resLembaga?.data?.values || []).map((item: any) => ({
+          label: item.nama_lembaga,
+          value: item.id_lembaga
+        }))
+
+        const listLembagaFormal = (resLembagaFormal?.data?.values || []).map((item: any) => ({
+          label: item.nama_lembaga,
+          value: item.id_lembaga
+        }))
+
+        const combined = [...listLembaga, ...listLembagaFormal]
+
+        combined.sort((a, b) => a.label.localeCompare(b.label, 'id', { sensitivity: 'base' }))
+
+        setOptLembaga(combined)
+      } catch (err) {
+        toast.error('Gagal memuat master data Lembaga')
+      }
+    }
+
+    fetchMasterLembaga()
+  }, [dispatch])
 
   // Core Kepegawaian API Fetcher
   const executeFetchData = useCallback(
@@ -153,6 +193,7 @@ const PerizinanPegawaiTabsList = () => {
           end_date: filters.endDate || undefined,
           status_approval: tabIndex === 1 ? 'Disetujui' : 'Menunggu',
           jenis_izin: filters.jenisIzin !== 'Semua' ? filters.jenisIzin : undefined,
+          id_lembaga: filters.idLembaga !== 'Semua' ? filters.idLembaga : undefined,
           q: filters.searchQuery || undefined,
           is_request_canceled: tabIndex === 1 ? true : false,
           is_canceled: false,
@@ -196,6 +237,7 @@ const PerizinanPegawaiTabsList = () => {
       endDate: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : '',
       statusApproval,
       jenisIzin,
+      idLembaga,
       searchQuery
     }
     setPage(1)
@@ -211,6 +253,7 @@ const PerizinanPegawaiTabsList = () => {
     setTanggalAkhir(null)
     setStatusApproval('Semua')
     setJenisIzin('Semua')
+    setIdLembaga('Semua')
     setSearchQuery('')
     setPage(1)
     setIsFilterApplied(true)
@@ -220,6 +263,7 @@ const PerizinanPegawaiTabsList = () => {
       endDate: null,
       statusApproval: 'Semua',
       jenisIzin: 'Semua',
+      idLembaga: 'Semua',
       searchQuery: ''
     }
     setCurrentFilters(baseFilters)
@@ -239,6 +283,7 @@ const PerizinanPegawaiTabsList = () => {
           end_date: currentFilters.endDate,
           status_approval: currentFilters.statusApproval !== 'Semua' ? currentFilters.statusApproval : undefined,
           jenis_izin: currentFilters.jenisIzin !== 'Semua' ? currentFilters.jenisIzin : undefined,
+          id_lembaga: currentFilters.idLembaga !== 'Semua' ? currentFilters.idLembaga : undefined,
           q: currentFilters.searchQuery || undefined,
           is_request_canceled: activeTab === 1 ? true : undefined
         })
@@ -416,8 +461,8 @@ const PerizinanPegawaiTabsList = () => {
 
         {/* CONTAINER PANEL FILTER UTAMA */}
         <Card sx={{ p: 5, mb: 4, overflow: 'visible' }}>
-          <Grid container spacing={4} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+          <Grid container spacing={3} sx={{ mb: 4 }} alignItems='center'>
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <AppReactDatepicker
                 selected={tanggalAwal}
                 onChange={(date: Date | null) => setTanggalAwal(date)}
@@ -431,7 +476,7 @@ const PerizinanPegawaiTabsList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <AppReactDatepicker
                 selected={tanggalAkhir}
                 onChange={(date: Date | null) => setTanggalAkhir(date)}
@@ -445,23 +490,7 @@ const PerizinanPegawaiTabsList = () => {
               />
             </Grid>
 
-            {/* <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-              <FormControl fullWidth size='small' disabled={activeTab === 1}>
-                <InputLabel>Status Approval</InputLabel>
-                <Select
-                  label='Status Approval'
-                  value={activeTab === 1 ? 'Menunggu' : statusApproval}
-                  onChange={e => setStatusApproval(e.target.value)}
-                >
-                  <MenuItem value='Semua'>Semua Status</MenuItem>
-                  <MenuItem value='Menunggu'>Menunggu</MenuItem>
-                  <MenuItem value='Disetujui'>Disetujui</MenuItem>
-                  <MenuItem value='Ditolak'>Ditolak</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid> */}
-
-            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Jenis Perizinan</InputLabel>
                 <Select label='Jenis Perizinan' value={jenisIzin} onChange={e => setJenisIzin(e.target.value)}>
@@ -472,10 +501,26 @@ const PerizinanPegawaiTabsList = () => {
               </FormControl>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.5 }}>
+              <Autocomplete
+                size='small'
+                options={[{ label: 'Semua Lembaga', value: 'Semua' }, ...optLembaga]}
+                value={
+                  idLembaga === 'Semua'
+                    ? { label: 'Semua Lembaga', value: 'Semua' }
+                    : optLembaga.find(item => item.value === idLembaga) || { label: 'Semua Lembaga', value: 'Semua' }
+                }
+                onChange={(_, newValue) => setIdLembaga(newValue ? newValue.value : 'Semua')}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => <TextField {...params} label='Lembaga' />}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 3 }}>
               <TextField
                 fullWidth
-                label='Pencarian Nama NIP Unit Kerja'
+                label='Pencarian Nama/NIP/Lokasi'
                 size='small'
                 placeholder='Ketik nama pegawai, NIP, atau unit kerja...'
                 value={searchQuery}
