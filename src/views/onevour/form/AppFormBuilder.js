@@ -79,6 +79,7 @@ export function field(props) {
     callback,
     onChange,
     onInputChange,
+    filterOptions,
     ref,
     checked = false,
     startAdornment = null,
@@ -125,6 +126,7 @@ export function field(props) {
     base64,
     onChange,
     onInputChange,
+    filterOptions,
     accept,
     helperText
   }
@@ -1392,7 +1394,7 @@ const selectField = form => {
             autoHighlight
             value={selectedOption || null}
             defaultValue={null}
-            filterOptions={x => x}
+            filterOptions={props.filterOptions ? props.filterOptions : (props.onInputChange ? (x => x) : undefined)}
             getOptionLabel={option => {
               return option.label || ''
             }}
