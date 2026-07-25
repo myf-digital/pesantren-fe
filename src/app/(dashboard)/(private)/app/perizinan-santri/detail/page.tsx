@@ -284,7 +284,9 @@ const DetailPerizinanPage = () => {
       toast.success(`Pengajuan izin berhasil dikonfirmasi sebagai: ${status}`)
       router.push(redirectBackUrl)
     } catch (err: any) {
-      toast.error(err || 'Gagal memproses keputusan perizinan')
+      const errorMessage =
+        typeof err === 'string' ? err : err?.message || err?.data?.message || 'Gagal memproses keputusan perizinan'
+      toast.error(errorMessage)
     } finally {
       setSubmitting(false)
     }
