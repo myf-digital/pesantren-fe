@@ -38,6 +38,7 @@ import DialogDelete from '@views/onevour/components/dialog-delete'
 import '@assets/iconify-icons/generated-icons.css'
 import { useCan } from '@/hooks/useCan'
 import { fetchLocationAll } from '../../location/slice'
+import { fetchPegawaiAll } from '../../guru-mata-pelajaran/slice'
 
 const statusObj: Record<string, { color: any; value: string }> = {
   Aktif: {
@@ -200,12 +201,39 @@ interface LokasiOption {
   value: string
 }
 
+interface KelasOption {
+  label: string
+  value: string
+}
+
+interface HariOption {
+  label: string
+  value: string
+}
+
+interface GuruOption {
+  label: string
+  value: string
+}
+
+const haris = [
+  { label: 'Semua', value: '' },
+  { label: 'Senin', value: 'Senin' },
+  { label: 'Selasa', value: 'Selasa' },
+  { label: 'Rabu', value: 'Rabu' },
+  { label: 'Kamis', value: 'Kamis' },
+  { label: 'Jumat', value: 'Jumat' },
+  { label: 'Sabtu', value: 'Sabtu' },
+  { label: 'Ahad', value: 'Ahad' }
+]
+
 const Table = () => {
   // ** Hooks
   const router = useRouter()
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.jadwal_pelajaran)
   const storeLokasi = useAppSelector(state => state.location)
+  const storePegawai = useAppSelector(state => state.guru_mata_pelajaran)
 
   const canCreate = useCan('create')
   const canImport = useCan('import')
@@ -217,6 +245,9 @@ const Table = () => {
   const [loadingExport, setLoadingExport] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState<StatusOption | null>({ label: 'Semua', value: '' })
   const [selectedLokasi, setSelectedLokasi] = useState<LokasiOption | null>({ label: 'Semua', value: '' })
+  const [selectedLembagaParent, setSelectedLembagaParent] = useState<LokasiOption | null>({ label: 'Semua', value: '' })
+  const [selectedHari, setSelectedHari] = useState<HariOption | null>({ label: 'Semua', value: '' })
+  const [selectedGuru, setSelectedGuru] = useState<GuruOption | null>({ label: 'Semua', value: '' })
 
   useEffect(() => {
     if (store.delete) {
@@ -226,13 +257,17 @@ const Table = () => {
           perPage: perPage,
           q: filter,
           status: selectedStatus?.value,
-          id_lokasi: selectedLokasi?.value
+          id_lokasi: selectedLokasi?.value,
+          id_lokasi_parent: selectedLembagaParent?.value,
+          hari: selectedHari?.value,
+          id_pegawai: selectedGuru?.value
         })
       )
       dispatch(resetRedux())
     }
 
-    dispatch(fetchLocationAll({ orderWithParent: true }))
+    dispatch(fetchLocationAll({ orderWithParent: true, jenis_lokasi: 'RuangKelas' }))
+    dispatch(fetchPegawaiAll({}))
   }, [dispatch, filter, perPage, store.delete])
 
   useEffect(() => {
@@ -244,13 +279,25 @@ const Table = () => {
           perPage: perPage,
           q: filter,
           status: selectedStatus?.value,
-          id_lokasi: selectedLokasi?.value
+          id_lokasi: selectedLokasi?.value,
+          id_lokasi_parent: selectedLembagaParent?.value,
+          hari: selectedHari?.value,
+          id_pegawai: selectedGuru?.value
         })
       )
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [dispatch, filter, perPage, selectedStatus, selectedLokasi])
+  }, [
+    dispatch,
+    filter,
+    perPage,
+    selectedStatus,
+    selectedLokasi,
+    selectedLembagaParent,
+    selectedHari,
+    selectedGuru
+  ])
 
   const handleChangePage = useCallback(
     (newPage: number) => {
@@ -261,11 +308,23 @@ const Table = () => {
           perPage: perPage,
           q: filter,
           status: selectedStatus?.value,
-          id_lokasi: selectedLokasi?.value
+          id_lokasi: selectedLokasi?.value,
+          id_lokasi_parent: selectedLembagaParent?.value,
+          hari: selectedHari?.value,
+          id_pegawai: selectedGuru?.value
         })
       )
     },
-    [dispatch, perPage, filter]
+    [
+      dispatch,
+      perPage,
+      filter,
+      selectedStatus,
+      selectedLokasi,
+      selectedLembagaParent,
+      selectedHari,
+      selectedGuru
+    ]
   )
 
   useEffect(() => {
@@ -356,7 +415,10 @@ const Table = () => {
         perPage: newPerPage,
         q: filter,
         status: selectedStatus?.value,
-        id_lokasi: selectedLokasi?.value
+        id_lokasi: selectedLokasi?.value,
+        id_lokasi_parent: selectedLembagaParent?.value,
+        hari: selectedHari?.value,
+        id_pegawai: selectedGuru?.value
       })
     )
   }
@@ -376,8 +438,7 @@ const Table = () => {
         fields: [
           tableColumn('OPTION', 'act-x', 'left', renderOption as any),
           tableColumn('HARI', 'hari'),
-          tableColumn('JAM', 'jam'),
-          tableColumn('KELAS/LEMBAGA', 'kelas'),
+          tableColumn('KELAS', 'kelas'),
           tableColumn('MATA PELAJARAN', 'mapel'),
           tableColumn('GURU', 'guru'),
           tableColumn('LOKASI', 'lokasi'),
@@ -388,11 +449,17 @@ const Table = () => {
         values: values?.map((row: any) => {
           return {
             ...row,
-            jam: `${row.jam_pelajaran?.mulai?.slice(0, -3)} - ${row.jam_pelajaran?.selesai?.slice(0, -3)}`,
-            kelas: `${row.kelas_formal ? row.kelas_formal?.nama_kelas : row.kelas_mda?.nama_kelas_mda} (${row.kelas_formal ? row.kelas_formal?.lembaga?.nama_lembaga : row.kelas_mda?.lembaga?.nama_lembaga})`,
+            kelas: row.kelas_formal ? row.kelas_formal?.nama_kelas : row.kelas_mda?.nama_kelas_mda,
+            lokasi: (
+              <Box>
+                <Typography variant='body2'>{row.lokasi?.nama_lokasi}</Typography>
+                <Typography variant='caption' color='text.disabled'>
+                  {row.kelas_formal ? row.kelas_formal?.lembaga?.nama_lembaga : row.kelas_mda?.lembaga?.nama_lembaga}
+                </Typography>
+              </Box>
+            ),
             mapel: row.jenis_guru?.mata_pelajaran?.nama_mapel,
             guru: row.jenis_guru?.pegawai?.nama_lengkap,
-            lokasi: row.lokasi?.nama_lokasi,
             status_custom: (
               <CustomChip
                 round='true'
@@ -401,6 +468,16 @@ const Table = () => {
                 color={statusObj[row.status]?.color}
                 sx={{ textTransform: 'capitalize' }}
               />
+            ),
+            hari: (
+              <Box>
+                <Typography variant='body2'>{row.hari || '-'}</Typography>
+                <Typography variant='caption' color='text.disabled' sx={{ whiteSpace: 'nowrap' }}>
+                  {row.jam_pelajaran
+                    ? `${row.jam_pelajaran?.mulai?.slice(0, -3)} - ${row.jam_pelajaran?.selesai?.slice(0, -3)}`
+                    : '-'}
+                </Typography>
+              </Box>
             )
           }
         }),
@@ -416,18 +493,102 @@ const Table = () => {
     }
   }
 
+  const getLembagaParentOptions = () => {
+    const parentsMap = new Map<string, { label: string; value: string }>()
+
+    storeLokasi.datas.forEach(r => {
+      if (r.parent) {
+        parentsMap.set(r.parent.id_lokasi, {
+          label: r.parent.nama_lokasi,
+          value: r.parent.id_lokasi
+        })
+      }
+    })
+
+    return [
+      { label: 'Semua', value: '' },
+      ...Array.from(parentsMap.values()).sort((a, b) => a.label.localeCompare(b.label))
+    ]
+  }
+
+  const getLokasiOptions = () => {
+    const allOptions = storeLokasi.datas
+      .filter(r => r.jenis_lokasi === 'RuangKelas')
+      .map(r => ({
+        label: `${r.parent ? `${r.parent.nama_lokasi} / ` : ''}${r.nama_lokasi}`,
+        value: r.id_lokasi,
+        parent_id: r.parent_id
+      }))
+
+    if (!selectedLembagaParent || selectedLembagaParent.value === '') {
+      return [{ label: 'Semua', value: '' }, ...allOptions]
+    }
+
+    const filtered = allOptions.filter(opt => opt.parent_id === selectedLembagaParent.value)
+    return [{ label: 'Semua', value: '' }, ...filtered]
+  }
+
   return (
     <Grid container spacing={6} sx={{ width: '100%' }}>
       <Grid size={12}>
         <Card sx={{ p: 5 }}>
           <Grid container spacing={4}>
-            <Grid size={{ xs: 12, sm: 3 }}>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Autocomplete
+                size='small'
+                options={haris}
+                value={selectedHari}
+                onChange={(_, newValue) => setSelectedHari(newValue)}
+                getOptionLabel={option => option.label || ''}
+                getOptionKey={option => option.value}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label='Hari'
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: <>{params.InputProps.endAdornment}</>
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua', value: '' },
+                  ...storePegawai.pegawai.map(r => ({
+                    label: `${r.nama_lengkap} (${r.nip || '-'})`,
+                    value: r.id_pegawai
+                  }))
+                ]}
+                value={selectedGuru}
+                onChange={(_, newValue) => setSelectedGuru(newValue)}
+                getOptionLabel={option => option.label || ''}
+                getOptionKey={option => option.value}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label='Guru'
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: <>{params.InputProps.endAdornment}</>
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Autocomplete
                 size='small'
                 options={statuss}
                 value={selectedStatus}
                 onChange={(_, newValue) => setSelectedStatus(newValue)}
                 getOptionLabel={option => option.label || ''}
+                getOptionKey={option => option.value}
                 isOptionEqualToValue={(option, value) => option.value === value?.value}
                 renderInput={params => (
                   <TextField
@@ -441,23 +602,43 @@ const Table = () => {
                 )}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 3 }}>
+            <Grid size={{ xs: 12, sm: 4 }}>
               <Autocomplete
                 size='small'
-                options={storeLokasi.datas.map(r => {
-                  return {
-                    label: `${r.parent ? `${r.parent.nama_lokasi} / ` : ''}${r.nama_lokasi}`,
-                    value: r.id_lokasi
-                  }
-                })}
-                value={selectedLokasi}
-                onChange={(_, newValue) => setSelectedLokasi(newValue)}
+                options={getLembagaParentOptions()}
+                value={selectedLembagaParent}
+                onChange={(_, newValue) => {
+                  setSelectedLembagaParent(newValue)
+                  setSelectedLokasi({ label: 'Semua', value: '' })
+                }}
                 getOptionLabel={option => option.label || ''}
+                getOptionKey={option => option.value}
                 isOptionEqualToValue={(option, value) => option.value === value?.value}
                 renderInput={params => (
                   <TextField
                     {...params}
-                    label='Lokasi'
+                    label='Lembaga / Gedung'
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: <>{params.InputProps.endAdornment}</>
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Autocomplete
+                size='small'
+                options={getLokasiOptions()}
+                value={selectedLokasi}
+                onChange={(_, newValue) => setSelectedLokasi(newValue)}
+                getOptionLabel={option => option.label || ''}
+                getOptionKey={option => option.value}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label='Lokasi (Ruang Kelas)'
                     InputProps={{
                       ...params.InputProps,
                       endAdornment: <>{params.InputProps.endAdornment}</>

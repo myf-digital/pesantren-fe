@@ -12,6 +12,11 @@ export interface FetchParams {
   q: string
   status?: string
   id_lokasi?: string
+  id_kelas?: string
+  id_kelas_mda?: string
+  hari?: string
+  id_pegawai?: string
+  id_lokasi_parent?: string
 }
 
 export interface InitialState {

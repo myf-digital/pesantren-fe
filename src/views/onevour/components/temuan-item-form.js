@@ -277,7 +277,7 @@ const ItemForm = ({ temuanDetailsSelected, onAddTemuanDetail, onDeleteTemuanDeta
         }
       }),
       count: temuanDetailsSelected.length,
-      rowsPerPage: rowsPerPage,
+      perPage: rowsPerPage,
       changePage: (event, newPage) => {
         // handleChangePage(event, newPage)
       },
@@ -314,7 +314,7 @@ const ItemForm = ({ temuanDetailsSelected, onAddTemuanDetail, onDeleteTemuanDeta
   return (
     <RepeaterWrapper>
       {!Boolean(view) && (
-        <form ref={formRef} onSubmit={handleSubmit(onSubmit)} autoComplete='off' className='mb-3'>
+        <div ref={formRef} className='mb-3'>
           <Repeater count={count}>
             {i => {
               const Tag = i === 0 ? Box : Collapse
@@ -340,7 +340,7 @@ const ItemForm = ({ temuanDetailsSelected, onAddTemuanDetail, onDeleteTemuanDeta
               )
             }}
           </Repeater>
-        </form>
+        </div>
       )}
 
       <TableView model={buildTable()} />
