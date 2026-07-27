@@ -17,6 +17,16 @@ import { useForm } from 'react-hook-form'
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchOrangTuaWaliById, postOrangTuaWali, postOrangTuaWaliUpdate, resetRedux } from '../slice/index'
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
+import { fetchSantriAll } from '../../santri/slice'
+import {
+  fetchProvinces,
+  fetchRegenciesByProvince,
+  fetchDistrictsByRegency,
+  fetchSubDistrictsByDistrict,
+  clearRegencies,
+  clearDistricts,
+  clearSubDistricts
+} from '../../areas/slice'
 
 const hubunganOption = {
   values: [
@@ -184,17 +194,52 @@ const FormValidationBasic = () => {
   const searchParams = useSearchParams()
   const id = searchParams.get('id')
   const view = searchParams.get('view')
+  const santri = searchParams.get('santri')
+  const callback = searchParams.get('callback')
 
   const dispatch = useAppDispatch()
 
-  const store = useAppSelector(state => state.jenis_beasiswa)
+  const store = useAppSelector(state => state.orang_tua_wali)
+  const storeSantri = useAppSelector(state => state.santri)
+  const storeAreas = useAppSelector(state => state.areas)
 
   interface FormData {
     nama_wali: string
-    hubungan: string
     nik: string
     keterangan: string
     id_santri: {
+      value: string
+      label: string
+    } | null
+    province_id: {
+      value: string
+      label: string
+    } | null
+    city_id: {
+      value: string
+      label: string
+    } | null
+    district_id: {
+      value: string
+      label: string
+    } | null
+    sub_district_id: {
+      value: string
+      label: string
+    } | null
+    pendidikan: {
+      value: string
+      label: string
+    } | null
+    pekerjaan: {
+      value: string
+      label: string
+    } | null
+    penghasilan: {
+      value: string
+      label: string
+    } | null
+    hubungan: {
       value: string
       label: string
     } | null
@@ -202,13 +247,21 @@ const FormValidationBasic = () => {
 
   const defaultValues = {
     nama_wali: '',
-    hubungan: '',
     nik: '',
     keterangan: '',
-    id_santri: null
+    id_santri: null,
+    province_id: null,
+    city_id: null,
+    district_id: null,
+    sub_district_id: null,
+    pendidikan: null,
+    pekerjaan: null,
+    penghasilan: null,
+    hubungan: null
   }
 
   const [state, setState] = useState<FormData>(defaultValues)
+  const [idWali, setIdWali] = useState<string>('')
 
   const [loading, setLoading] = useState(false)
 
@@ -221,11 +274,76 @@ const FormValidationBasic = () => {
   } = useForm({ defaultValues })
 
   useEffect(() => {
+    dispatch(fetchSantriAll({}))
+    dispatch(fetchProvinces())
+
     if (id) {
       dispatch(fetchOrangTuaWaliById(id)).then(res => {
         const datas = { ...res?.payload?.data }
 
         if (datas) {
+          if (santri) {
+            datas.id_santri = {
+              label: santri
+            }
+          }
+
+          if (datas.hubungan) {
+            datas.hubungan = {
+              value: datas.hubungan,
+              label: datas.hubungan
+            }
+          }
+
+          if (datas.pendidikan) {
+            datas.pendidikan = {
+              value: datas.pendidikan,
+              label: datas.pendidikan
+            }
+          }
+
+          if (datas.pekerjaan) {
+            datas.pekerjaan = {
+              value: datas.pekerjaan,
+              label: datas.pekerjaan
+            }
+          }
+
+          if (datas.penghasilan) {
+            datas.penghasilan = {
+              value: datas.penghasilan,
+              label: datas.penghasilan
+            }
+          }
+
+          if (datas.province) {
+            datas.province_id = {
+              value: datas.province?.id,
+              label: datas.province?.name
+            }
+          }
+
+          if (datas.city) {
+            datas.city_id = {
+              value: datas.city?.id,
+              label: datas.city?.name
+            }
+          }
+
+          if (datas.district) {
+            datas.district_id = {
+              value: datas.district?.id,
+              label: datas.district?.name
+            }
+          }
+
+          if (datas.sub_district) {
+            datas.sub_district_id = {
+              value: datas.sub_district?.id,
+              label: datas.sub_district?.name
+            }
+          }
+
           setState(datas)
           reset(datas)
         }
@@ -250,18 +368,28 @@ const FormValidationBasic = () => {
     if (loading) return
     setLoading(true)
 
-    if (id) {
+    if (id || idWali) {
       // update
       dispatch(
         postOrangTuaWaliUpdate({
-          id: id,
-          param: { ...state }
+          id: id || idWali,
+          param: {
+            ...state,
+            pendidikan: state.pendidikan?.value,
+            pekerjaan: state.pekerjaan?.value,
+            penghasilan: state.penghasilan?.value,
+            hubungan: state.hubungan?.value
+          }
         })
       )
     } else {
       dispatch(
         postOrangTuaWali({
-          ...state
+          ...state,
+          pendidikan: state.pendidikan?.value,
+          pekerjaan: state.pekerjaan?.value,
+          penghasilan: state.penghasilan?.value,
+          hubungan: state.hubungan?.value
         })
       )
     }
@@ -269,7 +397,7 @@ const FormValidationBasic = () => {
 
   const onCancel = () => {
     dispatch(resetRedux())
-    router.replace('/app/orang-tua-wali/list')
+    router.replace(callback ? callback : '/app/orang-tua-wali/list')
   }
 
   const fields = () => {
@@ -281,9 +409,89 @@ const FormValidationBasic = () => {
         placeholder: 'Pilih Santri',
         required: true,
         options: {
-          values: [{ label: 'Dummy', value: '47304cb3-cf08-43a0-900c-7896ac33d973' }]
+          values: storeSantri.datas.map(r => {
+            return {
+              label: r.fullname,
+              value: r.id_santri,
+              id_wali: r.id_wali
+            }
+          }),
+          onChange: (e: any) => {
+            if (!e?.id_wali) return
+            dispatch(fetchOrangTuaWaliById(e.id_wali)).then(res => {
+              const datas = { ...res?.payload?.data }
+
+              if (datas) {
+                setIdWali(e.id_wali)
+
+                datas.id_santri = {
+                  value: e.value,
+                  label: e.label
+                }
+
+                if (datas.hubungan) {
+                  datas.hubungan = {
+                    value: datas.hubungan,
+                    label: datas.hubungan
+                  }
+                }
+
+                if (datas.pendidikan) {
+                  datas.pendidikan = {
+                    value: datas.pendidikan,
+                    label: datas.pendidikan
+                  }
+                }
+
+                if (datas.pekerjaan) {
+                  datas.pekerjaan = {
+                    value: datas.pekerjaan,
+                    label: datas.pekerjaan
+                  }
+                }
+
+                if (datas.penghasilan) {
+                  datas.penghasilan = {
+                    value: datas.penghasilan,
+                    label: datas.penghasilan
+                  }
+                }
+
+                if (datas.province) {
+                  datas.province_id = {
+                    value: datas.province?.id,
+                    label: datas.province?.name
+                  }
+                }
+
+                if (datas.city) {
+                  datas.city_id = {
+                    value: datas.city?.id,
+                    label: datas.city?.name
+                  }
+                }
+
+                if (datas.district) {
+                  datas.district_id = {
+                    value: datas.district?.id,
+                    label: datas.district?.name
+                  }
+                }
+
+                if (datas.sub_district) {
+                  datas.sub_district_id = {
+                    value: datas.sub_district?.id,
+                    label: datas.sub_district?.name
+                  }
+                }
+
+                setState(datas)
+                reset(datas)
+              }
+            })
+          }
         },
-        readOnly: Boolean(view)
+        readOnly: Boolean(view) || Boolean(id)
       }),
       field({
         type: 'text',
@@ -352,7 +560,30 @@ const FormValidationBasic = () => {
         placeholder: 'Pilih Provinsi',
         required: true,
         options: {
-          values: [{ label: 'Aceh', value: '11' }]
+          values: storeAreas.provinces.map(r => {
+            return {
+              label: r.name,
+              value: r.id
+            }
+          }),
+          onChange: (e: any) => {
+            if (!e) return
+            dispatch(fetchRegenciesByProvince(e.value))
+            dispatch(clearRegencies())
+            dispatch(clearDistricts())
+            dispatch(clearSubDistricts())
+            setValue('city_id', null)
+            setValue('district_id', null)
+            setValue('sub_district_id', null)
+            setState(prevState => {
+              return {
+                ...prevState,
+                city_id: null,
+                district_id: null,
+                sub_district_id: null
+              }
+            })
+          }
         },
         readOnly: Boolean(view)
       }),
@@ -363,18 +594,55 @@ const FormValidationBasic = () => {
         placeholder: 'Pilih Kabupaten/Kota',
         required: true,
         options: {
-          values: [{ label: 'Simuele', value: '11.09' }]
+          values: storeAreas.regencies.map(r => {
+            return {
+              label: r.name,
+              value: r.id
+            }
+          }),
+          onChange: (e: any) => {
+            if (!e) return
+            dispatch(fetchDistrictsByRegency(e.value))
+            dispatch(clearDistricts())
+            dispatch(clearSubDistricts())
+            setValue('district_id', null)
+            setValue('sub_district_id', null)
+            setState(prevState => {
+              return {
+                ...prevState,
+                district_id: null,
+                sub_district_id: null
+              }
+            })
+          }
         },
         readOnly: Boolean(view)
       }),
       field({
         type: 'select',
         key: 'district_id',
-        label: 'Kabupaten/Kota',
-        placeholder: 'Pilih Kabupaten/Kota',
+        label: 'Kecamatan',
+        placeholder: 'Pilih Kecamatan',
         required: true,
         options: {
-          values: [{ label: 'Teupah', value: '11.09.07' }]
+          values: storeAreas.districts.map(r => {
+            return {
+              label: r.name,
+              value: r.id
+            }
+          }),
+          onChange: (e: any) => {
+            if (!e) return
+            dispatch(fetchSubDistrictsByDistrict(e.value))
+            dispatch(clearSubDistricts())
+            setValue('sub_district_id', null)
+            setState(prevState => {
+              return {
+                ...prevState,
+                sub_district_id: null
+              }
+            })
+          }
         },
         readOnly: Boolean(view)
       }),
@@ -385,7 +653,12 @@ const FormValidationBasic = () => {
         placeholder: 'Pilih Kelurahan',
         required: true,
         options: {
-          values: [{ label: 'Latiung', value: '11.09.07.2008' }]
+          values: storeAreas.subdistricts.map(r => {
+            return {
+              label: r.name,
+              value: r.id
+            }
+          })
         },
         readOnly: Boolean(view)
       }),

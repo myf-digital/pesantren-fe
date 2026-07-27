@@ -24,9 +24,6 @@ import {
   useMediaQuery,
   useTheme,
   Autocomplete,
-  FormControl,
-  InputLabel,
-  Select,
   MenuItem
 } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
@@ -191,10 +188,12 @@ const TableSantri = () => {
   const [detail, setDetail] = useState<any>(null)
 
   const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>({ label: 'Semua', value: '' })
+
   const [selectedLembagaFormal, setSelectedLembagaFormal] = useState<LembagaOption | null>({
     label: 'Semua',
     value: ''
   })
+
   const [selectedLembagaMda, setSelectedLembagaMda] = useState<LembagaOption | null>({ label: 'Semua', value: '' })
   const [status, setStatus] = useState(initialStatus)
 
@@ -318,6 +317,7 @@ const TableSantri = () => {
   const onExport = async () => {
     try {
       setLoadingExport(true)
+
       const res = await dispatch(
         postExport({
           q: filter,
@@ -466,6 +466,10 @@ const TableSantri = () => {
         document.body.removeChild(iframe)
       }, 500)
     }
+  }
+
+  const handleEditWali = (data: any) => {
+    router.push(`/app/orang-tua-wali/form?id=${data.id_wali}&santri=${data.fullname}&callback=/app/santri/list`)
   }
 
   const buildTable = () => {
@@ -798,13 +802,19 @@ const TableSantri = () => {
               </Grid>
 
               <Grid size={{ xs: 12, md: 6 }}>
-                <Typography variant='caption'>Kalurahan</Typography>
-                <Typography variant='body2'>{detail?.wali?.subDistrict?.name || '-'}</Typography>
+                <Typography variant='caption'>Kelurahan</Typography>
+                <Typography variant='body2'>{detail?.wali?.sub_district?.name || '-'}</Typography>
               </Grid>
 
               <Grid size={{ xs: 12, md: 6 }}>
                 <Typography variant='caption'>Alamat</Typography>
                 <Typography variant='body2'>{detail?.wali?.alamat || '-'}</Typography>
+              </Grid>
+
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Button size='small' variant='outlined' color='success' onClick={() => handleEditWali(detail)}>
+                  Edit
+                </Button>
               </Grid>
             </Grid>
           </Box>
@@ -856,7 +866,7 @@ const TableSantri = () => {
               </Grid>
 
               <Grid size={{ xs: 12, md: 6 }}>
-                <Typography variant='caption'>Kalurahan</Typography>
+                <Typography variant='caption'>Kelurahan</Typography>
                 <Typography variant='body2'>{detail?.cabang?.subDistrict?.name || '-'}</Typography>
               </Grid>
 

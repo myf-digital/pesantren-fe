@@ -90,7 +90,7 @@ function RowAction(data: any) {
         <MenuItem
           component={Link}
           sx={{ '& svg': { mr: 2 } }}
-          href={`/app/orang-tua-wali/form?id=${data.row.id_wali}&view=true`}
+          href={`/app/orang-tua-wali/form?id=${data.row.id_wali}&view=true&santri=${data.row.santri?.fullname}`}
           onClick={handleView}
         >
           <i className='tabler-eye' />
@@ -101,7 +101,7 @@ function RowAction(data: any) {
           <MenuItem
             component={Link}
             sx={{ '& svg': { mr: 2 } }}
-            href={`/app/orang-tua-wali/form?id=${data.row.id_wali}`}
+            href={`/app/orang-tua-wali/form?id=${data.row.id_wali}&santri=${data.row.santri?.fullname}`}
             onClick={handleView}
           >
             <i className='tabler-edit' />
@@ -246,7 +246,7 @@ const Table = () => {
         page: page,
         fields: [
           tableColumn('OPTION', 'act-x', 'left', renderOption as any),
-          tableColumn('NAMA WALI', 'nama_wali'),
+          tableColumn('NAMA WALI', 'wali'),
           tableColumn('HUBUNGAN', 'hubungan'),
           tableColumn('NIK', 'nik'),
           tableColumn('NO. HP', 'no_hp'),
@@ -258,7 +258,43 @@ const Table = () => {
         ],
         values: values?.map((row: any) => {
           return {
-            ...row
+            ...row,
+            wali: (
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography
+                  variant='body2'
+                  sx={{
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                  title={row.nama_wali}
+                >
+                  {row.nama_wali}
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start', mt: 0.5 }}>
+                  <Typography
+                    variant='caption'
+                    sx={{
+                      px: 1,
+                      py: 0.2,
+                      borderRadius: 1,
+                      bgcolor: 'grey.100',
+                      color: 'text.secondary',
+                      fontWeight: 500,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '100%'
+                    }}
+                  >
+                    Santri: {row.santri?.fullname || '-'}
+                  </Typography>
+                </Box>
+              </Box>
+            )
           }
         }),
         count: total,
