@@ -166,7 +166,7 @@ const FormValidationBasic = () => {
 
     dispatch(fetchGuruMataPelajaranAll({}))
 
-    dispatch(fetchLocationAll({}))
+    dispatch(fetchLocationAll({ jenis_lokasi: 'RuangKelas' }))
 
     if (id) {
       dispatch(fetchJadwalPelajaranById(id)).then(res => {

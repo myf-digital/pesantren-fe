@@ -246,6 +246,13 @@ const TableInspeksi = () => {
   const [selectedLokasi, setSelectedLokasi] = useState<LokasiOption | null>({ label: 'Semua', value: '' })
   const [selectedStatus, setSelectedStatus] = useState<StatusOption | null>({ label: 'Semua', value: '' })
 
+  const filteredLokasiDatas = storeLokasi.datas.filter(r => {
+    if (!selectedCabang || selectedCabang.value === '') {
+      return true
+    }
+    return String(r.id_cabang) === String(selectedCabang.value)
+  })
+
   useEffect(() => {
     if (store.delete) {
       dispatch(
@@ -261,8 +268,8 @@ const TableInspeksi = () => {
       dispatch(resetRedux())
     }
 
-    dispatch(fetchCabangAll({}))
-    dispatch(fetchLocationAll({ orderWithParent: true }))
+    dispatch(fetchCabangAll({ all_cabang: true }))
+    dispatch(fetchLocationAll({ orderWithParent: true, all_cabang: true }))
   }, [dispatch, filter, perPage, store.delete])
 
   useEffect(() => {
@@ -313,7 +320,19 @@ const TableInspeksi = () => {
   }, [dispatch, handleChangePage, page, store.crud])
 
   const onAddForm = () => {
-    router.replace('/app/kebersihan-inspeksi/form')
+    let url = '/app/kebersihan-inspeksi/form'
+    const params = new URLSearchParams()
+    if (selectedCabang && selectedCabang.value !== '') {
+      params.append('id_cabang', selectedCabang.value)
+    }
+    if (selectedLokasi && selectedLokasi.value !== '') {
+      params.append('id_lokasi', selectedLokasi.value)
+    }
+    const queryString = params.toString()
+    if (queryString) {
+      url += `?${queryString}`
+    }
+    router.replace(url)
   }
 
   const onImport = () => {
@@ -417,6 +436,10 @@ const TableInspeksi = () => {
   const Detail = (row: any) => {
     const [openDetail, setOpenDetail] = useState(false)
 
+    if (!row.row.temuans || row.row.temuans.length === 0) {
+      return '-'
+    }
+
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Button size='small' variant='outlined' color='success' onClick={() => setOpenDetail(true)}>
@@ -483,11 +506,9 @@ const TableInspeksi = () => {
         page: page,
         fields: [
           tableColumn('OPTION', 'act-x', 'left', renderOption as any),
-          tableColumn('CABANG', 'cabang'),
           tableColumn('LOKASI', 'lokasi'),
           tableColumn('SLOT', 'kode_slot'),
           tableColumn('TANGGAL', 'tanggal_custom'),
-          tableColumn('WAKTU', 'waktu_custom'),
           tableColumn('PETUGAS', 'petugas'),
           tableColumn('KONDISI', 'status_kondisi'),
           tableColumn('STATUS TEMUAN', 'status_temuan'),
@@ -499,12 +520,26 @@ const TableInspeksi = () => {
 
           return {
             ...row,
-            cabang: row.cabang?.nama_cabang || '-',
-            lokasi: row.lokasi?.nama_lokasi || '-',
             petugas: row.pegawai?.nama_lengkap || '-',
-            waktu_custom: row.waktu ? row.waktu.slice(0, -3) : '-',
-            tanggal_custom: row.tanggal ? `${tanggalArr[2]}/${tanggalArr[1]}/${tanggalArr[0]}` : '-',
-            status_temuan: detail(row)
+            tanggal_custom: (
+              <Box>
+                <Typography variant='body2'>
+                  {row.tanggal ? `${tanggalArr[2]}/${tanggalArr[1]}/${tanggalArr[0]}` : '-'}
+                </Typography>
+                <Typography variant='caption' color='text.disabled'>
+                  Jam: {row.waktu ? row.waktu.slice(0, -3) : '-'}
+                </Typography>
+              </Box>
+            ),
+            status_temuan: detail(row),
+            lokasi: (
+              <Box>
+                <Typography variant='body2'>{row.lokasi?.nama_lokasi || '-'}</Typography>
+                <Typography variant='caption' color='text.disabled'>
+                  {row.cabang?.nama_cabang || ''}
+                </Typography>
+              </Box>
+            )
           }
         }),
         count: total,
@@ -527,14 +562,29 @@ const TableInspeksi = () => {
             <Grid size={{ xs: 12, sm: 3 }}>
               <Autocomplete
                 size='small'
-                options={storeCabang.datas.map(r => {
-                  return {
-                    label: `${r.nama_cabang}`,
-                    value: r.id_cabang
-                  }
-                })}
+                options={[
+                  { label: 'Semua', value: '' },
+                  ...storeCabang.datas.map(r => {
+                    return {
+                      label: `${r.nama_cabang}`,
+                      value: r.id_cabang
+                    }
+                  })
+                ]}
                 value={selectedCabang}
-                onChange={(_, newValue) => setSelectedCabang(newValue)}
+                onChange={(_, newValue) => {
+                  setSelectedCabang(newValue)
+                  if (newValue && newValue.value !== '') {
+                    const isLocationInNewBranch = storeLokasi.datas.some(
+                      r =>
+                        String(r.id_lokasi) === String(selectedLokasi?.value) &&
+                        String(r.id_cabang) === String(newValue.value)
+                    )
+                    if (!isLocationInNewBranch) {
+                      setSelectedLokasi({ label: 'Semua', value: '' })
+                    }
+                  }
+                }}
                 getOptionLabel={option => option.label || ''}
                 isOptionEqualToValue={(option, value) => option.value === value?.value}
                 renderInput={params => (
@@ -552,12 +602,15 @@ const TableInspeksi = () => {
             <Grid size={{ xs: 12, sm: 3 }}>
               <Autocomplete
                 size='small'
-                options={storeLokasi.datas.map(r => {
-                  return {
-                    label: `${r.parent ? `${r.parent.nama_lokasi} / ` : ''}${r.nama_lokasi}`,
-                    value: r.id_lokasi
-                  }
-                })}
+                options={[
+                  { label: 'Semua', value: '' },
+                  ...filteredLokasiDatas.map(r => {
+                    return {
+                      label: `${r.parent ? `${r.parent.nama_lokasi} / ` : ''}${r.nama_lokasi}`,
+                      value: r.id_lokasi
+                    }
+                  })
+                ]}
                 value={selectedLokasi}
                 onChange={(_, newValue) => setSelectedLokasi(newValue)}
                 getOptionLabel={option => option.label || ''}

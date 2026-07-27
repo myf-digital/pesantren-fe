@@ -117,6 +117,8 @@ const FormValidationBasic = () => {
   const id = searchParams.get('id')
   const view = searchParams.get('view')
   const qrcode = searchParams.get('qrcode')
+  const queryCabangId = searchParams.get('id_cabang')
+  const queryLokasiId = searchParams.get('id_lokasi')
 
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.kebersihan_inspeksi)
@@ -286,11 +288,19 @@ const FormValidationBasic = () => {
       if (qrcode) {
         setShowOption(false)
         handleScan(qrcode)
+      } else if (queryLokasiId) {
+        setShowOption(false)
+        setShowForm(true)
+        setFoundLocation(true)
+        setState(prevState => ({
+          ...prevState,
+          scan_type: 'MANUAL'
+        }))
       } else {
         setShowOption(true)
       }
     }
-  }, [dispatch, id, reset])
+  }, [dispatch, id, reset, queryLokasiId])
 
   useEffect(() => {
     if (store.location_qrcode) {
@@ -331,29 +341,65 @@ const FormValidationBasic = () => {
 
   useEffect(() => {
     if (storeCabang.datas.length > 0 && !Boolean(id)) {
-      if (currentUser?.pegawai) {
-        const findCabang = storeCabang.datas.find(
-          cabang => cabang.id_cabang === currentUser?.pegawai?.organizationUnit?.cabang?.id_cabang
+      let findCabang = null
+      if (queryCabangId) {
+        findCabang = storeCabang.datas.find(cabang => String(cabang.id_cabang) === String(queryCabangId))
+      }
+      if (!findCabang && currentUser?.pegawai) {
+        findCabang = storeCabang.datas.find(
+          cabang => cabang.id_cabang === currentUser?.pegawai?.organizationUnit?.id_cabang
         )
+      }
 
-        if (findCabang) {
-          setValue('id_cabang', {
-            value: findCabang.id_cabang,
-            label: findCabang.nama_cabang
-          } as any)
-          setState(prevState => {
-            return {
-              ...prevState,
-              id_cabang: {
-                value: findCabang.id_cabang,
-                label: findCabang.nama_cabang
-              }
+      if (findCabang) {
+        setValue('id_cabang', {
+          value: findCabang.id_cabang,
+          label: findCabang.nama_cabang
+        } as any)
+        setState(prevState => {
+          return {
+            ...prevState,
+            id_cabang: {
+              value: findCabang.id_cabang,
+              label: findCabang.nama_cabang
             }
-          })
-        }
+          }
+        })
       }
     }
-  }, [storeCabang.datas])
+  }, [storeCabang.datas, queryCabangId])
+
+  useEffect(() => {
+    if (storeLokasi.datas.length > 0 && !Boolean(id) && queryLokasiId) {
+      const findLokasi = storeLokasi.datas.find(loc => String(loc.id_lokasi) === String(queryLokasiId))
+
+      if (findLokasi) {
+        const optionVal = {
+          value: findLokasi.id_lokasi,
+          label: `${findLokasi.parent ? `${findLokasi.parent.nama_lokasi} / ` : ''}${findLokasi.nama_lokasi}`
+        }
+        setValue('id_lokasi', optionVal as any)
+        setState(prevState => {
+          return {
+            ...prevState,
+            id_lokasi: optionVal
+          }
+        })
+        dispatch(
+          postKebersihanScanLog({
+            id_lokasi: {
+              value: findLokasi.id_lokasi
+            },
+            scan_latitude: state.latitude,
+            scan_longitude: state.longitude,
+            metode_scan: 'MANUAL',
+            scan_source: isPWA() ? 'PWA' : 'WEB',
+            keterangan: 'Manual via List'
+          })
+        )
+      }
+    }
+  }, [storeLokasi.datas, queryLokasiId, dispatch, state.latitude, state.longitude])
 
   useEffect(() => {
     if (storePegawai.pegawai.length > 0 && !Boolean(id)) {
@@ -540,7 +586,33 @@ const FormValidationBasic = () => {
               label: r.nama_cabang,
               value: r.id_cabang
             }
-          })
+          }),
+          onChange: (newValue: any) => {
+            setState(prevState => ({
+              ...prevState,
+              id_cabang: newValue
+            }))
+
+            if (newValue && newValue.value) {
+              const currentLokasi = state.id_lokasi
+              if (currentLokasi && currentLokasi.value) {
+                const lokasiObj = storeLokasi.datas.find(r => String(r.id_lokasi) === String(currentLokasi.value))
+                if (lokasiObj && String(lokasiObj.id_cabang) !== String(newValue.value)) {
+                  setValue('id_lokasi', { label: '', value: '' } as any)
+                  setState(prevState => ({
+                    ...prevState,
+                    id_lokasi: { label: '', value: '' }
+                  }))
+                }
+              }
+            } else {
+              setValue('id_lokasi', { label: '', value: '' } as any)
+              setState(prevState => ({
+                ...prevState,
+                id_lokasi: { label: '', value: '' }
+              }))
+            }
+          }
         },
         readOnly: Boolean(view)
       }),
@@ -551,12 +623,17 @@ const FormValidationBasic = () => {
         placeholder: 'Pilih Lokasi',
         required: true,
         options: {
-          values: storeLokasi.datas.map(r => {
-            return {
-              label: `${r.parent ? `${r.parent.nama_lokasi} / ` : ''}${r.nama_lokasi}`,
-              value: r.id_lokasi
-            }
-          })
+          values: storeLokasi.datas
+            .filter(r => {
+              if (!state.id_cabang?.value) return true
+              return String(r.id_cabang) === String(state.id_cabang.value)
+            })
+            .map(r => {
+              return {
+                label: `${r.parent ? `${r.parent.nama_lokasi} / ` : ''}${r.nama_lokasi}`,
+                value: r.id_lokasi
+              }
+            })
         },
         readOnly: Boolean(view) || foundLocationQrCode || foundLocation || Boolean(id)
       }),
@@ -997,12 +1074,40 @@ const FormValidationBasic = () => {
                           placeholder: 'Input Lokasi',
                           required: true,
                           options: {
-                            values: storeLokasi.datas.map(r => {
-                              return {
-                                label: `${r.parent ? `${r.parent.nama_lokasi} / ` : ''}${r.nama_lokasi}`,
-                                value: r.id_lokasi
+                            values: storeLokasi.datas
+                              .filter(r => {
+                                if (!state.id_cabang?.value) return true
+                                return String(r.id_cabang) === String(state.id_cabang.value)
+                              })
+                              .map(r => {
+                                return {
+                                  label: `${r.parent ? `${r.parent.nama_lokasi} / ` : ''}${r.nama_lokasi}`,
+                                  value: r.id_lokasi
+                                }
+                              }),
+                            onChange: (newValue: any) => {
+                              if (newValue && newValue.value) {
+                                setValue('id_lokasi', newValue)
+                                setState(prevState => ({
+                                  ...prevState,
+                                  id_lokasi: newValue
+                                }))
+                                setShowForm(true)
+                                setFoundLocation(true)
+                                dispatch(
+                                  postKebersihanScanLog({
+                                    id_lokasi: {
+                                      value: newValue.value
+                                    },
+                                    scan_latitude: state.latitude,
+                                    scan_longitude: state.longitude,
+                                    metode_scan: 'MANUAL',
+                                    scan_source: isPWA() ? 'PWA' : 'WEB',
+                                    keterangan: 'Manual'
+                                  })
+                                )
                               }
-                            })
+                            }
                           }
                         })
                       })}
