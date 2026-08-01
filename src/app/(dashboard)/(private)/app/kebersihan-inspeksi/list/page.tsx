@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, forwardRef } from 'react'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -32,6 +32,7 @@ import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 
 import { toast } from 'react-toastify'
+import { format, startOfMonth } from 'date-fns'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import {
@@ -52,6 +53,8 @@ import { useCan } from '@/hooks/useCan'
 import CustomChip from '@/@core/components/mui/Chip'
 import { fetchCabangAll } from '../../cabang/slice'
 import { fetchLocationAll } from '../../location/slice'
+
+import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
 const statusObj: Record<string, { color: any; value: string }> = {
   0: {
@@ -104,6 +107,10 @@ const statuss = [
     value: 'RUSAK'
   }
 ]
+
+const PickersComponent = forwardRef(({ ...props }: any, ref) => {
+  return <TextField inputRef={ref} fullWidth size='small' {...props} />
+})
 
 function RowAction(data: any) {
   const [anchorEl, setAnchorEl] = useState(null)
@@ -246,11 +253,16 @@ const TableInspeksi = () => {
   const [selectedLokasi, setSelectedLokasi] = useState<LokasiOption | null>({ label: 'Semua', value: '' })
   const [selectedStatus, setSelectedStatus] = useState<StatusOption | null>({ label: 'Semua', value: '' })
 
+  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfMonth(new Date()))
+  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(new Date())
+
   const filteredLokasiDatas = storeLokasi.datas.filter(r => {
     if (!selectedCabang || selectedCabang.value === '') {
       return true
     }
-    return String(r.id_cabang) === String(selectedCabang.value)
+
+    
+return String(r.id_cabang) === String(selectedCabang.value)
   })
 
   useEffect(() => {
@@ -262,7 +274,9 @@ const TableInspeksi = () => {
           q: filter,
           id_cabang: selectedCabang?.value,
           id_lokasi: selectedLokasi?.value,
-          status: selectedStatus?.value
+          status: selectedStatus?.value,
+          tanggal_awal: tanggalAwal ? format(tanggalAwal, 'yyyy-MM-dd') : undefined,
+          tanggal_akhir: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : undefined
         })
       )
       dispatch(resetRedux())
@@ -270,7 +284,7 @@ const TableInspeksi = () => {
 
     dispatch(fetchCabangAll({ all_cabang: true }))
     dispatch(fetchLocationAll({ orderWithParent: true, all_cabang: true }))
-  }, [dispatch, filter, perPage, store.delete])
+  }, [dispatch, filter, perPage, selectedCabang?.value, selectedLokasi?.value, selectedStatus?.value, store.delete, tanggalAkhir, tanggalAwal])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -282,13 +296,15 @@ const TableInspeksi = () => {
           q: filter,
           id_cabang: selectedCabang?.value,
           id_lokasi: selectedLokasi?.value,
-          status: selectedStatus?.value
+          status: selectedStatus?.value,
+          tanggal_awal: tanggalAwal ? format(tanggalAwal, 'yyyy-MM-dd') : undefined,
+          tanggal_akhir: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : undefined
         })
       )
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [dispatch, filter, perPage, selectedCabang, selectedLokasi, selectedStatus])
+  }, [dispatch, filter, perPage, selectedCabang, selectedLokasi, selectedStatus, tanggalAwal, tanggalAkhir])
 
   const handleChangePage = useCallback(
     (newPage: number) => {
@@ -300,11 +316,13 @@ const TableInspeksi = () => {
           q: filter,
           id_cabang: selectedCabang?.value,
           id_lokasi: selectedLokasi?.value,
-          status: selectedStatus?.value
+          status: selectedStatus?.value,
+          tanggal_awal: tanggalAwal ? format(tanggalAwal, 'yyyy-MM-dd') : undefined,
+          tanggal_akhir: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : undefined
         })
       )
     },
-    [dispatch, perPage, filter]
+    [dispatch, perPage, filter, selectedCabang, selectedLokasi, selectedStatus, tanggalAwal, tanggalAkhir]
   )
 
   useEffect(() => {
@@ -322,16 +340,21 @@ const TableInspeksi = () => {
   const onAddForm = () => {
     let url = '/app/kebersihan-inspeksi/form'
     const params = new URLSearchParams()
+
     if (selectedCabang && selectedCabang.value !== '') {
       params.append('id_cabang', selectedCabang.value)
     }
+
     if (selectedLokasi && selectedLokasi.value !== '') {
       params.append('id_lokasi', selectedLokasi.value)
     }
+
     const queryString = params.toString()
+
     if (queryString) {
       url += `?${queryString}`
     }
+
     router.replace(url)
   }
 
@@ -342,7 +365,17 @@ const TableInspeksi = () => {
   const onExport = async () => {
     try {
       setLoadingExport(true)
-      const res = await dispatch(postExport({ q: filter })).unwrap()
+
+      const res = await dispatch(
+        postExport({
+          q: filter,
+          id_cabang: selectedCabang?.value,
+          id_lokasi: selectedLokasi?.value,
+          status: selectedStatus?.value,
+          tanggal_awal: tanggalAwal ? format(tanggalAwal, 'yyyy-MM-dd') : undefined,
+          tanggal_akhir: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : undefined
+        })
+      ).unwrap()
 
       if (res?.status && res?.data) {
         const url = `${process.env.NEXT_PUBLIC_API_URL}${res.data}`
@@ -400,7 +433,9 @@ const TableInspeksi = () => {
         q: filter,
         id_cabang: selectedCabang?.value,
         id_lokasi: selectedLokasi?.value,
-        status: selectedStatus?.value
+        status: selectedStatus?.value,
+        tanggal_awal: tanggalAwal ? format(tanggalAwal, 'yyyy-MM-dd') : undefined,
+        tanggal_akhir: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : undefined
       })
     )
   }
@@ -560,6 +595,32 @@ const TableInspeksi = () => {
         <Card sx={{ p: 5 }}>
           <Grid container spacing={4}>
             <Grid size={{ xs: 12, sm: 3 }}>
+              <AppReactDatepicker
+                selected={tanggalAwal}
+                onChange={(date: Date | null) => setTanggalAwal(date)}
+                placeholderText='MM/DD/YYYY'
+                showMonthDropdown
+                showYearDropdown
+                scrollableYearDropdown
+                maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
+                dropdownMode='select'
+                customInput={<PickersComponent label='Tanggal Awal' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <AppReactDatepicker
+                selected={tanggalAkhir}
+                onChange={(date: Date | null) => setTanggalAkhir(date)}
+                placeholderText='MM/DD/YYYY'
+                showMonthDropdown
+                showYearDropdown
+                scrollableYearDropdown
+                maxDate={new Date(new Date().getFullYear() + 5, 11, 31)}
+                dropdownMode='select'
+                customInput={<PickersComponent label='Tanggal Akhir' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 3 }}>
               <Autocomplete
                 size='small'
                 options={[
@@ -574,12 +635,14 @@ const TableInspeksi = () => {
                 value={selectedCabang}
                 onChange={(_, newValue) => {
                   setSelectedCabang(newValue)
+
                   if (newValue && newValue.value !== '') {
                     const isLocationInNewBranch = storeLokasi.datas.some(
                       r =>
                         String(r.id_lokasi) === String(selectedLokasi?.value) &&
                         String(r.id_cabang) === String(newValue.value)
                     )
+
                     if (!isLocationInNewBranch) {
                       setSelectedLokasi({ label: 'Semua', value: '' })
                     }

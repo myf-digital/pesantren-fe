@@ -106,7 +106,7 @@ const TableKebersihanPetugas = () => {
 
       const res = await dispatch(
         postExportPetugas({
-          q: searchTyped,
+          q: filter,
           tanggal_awal: tanggalAwal || '',
           tanggal_akhir: tanggalAkhir || ''
         })
@@ -145,7 +145,8 @@ const TableKebersihanPetugas = () => {
 
   const handleSearchSubmit = () => {
     setPage(1)
-    executeFetchData({ page: 1 })
+    setSearchTyped(filter)
+    executeFetchData({ page: 1, q: filter })
   }
 
   const handleResetFilter = () => {
