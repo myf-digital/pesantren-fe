@@ -194,7 +194,7 @@ const FormValidationBasic = () => {
   return (
     <Card>
       <CardHeader title='Form Master Slot Waktu' />
-      <CardContent>
+      <CardContent sx={{ marginBottom: 20 }}>
         <form onSubmit={handleSubmit(onSubmit)} autoComplete='off'>
           {formColumn({
             control: control,

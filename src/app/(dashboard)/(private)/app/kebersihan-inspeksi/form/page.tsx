@@ -342,9 +342,11 @@ const FormValidationBasic = () => {
   useEffect(() => {
     if (storeCabang.datas.length > 0 && !Boolean(id)) {
       let findCabang = null
+
       if (queryCabangId) {
         findCabang = storeCabang.datas.find(cabang => String(cabang.id_cabang) === String(queryCabangId))
       }
+
       if (!findCabang && currentUser?.pegawai) {
         findCabang = storeCabang.datas.find(
           cabang => cabang.id_cabang === currentUser?.pegawai?.organizationUnit?.id_cabang
@@ -378,6 +380,7 @@ const FormValidationBasic = () => {
           value: findLokasi.id_lokasi,
           label: `${findLokasi.parent ? `${findLokasi.parent.nama_lokasi} / ` : ''}${findLokasi.nama_lokasi}`
         }
+
         setValue('id_lokasi', optionVal as any)
         setState(prevState => {
           return {
@@ -432,7 +435,7 @@ const FormValidationBasic = () => {
   }, [storePegawai.pegawai])
 
   useEffect(() => {
-    if (storeSlot.datas.length > 0 && !Boolean(id)) {
+    if (storeJadwal.datas.length == 0 && storeSlot.datas.length > 0 && !Boolean(id)) {
       const timeNow = formatDate(state.waktu, 'HH:mm')
 
       const findSlot = storeSlot.datas.find(slot => timeNow >= slot.jam_mulai && timeNow < slot.jam_selesai)
@@ -440,7 +443,7 @@ const FormValidationBasic = () => {
       if (findSlot) {
         setValue('kode_slot', {
           value: findSlot.kode_slot,
-          label: findSlot.kode_slot
+          label: `${findSlot.kode_slot} (${findSlot.jam_mulai?.slice(0, -3)} - ${findSlot.jam_selesai?.slice(0, -3)})`
         } as any)
         setState(prevState => {
           return {
@@ -453,7 +456,7 @@ const FormValidationBasic = () => {
         })
       }
     }
-  }, [storeSlot.datas])
+  }, [storeJadwal.datas, storeSlot.datas])
 
   const onSubmit = () => {
     if (loading) return
@@ -558,12 +561,20 @@ const FormValidationBasic = () => {
             value: findSlot.id_jadwal,
             label: `${haris.find(d => d.value === findSlot.hari)?.label?.toUpperCase()} ${findSlot.kode_slot}`
           } as any)
+          setValue('kode_slot', {
+            value: findSlot.master_slot_waktu.kode_slot,
+            label: `${findSlot.master_slot_waktu.kode_slot} (${findSlot.master_slot_waktu.jam_mulai?.slice(0, -3)} - ${findSlot.master_slot_waktu.jam_selesai?.slice(0, -3)})`
+          } as any)
           setState(prevState => {
             return {
               ...prevState,
               id_jadwal: {
                 value: findSlot.id_jadwal,
                 label: `${haris.find(d => d.value === findSlot.hari)?.label?.toUpperCase()} ${findSlot.kode_slot}`
+              },
+              kode_slot: {
+                value: findSlot.master_slot_waktu.kode_slot,
+                label: findSlot.master_slot_waktu.kode_slot
               }
             }
           })
@@ -595,8 +606,10 @@ const FormValidationBasic = () => {
 
             if (newValue && newValue.value) {
               const currentLokasi = state.id_lokasi
+
               if (currentLokasi && currentLokasi.value) {
                 const lokasiObj = storeLokasi.datas.find(r => String(r.id_lokasi) === String(currentLokasi.value))
+
                 if (lokasiObj && String(lokasiObj.id_cabang) !== String(newValue.value)) {
                   setValue('id_lokasi', { label: '', value: '' } as any)
                   setState(prevState => ({
@@ -626,6 +639,7 @@ const FormValidationBasic = () => {
           values: storeLokasi.datas
             .filter(r => {
               if (!state.id_cabang?.value) return true
+
               return String(r.id_cabang) === String(state.id_cabang.value)
             })
             .map(r => {
@@ -652,7 +666,7 @@ const FormValidationBasic = () => {
           }),
           onChange: handleJadwal
         },
-        readOnly: Boolean(view)
+        readOnly: Boolean(view) || state.id_petugas?.value
       }),
       field({
         type: 'select',
@@ -661,14 +675,37 @@ const FormValidationBasic = () => {
         placeholder: 'Pilih Jadwal',
         required: false,
         options: {
-          values: storeJadwal.datas.map(r => {
-            return {
-              label: `${haris.find(d => d.value === r.hari)?.label?.toUpperCase()} ${r.kode_slot}`,
-              value: r.id_jadwal
-            }
-          })
+          values: storeJadwal.datas
+            .filter(r => {
+              const day = new Date().getDay()
+
+              return r.hari == (day == 0 ? 7 : day)
+            })
+            .map(r => {
+              return {
+                label: `${haris.find(d => d.value === r.hari)?.label?.toUpperCase()} ${r.kode_slot} (${r.master_slot_waktu?.jam_mulai?.slice(0, -3)} - ${r.master_slot_waktu?.jam_selesai?.slice(0, -3)})`,
+                value: r.id_jadwal,
+                master_slot_waktu: r.master_slot_waktu
+              }
+            }),
+          onChange: (newValue: any) => {
+            if (!newValue) return
+            setValue('kode_slot', {
+              value: newValue.master_slot_waktu.kode_slot,
+              label: `${newValue.master_slot_waktu.kode_slot} (${newValue.master_slot_waktu.jam_mulai?.slice(0, -3)} - ${newValue.master_slot_waktu.jam_selesai?.slice(0, -3)})`
+            } as any)
+            setState(prevState => {
+              return {
+                ...prevState,
+                kode_slot: {
+                  value: newValue.master_slot_waktu.kode_slot,
+                  label: newValue.master_slot_waktu.kode_slot
+                }
+              }
+            })
+          }
         },
-        readOnly: Boolean(view)
+        readOnly: Boolean(view) || state.id_jadwal?.value
       }),
       field({
         type: 'select',
@@ -679,12 +716,12 @@ const FormValidationBasic = () => {
         options: {
           values: storeSlot.datas.map(r => {
             return {
-              label: r.kode_slot,
+              label: `${r.kode_slot} (${r.jam_mulai?.slice(0, -3)} - ${r.jam_selesai?.slice(0, -3)})`,
               value: r.kode_slot
             }
           })
         },
-        readOnly: Boolean(view)
+        readOnly: Boolean(view) || state.id_jadwal?.value
       }),
       field({ type: 'date', key: 'tanggal', label: 'Tanggal', required: true, readOnly: true }),
       field({ type: 'time', key: 'waktu', label: 'Waktu', required: true, readOnly: true }),
@@ -1077,6 +1114,7 @@ const FormValidationBasic = () => {
                             values: storeLokasi.datas
                               .filter(r => {
                                 if (!state.id_cabang?.value) return true
+
                                 return String(r.id_cabang) === String(state.id_cabang.value)
                               })
                               .map(r => {
