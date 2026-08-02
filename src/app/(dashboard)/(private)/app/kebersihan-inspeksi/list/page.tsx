@@ -620,6 +620,8 @@ return String(r.id_cabang) === String(selectedCabang.value)
                 customInput={<PickersComponent label='Tanggal Akhir' />}
               />
             </Grid>
+          </Grid>
+          <Grid container spacing={4} sx={{ mt: 5 }}>
             <Grid size={{ xs: 12, sm: 3 }}>
               <Autocomplete
                 size='small'
