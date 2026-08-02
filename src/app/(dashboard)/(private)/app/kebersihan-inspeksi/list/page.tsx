@@ -592,7 +592,7 @@ return String(r.id_cabang) === String(selectedCabang.value)
   return (
     <Grid container spacing={6} sx={{ width: '100%' }}>
       <Grid size={12}>
-        <Card sx={{ p: 5 }}>
+        <Card sx={{ p: 5, overflow: 'visible' }}>
           <Grid container spacing={4}>
             <Grid size={{ xs: 12, sm: 3 }}>
               <AppReactDatepicker
