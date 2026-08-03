@@ -22,13 +22,15 @@ import {
   Select,
   useTheme,
   useMediaQuery,
-  Tooltip
+  Tooltip,
+  Autocomplete
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchKesehatanSantriPage, deleteKesehatanSantri, resetRedux, postExportKesehatan } from '../slice'
+import { fetchCabangAll } from '../../cabang/slice'
 
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
@@ -118,11 +120,16 @@ const KesehatanSantriList = () => {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.kesehatan_santri)
+  const storeCabang = useAppSelector(state => state.cabang)
 
   const canCreate = useCan('create')
   const canExport = useCan('export')
 
   // Filter States
+  const [selectedCabang, setSelectedCabang] = useState<{ label: string; value: string } | null>({
+    label: 'Semua Cabang',
+    value: ''
+  })
   const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfMonth(new Date()))
   const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(endOfMonth(new Date()))
   const [kategoriSakit, setKategoriSakit] = useState('Semua')
@@ -132,6 +139,10 @@ const KesehatanSantriList = () => {
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
+
+  useEffect(() => {
+    dispatch(fetchCabangAll({}))
+  }, [dispatch])
 
   const onExport = async () => {
     try {
@@ -143,6 +154,7 @@ const KesehatanSantriList = () => {
           progres_status: progresStatus !== 'Semua' ? progresStatus : undefined,
           tanggal_awal: tanggalAwal ? format(tanggalAwal, 'yyyy-MM-dd') : undefined,
           tanggal_akhir: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : undefined,
+          id_cabang: selectedCabang?.value || undefined,
           subject_type: 'santri'
         })
       ).unwrap()
@@ -177,10 +189,11 @@ const KesehatanSantriList = () => {
         progres_status: progresStatus !== 'Semua' ? progresStatus : undefined,
         tanggal_awal: tanggalAwal ? format(tanggalAwal, 'yyyy-MM-dd') : undefined,
         tanggal_akhir: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : undefined,
+        id_cabang: selectedCabang?.value || undefined,
         subject_type: 'santri'
       })
     )
-  }, [dispatch, page, perPage, searchQuery, kategoriSakit, progresStatus, tanggalAwal, tanggalAkhir])
+  }, [dispatch, page, perPage, searchQuery, kategoriSakit, progresStatus, tanggalAwal, tanggalAkhir, selectedCabang])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -396,6 +409,9 @@ const KesehatanSantriList = () => {
                   NIS: {row?.santri?.nis || '-'}
                 </Typography>
               </Box>
+              <Typography variant='caption' color='text.disabled'>
+                {row?.santri?.cabang?.nama_cabang || '-'}
+              </Typography>
             </Box>
           </Box>
         )
@@ -455,7 +471,7 @@ const KesehatanSantriList = () => {
             </Tooltip>
           )}
           <Grid container spacing={4} sx={{ pt: 10 }}>
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 2 }}>
               <AppReactDatepicker
                 selected={tanggalAwal}
                 onChange={(date: Date | null) => setTanggalAwal(date)}
@@ -463,7 +479,7 @@ const KesehatanSantriList = () => {
                 customInput={<PickersComponent label='Tanggal Mulai' />}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 2 }}>
               <AppReactDatepicker
                 selected={tanggalAkhir}
                 onChange={(date: Date | null) => setTanggalAkhir(date)}
@@ -471,7 +487,29 @@ const KesehatanSantriList = () => {
                 customInput={<PickersComponent label='Tanggal Selesai' />}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+          </Grid>
+          <Grid container spacing={4} sx={{ pt: 5 }}>
+            <Grid size={{ xs: 12, sm: 3 }}>
+              <Autocomplete
+                size='small'
+                options={[
+                  { label: 'Semua Cabang', value: '' },
+                  ...(storeCabang.datas || []).map((r: any) => ({
+                    label: `${r.nama_cabang}`,
+                    value: r.id_cabang
+                  }))
+                ]}
+                value={selectedCabang}
+                onChange={(_, newValue) => {
+                  setSelectedCabang(newValue)
+                  setPage(1)
+                }}
+                getOptionLabel={option => option?.label || ''}
+                isOptionEqualToValue={(option, value) => option?.value === value?.value}
+                renderInput={params => <TextField {...params} label='Cabang' />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 2 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Kategori</InputLabel>
                 <Select label='Kategori' value={kategoriSakit} onChange={e => setKategoriSakit(e.target.value)}>
@@ -482,7 +520,7 @@ const KesehatanSantriList = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 2 }}>
               <FormControl fullWidth size='small'>
                 <InputLabel>Progres</InputLabel>
                 <Select label='Progres' value={progresStatus} onChange={e => setProgresStatus(e.target.value)}>
@@ -493,7 +531,7 @@ const KesehatanSantriList = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 2 }}>
               <TextField
                 fullWidth
                 label='Cari Nama / NIS'

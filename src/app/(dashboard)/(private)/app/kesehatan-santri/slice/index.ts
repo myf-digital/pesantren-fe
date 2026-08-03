@@ -17,6 +17,8 @@ export interface FetchParams {
   tanggal_awal?: string
   tanggal_akhir?: string
   subject_type?: string
+  id_cabang?: string
+  id_orgunit?: string
 }
 
 export interface InitialState {
@@ -91,7 +93,9 @@ export const fetchKesehatanSantriPage = createAsyncThunk(
           kategori_sakit: params.kategori_sakit,
           tanggal_awal: params.tanggal_awal,
           tanggal_akhir: params.tanggal_akhir,
-          subject_type: params.subject_type
+          subject_type: params.subject_type,
+          id_cabang: params.id_cabang,
+          id_orgunit: params.id_orgunit
         }
       })
       return response.data
