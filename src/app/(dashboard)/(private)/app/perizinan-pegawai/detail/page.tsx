@@ -429,8 +429,23 @@ const ApprovalKepegawaianCard = ({
             />
           </Grid>
           <Grid size={12}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 3, mt: 2 }}>
-              <Button variant='outlined' color='secondary' onClick={onBack} disabled={submitting} sx={{ px: 5 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: { xs: 'stretch', sm: 'flex-end' },
+                alignItems: { xs: 'stretch', sm: 'center' },
+                gap: 3,
+                mt: 2
+              }}
+            >
+              <Button
+                variant='outlined'
+                color='secondary'
+                onClick={onBack}
+                disabled={submitting}
+                sx={{ px: 5, width: { xs: '100%', sm: 'auto' } }}
+              >
                 KEMBALI
               </Button>
               {isPendingApproval && (
@@ -441,7 +456,7 @@ const ApprovalKepegawaianCard = ({
                     onClick={onReject}
                     disabled={submitting}
                     startIcon={<i className='tabler-x' />}
-                    sx={{ backgroundColor: '#D32F2F', px: 5 }}
+                    sx={{ backgroundColor: '#D32F2F', px: 5, width: { xs: '100%', sm: 'auto' } }}
                   >
                     TOLAK IZIN PEGAWAI
                   </Button>
@@ -451,7 +466,12 @@ const ApprovalKepegawaianCard = ({
                     onClick={onApprove}
                     disabled={submitting}
                     startIcon={<i className='tabler-check' />}
-                    sx={{ backgroundColor: '#007A53', px: 5, '&:hover': { backgroundColor: '#005F40' } }}
+                    sx={{
+                      backgroundColor: '#007A53',
+                      px: 5,
+                      '&:hover': { backgroundColor: '#005F40' },
+                      width: { xs: '100%', sm: 'auto' }
+                    }}
                   >
                     SETUJUI IZIN PEGAWAI
                   </Button>
@@ -724,18 +744,40 @@ const RequestCancellationApprovalPegawaiCard = ({
         </Box>
 
         {/* Action Toolbar Bottom */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-          <Button variant='outlined' color='secondary' onClick={onBack} disabled={submitting} sx={{ px: 4 }}>
+        <Box
+          sx={{
+            mt: 2,
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'stretch', sm: 'center' },
+            gap: { xs: 2, sm: 0 }
+          }}
+        >
+          <Button
+            variant='outlined'
+            color='secondary'
+            onClick={onBack}
+            disabled={submitting}
+            sx={{ px: 4, width: { xs: '100%', sm: 'auto' } }}
+          >
             Kembali
           </Button>
-          <Box sx={{ display: 'flex', gap: 3 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 3,
+              width: { xs: '100%', sm: 'auto' }
+            }}
+          >
             <Button
               variant='contained'
               color='error'
               onClick={onRejectCancel}
               disabled={submitting}
               startIcon={<i className='tabler-x' />}
-              sx={{ backgroundColor: '#D32F2F', px: 4 }}
+              sx={{ backgroundColor: '#D32F2F', px: 4, width: { xs: '100%', sm: 'auto' } }}
             >
               Tolak Permintaan Pembatalan
             </Button>
@@ -745,7 +787,12 @@ const RequestCancellationApprovalPegawaiCard = ({
               onClick={onApproveCancel}
               disabled={submitting}
               startIcon={<i className='tabler-check' />}
-              sx={{ backgroundColor: '#007A53', px: 4, '&:hover': { backgroundColor: '#005F40' } }}
+              sx={{
+                backgroundColor: '#007A53',
+                px: 4,
+                '&:hover': { backgroundColor: '#005F40' },
+                width: { xs: '100%', sm: 'auto' }
+              }}
             >
               Setujui Pencabutan Izin
             </Button>
@@ -1231,29 +1278,45 @@ const DetailPerizinanPegawaiPage = () => {
           sx={{
             mt: 6,
             display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: { xs: 'stretch', sm: 'center' },
+            gap: { xs: 2, sm: 0 }
           }}
         >
-          {/* Tombol Kembali */}
           <Button
             onClick={() => router.push(redirectBackUrl)}
             variant='outlined'
             color='secondary'
             startIcon={<i className='tabler-arrow-left' />}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Kembali
           </Button>
 
-          {/* Tombol aksi di sebelah kanan */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              width: { xs: '100%', sm: 'auto' }
+            }}
+          >
             {isAgreed && (
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: 2,
+                  width: { xs: '100%', sm: 'auto' }
+                }}
+              >
                 <Button
                   onClick={() => setOpenSuratDialog(true)}
                   variant='contained'
                   color='primary'
                   startIcon={<i className='tabler-file-text' />}
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
                 >
                   Lihat Surat
                 </Button>
@@ -1263,6 +1326,7 @@ const DetailPerizinanPegawaiPage = () => {
                   variant='contained'
                   color='secondary'
                   startIcon={<i className='tabler-printer' />}
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
                 >
                   Cetak
                 </Button>
@@ -1275,6 +1339,7 @@ const DetailPerizinanPegawaiPage = () => {
                 variant='contained'
                 color='error'
                 startIcon={<i className='tabler-trash-x' />}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 Batalkan Pengajuan
               </Button>

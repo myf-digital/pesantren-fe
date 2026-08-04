@@ -54,6 +54,7 @@ const RowAction = ({ row, currentUserRole }: { row: any; currentUserRole: string
   const isKedisiplinan = ['petugas_kedisiplinan', 'wali_asuh', 'administrator'].includes(currentUserRole)
   const isStatusMenunggu = row.status_approval === 'Menunggu' && !row.is_canceled
   const isStatusRequestCanceled = row.is_request_canceled && !row.is_canceled
+  const canApprove = useCan('approve')
 
   return (
     <TableCell size='small' sx={{ borderBottom: 0 }}>
@@ -62,31 +63,28 @@ const RowAction = ({ row, currentUserRole }: { row: any; currentUserRole: string
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         {/* Tombol Detail: Selalu muncul untuk Akses Guru/Wali, atau kondisi kondisional */}
-        {isParentOrWali && (
-          <MenuItem
-            component={Link}
-            href={`/app/perizinan-santri/detail?id=${row.id_izin}&view=true&from=kedisiplinan`}
-          >
-            <i className='tabler-eye' style={{ marginRight: 8 }} /> Detail
-          </MenuItem>
-        )}
+        {/* {!canApprove && ( */}
+        <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}&view=true&from=kedisiplinan`}>
+          <i className='tabler-eye' style={{ marginRight: 8 }} /> Detail
+        </MenuItem>
+        {/* )} */}
 
         {/* Tombol Proses Pengajuan: Hanya aktif untuk divisi kedisiplinan pada status pending */}
-        {isKedisiplinan && (isStatusMenunggu || isStatusRequestCanceled) && (
+        {canApprove && (isStatusMenunggu || isStatusRequestCanceled) && (
           <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}&from=kedisiplinan`}>
             <i className='tabler-gavel' style={{ marginRight: 8 }} /> Proses Izin
           </MenuItem>
         )}
 
         {/* Cadangan fallback view reguler jika role diluar spesifikasi diatas */}
-        {!isParentOrWali && !isKedisiplinan && (
+        {/* {!isParentOrWali && !canApprove && (
           <MenuItem
             component={Link}
             href={`/app/perizinan-santri/detail?id=${row.id_izin}&view=true&from=kedisiplinan`}
           >
             <i className='tabler-eye' style={{ marginRight: 8 }} /> View Detail
           </MenuItem>
-        )}
+        )} */}
       </Menu>
     </TableCell>
   )

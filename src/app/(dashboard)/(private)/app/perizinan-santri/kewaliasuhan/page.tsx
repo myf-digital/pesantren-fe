@@ -69,6 +69,7 @@ const RowAction = ({
   const isKedisiplinan = ['pegawai_kedisiplinan', 'wali_asuh', 'administrator'].includes(currentUserRole)
   const isStatusMenunggu = row.status_approval === 'Menunggu' && !row.is_canceled
   const isStatusRequestCanceled = row.is_request_canceled && !row.is_canceled
+  const canApprove = useCan('approve')
 
   return (
     <TableCell size='small' sx={{ borderBottom: 0 }}>
@@ -77,25 +78,25 @@ const RowAction = ({
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         {/* Tombol Detail: Selalu muncul untuk Akses Guru/Wali, atau kondisi kondisional */}
-        {isParentOrWali && (
-          <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}&view=true`}>
-            <i className='tabler-eye' style={{ marginRight: 8 }} /> Detail
-          </MenuItem>
-        )}
+        {/* {!canApprove && ( */}
+        <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}&view=true`}>
+          <i className='tabler-eye' style={{ marginRight: 8 }} /> Detail
+        </MenuItem>
+        {/* )} */}
 
         {/* Tombol Proses Pengajuan: Hanya aktif untuk divisi kedisiplinan pada status pending */}
-        {isKedisiplinan && (isStatusMenunggu || isStatusRequestCanceled) && (
+        {canApprove && (isStatusMenunggu || isStatusRequestCanceled) && (
           <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}`}>
             <i className='tabler-gavel' style={{ marginRight: 8 }} /> Proses Izin
           </MenuItem>
         )}
 
         {/* Cadangan fallback view reguler jika role diluar spesifikasi diatas */}
-        {!isParentOrWali && !isKedisiplinan && (
+        {/* {!isParentOrWali && !canApprove && (
           <MenuItem component={Link} href={`/app/perizinan-santri/detail?id=${row.id_izin}&view=true`}>
             <i className='tabler-eye' style={{ marginRight: 8 }} /> View Detail
           </MenuItem>
-        )}
+        )} */}
       </Menu>
     </TableCell>
   )
@@ -113,11 +114,13 @@ const PerizinanSantriList = () => {
   const { data: session } = useSession()
   const currentUser: any = session?.userdata
 
+  console.log(currentUser)
   const userRole = currentUser?.role_name || 'pegawai_kedisiplinan' // Default fallback
 
   // Hooks Otorisasi Multi-Aksi Konten Vuexy
   const canImport = useCan('import')
   const canExport = useCan('export')
+  console.log(useCan('approve'))
 
   // Deteksi Breakpoint Media Screen untuk layouting Responsif (Mobile & Tablet)
   const theme = useTheme()

@@ -4,7 +4,8 @@ export type Ability =
   | 'edit'
   | 'delete'
   | 'import'
-  | 'export';
+  | 'export'
+  | 'approve';
 
 export type Resource = string;
 
@@ -16,6 +17,7 @@ export type AbilityItem = {
   role_menu_delete: number
   role_menu_import: number
   role_menu_export: number
+  role_menu_approve: number
 }
 
 /** old: object<string, boolean> */

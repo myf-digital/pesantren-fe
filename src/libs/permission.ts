@@ -19,6 +19,7 @@ export function can(
     delete: 8,
     import: 16,
     export: 32,
+    approve: 64
   };
 
   const required = Array.isArray(abilities)
@@ -67,7 +68,8 @@ export function normalizeAbility(abilities: AbilityItem[]) {
       (item.role_menu_edit ? 4 : 0) +
       (item.role_menu_delete ? 8 : 0) +
       (item.role_menu_import ? 16 : 0) +
-      (item.role_menu_export ? 32 : 0)
+      (item.role_menu_export ? 32 : 0) +
+      (item.role_menu_approve ? 64 : 0)
     )
 
     return acc
@@ -78,6 +80,6 @@ export function normalizeResource(path: string): string {
   return path
     .toLowerCase()
     .split('?')[0]
-    .replace(/\/(list|form|edit|detail|access|import)[^\/]*(\/.*)?$/, '')
+    .replace(/\/(list|form|edit|detail|access|import|approve)[^\/]*(\/.*)?$/, '')
     .replace(/\/$/, '');
 }

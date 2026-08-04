@@ -55,6 +55,7 @@ const RowAction = ({ row, currentUserRole }: { row: any; currentUserRole: string
   const isKedisipliaStaff = ['pegawai_kedisiplinan', 'administrator'].includes(currentUserRole)
   const isStatusMenunggu = row.status_approval === 'Menunggu' && !row.is_canceled
   const isStatusRequestCanceled = row.is_request_canceled && !row.is_canceled
+  const canApprove = useCan('approve')
 
   return (
     <TableCell size='small' sx={{ borderBottom: 0 }}>
@@ -63,31 +64,31 @@ const RowAction = ({ row, currentUserRole }: { row: any; currentUserRole: string
       </IconButton>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
         {/* Tombol Detail: Muncul untuk atasan, manajemen hrd, atau administrator */}
-        {isManajemenAtasan && (
-          <MenuItem
-            component={Link}
-            href={`/app/perizinan-pegawai/detail?id=${row.id_izin}&view=true&from=manajemen-hrd`}
-          >
-            <i className='tabler-eye' style={{ marginRight: 8 }} /> Detail Pegawai
-          </MenuItem>
-        )}
+        {/* {isManajemenAtasan && ( */}
+        <MenuItem
+          component={Link}
+          href={`/app/perizinan-pegawai/detail?id=${row.id_izin}&view=true&from=manajemen-hrd`}
+        >
+          <i className='tabler-eye' style={{ marginRight: 8 }} /> Detail Pegawai
+        </MenuItem>
+        {/* )} */}
 
         {/* Tombol Proses Pengajuan: Aktif untuk divisi kepegawaian atau hrd pada status pending */}
-        {isKedisipliaStaff && (isStatusMenunggu || isStatusRequestCanceled) && (
+        {canApprove && (isStatusMenunggu || isStatusRequestCanceled) && (
           <MenuItem component={Link} href={`/app/perizinan-pegawai/detail?id=${row.id_izin}&from=manajemen-hrd`}>
             <i className='tabler-gavel' style={{ marginRight: 8 }} /> Proses Izin
           </MenuItem>
         )}
 
         {/* Cadangan fallback view reguler jika role diluar spesifikasi diatas */}
-        {!isManajemenAtasan && !isKedisipliaStaff && (
+        {/* {!isManajemenAtasan && !isKedisipliaStaff && (
           <MenuItem
             component={Link}
             href={`/app/perizinan-pegawai/detail?id=${row.id_izin}&view=true&from=manajemen-hrd`}
           >
             <i className='tabler-eye' style={{ marginRight: 8 }} /> View Detail
           </MenuItem>
-        )}
+        )} */}
       </Menu>
     </TableCell>
   )
