@@ -700,7 +700,7 @@ export function formColumnDetailField(form) {
   if ('image' === props.type) {
     let session = form.session
 
-    const { key, base64 } = props
+    const { key, base64, readOnly } = props
 
     const defaultImage = `https://placehold.co/300x300?font=roboto&text=${props.placeholder}`
 
@@ -737,6 +737,7 @@ export function formColumnDetailField(form) {
           }}
           gridProps={{ size: { sm: 4, md: 2, xs: 12 } }}
           ref={props.ref}
+          readOnly={readOnly}
         />
       </Grid>
     )
@@ -1380,6 +1381,7 @@ const selectField = form => {
         const rawValue = value ?? session?.state?.[props.key] ?? null
 
         let selectedOption = null
+
         if (rawValue) {
           if (typeof rawValue === 'object') {
             selectedOption = props.options.values.find(e => String(e.value) === String(rawValue.value)) || rawValue
@@ -1394,7 +1396,7 @@ const selectField = form => {
             autoHighlight
             value={selectedOption || null}
             defaultValue={null}
-            filterOptions={props.filterOptions ? props.filterOptions : (props.onInputChange ? (x => x) : undefined)}
+            filterOptions={props.filterOptions ? props.filterOptions : props.onInputChange ? x => x : undefined}
             getOptionLabel={option => {
               return option.label || ''
             }}
@@ -1402,6 +1404,7 @@ const selectField = form => {
               if (!val) return false
               const optionVal = option?.value
               const currentVal = typeof val === 'object' ? val.value : val
+
               return String(optionVal) === String(currentVal)
             }}
             onInputChange={(event, value, reason) => {

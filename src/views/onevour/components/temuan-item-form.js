@@ -1,5 +1,7 @@
 import React, { useRef, useState } from 'react'
 
+import { useRouter } from 'next/navigation'
+
 import Box from '@mui/material/Box'
 
 import Collapse from '@mui/material/Collapse'
@@ -23,8 +25,6 @@ import TableView from '../table/TableView'
 import { tableColumn } from '../table/TableViewBuilder'
 
 import Repeater from '../../../@core/components/repeater'
-
-import { useRouter } from 'next/navigation'
 
 const RepeatingContent = styled(Grid)(({ theme }) => ({
   paddingRight: 0,
@@ -101,24 +101,22 @@ const RowAction = ({ data, onRowUpdate, onRowDeleted, view }) => {
         PaperProps={{ style: { minWidth: '8rem' } }}
       >
         {Boolean(view) ? (
-          <>
-            <MenuItem onClick={handleTindakan} sx={{ '& svg': { mr: 2 } }}>
-              <i className='tabler-check' fontSize={20} />
-              Tindakan
-            </MenuItem>
-          </>
+          <MenuItem onClick={handleTindakan} sx={{ '& svg': { mr: 2 } }}>
+            <i className='tabler-check' fontSize={20} />
+            Tindakan
+          </MenuItem>
         ) : (
-          <>
-            <MenuItem onClick={handleUpdate} sx={{ '& svg': { mr: 2 } }}>
+          [
+            <MenuItem onClick={handleUpdate} sx={{ '& svg': { mr: 2 } }} key='edit'>
               <i className='tabler-edit' fontSize={20} />
               Edit
-            </MenuItem>
+            </MenuItem>,
 
-            <MenuItem onClick={handleDelete} sx={{ '& svg': { mr: 2 } }}>
+            <MenuItem onClick={handleDelete} sx={{ '& svg': { mr: 2 } }} key='delete'>
               <i className='tabler-trash' fontSize={20} />
               Delete
             </MenuItem>
-          </>
+          ]
         )}
       </Menu>
     </TableCell>
@@ -260,7 +258,7 @@ const ItemForm = ({ temuanDetailsSelected, onAddTemuanDetail, onDeleteTemuanDeta
   // table
   const buildTable = () => {
     return {
-      page: 0,
+      page: 1,
       fields: [
         tableColumn('OPTION', 'act-x', 'left', renderOption),
         tableColumn('Kategori', 'kategori', 'left'),
