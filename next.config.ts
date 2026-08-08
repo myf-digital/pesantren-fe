@@ -21,6 +21,11 @@ const nextConfig: NextConfig = {
         source: '/',
         destination: '/dashboards/crm',
         permanent: true
+      },
+      {
+        source: '/dashboards/analytics',
+        destination: '/dashboards/crm',
+        permanent: true
       }
     ]
   },

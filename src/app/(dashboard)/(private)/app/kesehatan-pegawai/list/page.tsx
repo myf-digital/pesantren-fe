@@ -23,7 +23,12 @@ import {
   useTheme,
   useMediaQuery,
   Tooltip,
-  Autocomplete
+  Autocomplete,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
 import { toast } from 'react-toastify'
@@ -32,6 +37,7 @@ import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import {
   fetchKesehatanSantriPage,
   deleteKesehatanSantri,
+  putKesehatanSantriUpdate,
   resetRedux,
   postExportKesehatan
 } from '../../kesehatan-santri/slice'
@@ -46,7 +52,217 @@ import { format, startOfMonth, endOfMonth } from 'date-fns'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 import CopyTooltip from '@/components/CopyTooltip'
 
-const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: string) => void }) => {
+const DialogUpdateStatus = ({
+  open,
+  row,
+  onClose,
+  onSave,
+  loading
+}: {
+  open: boolean
+  row: any
+  onClose: () => void
+  onSave: (id: string, payload: any) => void
+  loading: boolean
+}) => {
+  const [progresStatus, setProgresStatus] = useState<string>('Selesai')
+  const [tempatDirawat, setTempatDirawat] = useState<string>('UKS')
+  const [tanggalMulaiRawat, setTanggalMulaiRawat] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
+  const [tempatRujukan, setTempatRujukan] = useState<string>('')
+  const [tanggalDirujuk, setTanggalDirujuk] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
+  const [estimasiHari, setEstimasiHari] = useState<string>('')
+
+  useEffect(() => {
+    if (row) {
+      setProgresStatus(row.progres_status || 'Selesai')
+      setTempatDirawat(row.tempat_dirawat || 'UKS')
+      setTanggalMulaiRawat(
+        row.tanggal_mulai_rawat ? format(new Date(row.tanggal_mulai_rawat), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+      )
+      setTempatRujukan(row.tempat_rujukan || '')
+      setTanggalDirujuk(
+        row.tanggal_dirujuk ? format(new Date(row.tanggal_dirujuk), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+      )
+      setEstimasiHari(row.estimasi_hari ? String(row.estimasi_hari) : '')
+    }
+  }, [row])
+
+  if (!row) return null
+
+  const handleSave = () => {
+    const payload: any = {
+      id_santri: row.id_santri,
+      id_pegawai: row.id_pegawai,
+      kategori_sakit: row.kategori_sakit,
+      progres_status: progresStatus,
+      keluhan: row.keluhan,
+      tindakan: row.tindakan || null,
+      tanggal_event: row.tanggal_event ? format(new Date(row.tanggal_event), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+      obat_diberikan: row.obat_diberikan || null,
+      keterangan: row.keterangan || null
+    }
+
+    if (progresStatus === 'Dirawat') {
+      if (!tempatDirawat) {
+        toast.error('Pilih lokasi rawat!')
+        return
+      }
+      if (!tanggalMulaiRawat) {
+        toast.error('Tanggal mulai rawat wajib diisi!')
+        return
+      }
+      payload.tempat_dirawat = tempatDirawat
+      payload.tanggal_mulai_rawat = tanggalMulaiRawat
+      if (estimasiHari) {
+        const est = parseInt(estimasiHari, 10)
+        if (isNaN(est) || est <= 0) {
+          toast.error('Estimasi hari rawat harus berupa angka positif!')
+          return
+        }
+        payload.estimasi_hari = est
+      } else {
+        payload.estimasi_hari = null
+      }
+    } else if (progresStatus === 'Dirujuk') {
+      if (!tempatRujukan.trim()) {
+        toast.error('Tempat rujukan wajib diisi!')
+        return
+      }
+      if (!tanggalDirujuk) {
+        toast.error('Tanggal dirujuk wajib diisi!')
+        return
+      }
+      const est = parseInt(estimasiHari, 10)
+      if (isNaN(est) || est <= 0) {
+        toast.error('Estimasi hari rujukan harus berupa angka positif!')
+        return
+      }
+      payload.tempat_rujukan = tempatRujukan.trim()
+      payload.tanggal_dirujuk = tanggalDirujuk
+      payload.estimasi_hari = est
+    } else if (progresStatus === 'Selesai') {
+      if (row.tempat_dirawat) payload.tempat_dirawat = row.tempat_dirawat
+      if (row.tanggal_mulai_rawat) payload.tanggal_mulai_rawat = row.tanggal_mulai_rawat
+      if (row.tempat_rujukan) payload.tempat_rujukan = row.tempat_rujukan
+      if (row.tanggal_dirujuk) payload.tanggal_dirujuk = row.tanggal_dirujuk
+      if (row.estimasi_hari) payload.estimasi_hari = row.estimasi_hari
+    }
+
+    onSave(row.id_kesehatan, payload)
+  }
+
+  const titleName = row.pegawai?.nama_lengkap || row.santri?.fullname || 'Pasien'
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth='xs'>
+      <DialogTitle sx={{ pb: 1 }}>Update Progres Status</DialogTitle>
+      <DialogContent sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Typography variant='body2' color='text.secondary'>
+          Nama: <strong>{titleName}</strong>
+        </Typography>
+
+        <FormControl fullWidth size='small'>
+          <InputLabel>Progres Status</InputLabel>
+          <Select
+            value={progresStatus}
+            label='Progres Status'
+            onChange={e => setProgresStatus(e.target.value as string)}
+          >
+            <MenuItem value='Selesai'>Selesai</MenuItem>
+            <MenuItem value='Dirawat'>Dirawat</MenuItem>
+            <MenuItem value='Dirujuk'>Dirujuk</MenuItem>
+          </Select>
+        </FormControl>
+
+        {progresStatus === 'Dirawat' && (
+          <>
+            <FormControl fullWidth size='small'>
+              <InputLabel>Lokasi Rawat</InputLabel>
+              <Select
+                value={tempatDirawat}
+                label='Lokasi Rawat'
+                onChange={e => setTempatDirawat(e.target.value as string)}
+              >
+                <MenuItem value='UKS'>UKS</MenuItem>
+                <MenuItem value='Kamar'>Kamar</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              size='small'
+              type='date'
+              label='Tanggal Mulai Rawat'
+              value={tanggalMulaiRawat}
+              onChange={e => setTanggalMulaiRawat(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              fullWidth
+              size='small'
+              type='number'
+              label='Estimasi Hari Rawat'
+              value={estimasiHari}
+              onChange={e => setEstimasiHari(e.target.value)}
+            />
+          </>
+        )}
+
+        {progresStatus === 'Dirujuk' && (
+          <>
+            <TextField
+              fullWidth
+              size='small'
+              type='date'
+              label='Tanggal Dirujuk'
+              value={tanggalDirujuk}
+              onChange={e => setTanggalDirujuk(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              fullWidth
+              size='small'
+              label='Tempat Rujukan'
+              placeholder='Klinik / Rumah Sakit'
+              value={tempatRujukan}
+              onChange={e => setTempatRujukan(e.target.value)}
+            />
+            <TextField
+              fullWidth
+              size='small'
+              type='number'
+              label='Estimasi Hari Rujukan'
+              value={estimasiHari}
+              onChange={e => setEstimasiHari(e.target.value)}
+            />
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color='secondary' disabled={loading}>
+          Batal
+        </Button>
+        <Button
+          onClick={handleSave}
+          variant='contained'
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={16} color='inherit' /> : null}
+        >
+          Simpan
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
+const RowAction = ({
+  row,
+  onDeleteSuccess,
+  onUpdateStatus
+}: {
+  row: any
+  onDeleteSuccess: (id: string) => void
+  onUpdateStatus: (row: any) => void
+}) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [openConfirm, setOpenConfirm] = useState(false)
   const theme = useTheme()
@@ -80,6 +296,17 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
         >
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View Detail
         </MenuItem>
+
+        {canEdit && (
+          <MenuItem
+            onClick={() => {
+              handleClose()
+              onUpdateStatus(row)
+            }}
+          >
+            <i className='tabler-refresh' style={{ marginRight: 8 }} /> Ubah Progres Status
+          </MenuItem>
+        )}
 
         {canEdit && !hasIzin && (
           <MenuItem component={Link} href={`/app/kesehatan-pegawai/form?id=${row.id_kesehatan}`} onClick={handleClose}>
@@ -150,6 +377,18 @@ const KesehatanPegawaiList = () => {
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
+
+  const [selectedRowStatus, setSelectedRowStatus] = useState<any>(null)
+  const [openStatusDialog, setOpenStatusDialog] = useState(false)
+
+  const handleOpenStatusDialog = (row: any) => {
+    setSelectedRowStatus(row)
+    setOpenStatusDialog(true)
+  }
+
+  const handleSaveStatus = (id: string, payload: any) => {
+    dispatch(putKesehatanSantriUpdate({ id, params: payload }))
+  }
 
   useEffect(() => {
     dispatch(fetchCabangAll({}))
@@ -243,6 +482,20 @@ const KesehatanPegawaiList = () => {
     }
   }, [store.delete, dispatch, fetchData])
 
+  useEffect(() => {
+    if (store.crud) {
+      if (store.crud.status) {
+        toast.success(store.crud.message || 'Progres status berhasil diperbarui')
+        setOpenStatusDialog(false)
+        setSelectedRowStatus(null)
+        fetchData()
+      } else {
+        toast.error(store.crud.message || 'Gagal memperbarui progres status')
+      }
+      dispatch(resetRedux())
+    }
+  }, [store.crud, dispatch, fetchData])
+
   const handleDelete = (id: string) => {
     dispatch(deleteKesehatanSantri(id))
   }
@@ -277,7 +530,7 @@ const KesehatanPegawaiList = () => {
               pb: 0.5
             }}
           >
-            Detail Perawatan
+            Detail Perawatan (Klik untuk ubah)
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             <Typography variant='caption' sx={{ color: 'common.white' }}>
@@ -301,7 +554,8 @@ const KesehatanPegawaiList = () => {
             size='small'
             color={mapColor[status] || 'primary'}
             variant='outlined'
-            sx={{ cursor: 'pointer' }}
+            onClick={() => handleOpenStatusDialog(row)}
+            sx={{ cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
           />
         </Tooltip>
       )
@@ -320,7 +574,7 @@ const KesehatanPegawaiList = () => {
               pb: 0.5
             }}
           >
-            Detail Rujukan
+            Detail Rujukan (Klik untuk ubah)
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             <Typography variant='caption' sx={{ color: 'common.white' }}>
@@ -344,13 +598,25 @@ const KesehatanPegawaiList = () => {
             size='small'
             color={mapColor[status] || 'primary'}
             variant='outlined'
-            sx={{ cursor: 'pointer' }}
+            onClick={() => handleOpenStatusDialog(row)}
+            sx={{ cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
           />
         </Tooltip>
       )
     }
 
-    return <Chip label={status} size='small' color={mapColor[status] || 'primary'} variant='outlined' />
+    return (
+      <Tooltip title='Klik untuk ubah progres status' arrow placement='top'>
+        <Chip
+          label={status}
+          size='small'
+          color={mapColor[status] || 'primary'}
+          variant='outlined'
+          onClick={() => handleOpenStatusDialog(row)}
+          sx={{ cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
+        />
+      </Tooltip>
+    )
   }
 
   const renderStatusIzin = (row: any) => {
@@ -380,7 +646,7 @@ const KesehatanPegawaiList = () => {
       page: page,
       fields: [
         tableColumn('AKSI', 'act-x', 'center', ((row: any) => (
-          <RowAction row={row} onDeleteSuccess={handleDelete} />
+          <RowAction row={row} onDeleteSuccess={handleDelete} onUpdateStatus={handleOpenStatusDialog} />
         )) as any),
         tableColumn('NAMA PEGAWAI', 'pegawai'),
         tableColumn('TGL EVENT', 'tanggal_event'),
@@ -660,6 +926,14 @@ const KesehatanPegawaiList = () => {
           <TableView changeSort={() => {}} model={buildTable()} />
         </Card>
       </Grid>
+
+      <DialogUpdateStatus
+        open={openStatusDialog}
+        row={selectedRowStatus}
+        onClose={() => setOpenStatusDialog(false)}
+        onSave={handleSaveStatus}
+        loading={store.loading}
+      />
     </Grid>
   )
 }

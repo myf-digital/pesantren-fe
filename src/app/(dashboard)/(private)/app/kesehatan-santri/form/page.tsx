@@ -140,9 +140,9 @@ const KesehatanSantriForm = () => {
   const onSubmit = () => {
     if (store.loading) return
 
-    const santriId = state.id_santri?.value
-    const kategori = state.kategori_sakit?.value
-    const progres = state.progres_status?.value
+    const santriId = state.id_santri?.value || state.id_santri
+    const kategori = state.kategori_sakit?.value || state.kategori_sakit
+    const progres = state.progres_status?.value || state.progres_status
     const tgl = state.tanggal_event ? format(new Date(state.tanggal_event), 'yyyy-MM-dd') : ''
 
     if (!santriId) {
@@ -205,7 +205,7 @@ const KesehatanSantriForm = () => {
         payload.estimasi_hari = null
       }
     } else if (progres === 'Dirujuk') {
-      const tempat = state.tempat_rujukan?.trim()
+      const tempat = typeof state.tempat_rujukan === 'string' ? state.tempat_rujukan.trim() : state.tempat_rujukan
       const estimasi = parseInt(state.estimasi_hari, 10)
       const tglRujuk = state.tanggal_dirujuk ? format(new Date(state.tanggal_dirujuk), 'yyyy-MM-dd') : ''
 
@@ -225,6 +225,22 @@ const KesehatanSantriForm = () => {
       payload.tempat_rujukan = tempat
       payload.estimasi_hari = estimasi
       payload.tanggal_dirujuk = tglRujuk
+    } else if (progres === 'Selesai') {
+      if (state.tempat_dirawat) {
+        payload.tempat_dirawat = state.tempat_dirawat?.value || state.tempat_dirawat
+      }
+      if (state.tanggal_mulai_rawat) {
+        payload.tanggal_mulai_rawat = format(new Date(state.tanggal_mulai_rawat), 'yyyy-MM-dd')
+      }
+      if (state.tempat_rujukan) {
+        payload.tempat_rujukan = typeof state.tempat_rujukan === 'string' ? state.tempat_rujukan.trim() : state.tempat_rujukan
+      }
+      if (state.tanggal_dirujuk) {
+        payload.tanggal_dirujuk = format(new Date(state.tanggal_dirujuk), 'yyyy-MM-dd')
+      }
+      if (state.estimasi_hari) {
+        payload.estimasi_hari = parseInt(state.estimasi_hari, 10) || null
+      }
     }
 
     if (id) {
@@ -304,11 +320,7 @@ const KesehatanSantriForm = () => {
         onChange: (val: any) => {
           const newState = {
             ...state,
-            progres_status: val,
-            lokasi_rawat: null,
-            id_lokasi_rawat: null,
-            tempat_rujukan: '',
-            estimasi_hari: ''
+            progres_status: val
           }
           setState(newState)
           reset(newState)
