@@ -17,6 +17,14 @@ import { field, formColumn } from '@views/onevour/form/AppFormBuilder'
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog'
 import { useSession } from 'next-auth/react'
 
+const getValue = (val: any) => {
+  if (val === null || val === undefined) return null
+  if (typeof val === 'object' && 'value' in val) {
+    return val.value ?? null
+  }
+  return val
+}
+
 const FormPerizinanPegawaiPage = () => {
   const router = useRouter()
   const dispatch = useAppDispatch()
@@ -139,9 +147,16 @@ const FormPerizinanPegawaiPage = () => {
   }, [state.file_izin])
 
   const onSubmitPreValidate = () => {
+    const idPegawai = getValue(state.id_pegawai)
+    const idLokasiKerja = getValue(state.id_lokasi_kerja)
+    const sumberPengajuan = getValue(state.sumber_pengajuan)
+    const jenisIzin = getValue(state.jenis_izin)
+
     if (
-      !state.id_pegawai?.value ||
-      !state.id_lokasi_kerja?.value ||
+      !idPegawai ||
+      !idLokasiKerja ||
+      !sumberPengajuan ||
+      !jenisIzin ||
       !state.tanggal_mulai ||
       !state.tanggal_selesai ||
       !state.alasan?.trim()
@@ -162,10 +177,10 @@ const FormPerizinanPegawaiPage = () => {
   const handleFinalSubmit = () => {
     setOpenConfirm(false)
     const payload = {
-      id_pegawai: state.id_pegawai.value,
-      id_lokasi_kerja: state.id_lokasi_kerja.value,
-      sumber_pengajuan: state.sumber_pengajuan?.value || 'Pegawai',
-      jenis_izin: state.jenis_izin?.value || 'Izin',
+      id_pegawai: getValue(state.id_pegawai),
+      id_lokasi_kerja: getValue(state.id_lokasi_kerja),
+      sumber_pengajuan: getValue(state.sumber_pengajuan) || 'Pegawai',
+      jenis_izin: getValue(state.jenis_izin) || 'Izin',
       tanggal_mulai: state.tanggal_mulai,
       tanggal_selesai: state.tanggal_selesai,
       alasan: state.alasan,

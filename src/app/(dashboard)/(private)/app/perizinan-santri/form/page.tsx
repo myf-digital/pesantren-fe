@@ -18,6 +18,14 @@ import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog'
 import { format, isValid } from 'date-fns'
 import { useDebounce } from '@/@core/utils/globalHelpers'
 
+const getValue = (val: any) => {
+  if (val === null || val === undefined) return null
+  if (typeof val === 'object' && 'value' in val) {
+    return val.value ?? null
+  }
+  return val
+}
+
 const FormPerizinanSantriPage = () => {
   const router = useRouter()
   const dispatch = useAppDispatch()
@@ -118,7 +126,7 @@ const FormPerizinanSantriPage = () => {
         const newOptions = Array.isArray(rawList) ? rawList.map(mapSantriToOption) : []
 
         setOpt(prev => {
-          const currentSelected = prev.santri.find(s => s.value === state.id_santri)
+          const currentSelected = prev.santri.find(s => s.value === getValue(state.id_santri))
 
           if (currentSelected && !newOptions.some(item => item.value === currentSelected.value)) {
             return { ...prev, santri: [currentSelected, ...newOptions] }
@@ -137,9 +145,16 @@ const FormPerizinanSantriPage = () => {
   const debouncedSearchSantri = useDebounce(searchSantri, 500)
 
   const onSubmitPreValidate = () => {
+    const idSantri = getValue(state.id_santri)
+    const idLokasiKamar = getValue(state.id_lokasi_kamar)
+    const sumberPengajuan = getValue(state.sumber_pengajuan)
+    const jenisIzin = getValue(state.jenis_izin)
+
     if (
-      !state.id_santri?.value ||
-      !state.id_lokasi_kamar?.value ||
+      !idSantri ||
+      !idLokasiKamar ||
+      !sumberPengajuan ||
+      !jenisIzin ||
       !state.tanggal_mulai ||
       !state.tanggal_selesai ||
       !state.alasan?.trim()
@@ -180,10 +195,10 @@ const FormPerizinanSantriPage = () => {
     const finalTanggalSelesai = dateSelesaiStr ? `${dateSelesaiStr} ${jamSelesaiStr}` : null
 
     const payload = {
-      id_santri: state.id_santri.value,
-      id_lokasi_kamar: state.id_lokasi_kamar.value,
-      sumber_pengajuan: state.sumber_pengajuan?.value || 'Waliasuh',
-      jenis_izin: state.jenis_izin?.value || 'Izin',
+      id_santri: getValue(state.id_santri),
+      id_lokasi_kamar: getValue(state.id_lokasi_kamar),
+      sumber_pengajuan: getValue(state.sumber_pengajuan) || 'Waliasuh',
+      jenis_izin: getValue(state.jenis_izin) || 'Izin',
       tanggal_mulai: finalTanggalMulai,
       tanggal_selesai: finalTanggalSelesai,
       alasan: state.alasan,
@@ -221,8 +236,8 @@ const FormPerizinanSantriPage = () => {
 
         setState((prev: any) => ({
           ...prev,
-          id_santri: id_santri,
-          id_lokasi_kamar: id_lokasi
+          id_santri: selectedOption,
+          id_lokasi_kamar: lokasiKamarObj
         }))
 
         if (selectedOption && !id_lokasi) {
