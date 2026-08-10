@@ -30,29 +30,31 @@ interface SwitchRoleDialogProps {
 const sanitizeRoleItem = (item: any) => {
   if (!item) return null
 
-  return {
-    id_resource_role: item.id_resource_role,
-    is_default: item.is_default,
-    id_lembaga: item.id_lembaga || null,
-    role: item.role ? { role_id: item.role.role_id, role_name: item.role.role_name } : null,
-    cabang: item.cabang ? { id_cabang: item.cabang.id_cabang, nama_cabang: item.cabang.nama_cabang } : null,
-    organizationUnit: item.organizationUnit
-      ? { id_orgunit: item.organizationUnit.id_orgunit, nama_orgunit: item.organizationUnit.nama_orgunit }
-      : null,
-    lembagaPendidikanFormal: item.lembagaPendidikanFormal
-      ? {
-          id_lembaga_formal: item.lembagaPendidikanFormal.id_lembaga_formal,
-          nama_lembaga_formal: item.lembagaPendidikanFormal.nama_lembaga_formal
-        }
-      : null,
-    lembagaPendidikanKepesantrenan: item.lembagaPendidikanKepesantrenan
-      ? {
-          id_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.id_lembaga_kepesantrenan,
-          nama_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.nama_lembaga_kepesantrenan
-        }
-      : null,
-    pegawai: item.pegawai ? { id_pegawai: item.pegawai.id_pegawai, nama_lengkap: item.pegawai.nama_lengkap } : null
-  }
+  const res: any = { id_resource_role: item.id_resource_role }
+
+  if (item.is_default) res.is_default = item.is_default
+  if (item.id_lembaga) res.id_lembaga = item.id_lembaga
+  if (item.role?.role_name) res.role = { role_id: item.role.role_id, role_name: item.role.role_name }
+  if (item.cabang?.nama_cabang) res.cabang = { id_cabang: item.cabang.id_cabang, nama_cabang: item.cabang.nama_cabang }
+  if (item.organizationUnit?.nama_orgunit)
+    res.organizationUnit = {
+      id_orgunit: item.organizationUnit.id_orgunit,
+      nama_orgunit: item.organizationUnit.nama_orgunit
+    }
+  if (item.lembagaPendidikanFormal?.nama_lembaga_formal)
+    res.lembagaPendidikanFormal = {
+      id_lembaga_formal: item.lembagaPendidikanFormal.id_lembaga_formal,
+      nama_lembaga_formal: item.lembagaPendidikanFormal.nama_lembaga_formal
+    }
+  if (item.lembagaPendidikanKepesantrenan?.nama_lembaga_kepesantrenan)
+    res.lembagaPendidikanKepesantrenan = {
+      id_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.id_lembaga_kepesantrenan,
+      nama_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.nama_lembaga_kepesantrenan
+    }
+  if (item.pegawai?.nama_lengkap)
+    res.pegawai = { id_pegawai: item.pegawai.id_pegawai, nama_lengkap: item.pegawai.nama_lengkap }
+
+  return res
 }
 
 const sanitizeAvailableRoles = (roles: any[]) => {
@@ -64,9 +66,48 @@ const sanitizeAvailableRoles = (roles: any[]) => {
 export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClose }) => {
   const { data: session, update } = useSession()
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [roles, setRoles] = useState<any[]>(sanitizeAvailableRoles(session?.userdata?.available_roles || []))
+  const [fetchingRoles, setFetchingRoles] = useState(false)
 
-  const availableRoles: any[] = session?.userdata?.available_roles || []
   const activeResourceRoleId = session?.userdata?.active_role?.id_resource_role
+
+  React.useEffect(() => {
+    if (session?.userdata?.available_roles) {
+      setRoles(sanitizeAvailableRoles(session.userdata.available_roles))
+    }
+  }, [session?.userdata?.available_roles])
+
+  React.useEffect(() => {
+    if (open) {
+      const fetchLatestRoles = async () => {
+        try {
+          setFetchingRoles(true)
+          const resourceId = (session?.userdata as any)?.resource_id
+          let resData: any = null
+
+          if (resourceId) {
+            const res = await api.get(`/app/resource/${resourceId}`)
+            resData = res.data?.data || res.data
+          }
+
+          if (resData) {
+            const fetchedRoles =
+              resData.available_roles || resData.user_roles || resData.resource_roles || resData.roles
+            if (Array.isArray(fetchedRoles) && fetchedRoles.length > 0) {
+              const cleanRoles = sanitizeAvailableRoles(fetchedRoles)
+              setRoles(cleanRoles)
+            }
+          }
+        } catch (err) {
+          console.error('Fetch latest roles error:', err)
+        } finally {
+          setFetchingRoles(false)
+        }
+      }
+
+      fetchLatestRoles()
+    }
+  }, [open])
 
   const handleSelectRole = async (item: any) => {
     try {
@@ -80,11 +121,12 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
         const { access_token, userdata } = response.data.data
 
         const activeRole = sanitizeRoleItem(userdata.active_role)
-        const newAvailableRoles = sanitizeAvailableRoles(userdata.available_roles || session?.userdata?.available_roles || [])
+        const newAvailableRoles = sanitizeAvailableRoles(userdata.available_roles || roles || [])
 
         await update({
           access_token,
           userdata: {
+            resource_id: userdata.resource_id || (session?.userdata as any)?.resource_id,
             username: userdata.username || session?.userdata?.username,
             full_name: userdata.full_name || session?.userdata?.full_name,
             email: userdata.email || session?.userdata?.email,
@@ -128,12 +170,16 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
           Pilih role dan cabang yang ingin Anda aktifkan untuk sesi ini:
         </Typography>
 
-        {availableRoles.length === 0 ? (
+        {fetchingRoles && roles.length === 0 ? (
+          <Box className='flex justify-center py-6'>
+            <CircularProgress size={24} />
+          </Box>
+        ) : roles.length === 0 ? (
           <Typography variant='body2' className='text-center py-4 italic' color='text.secondary'>
             Tidak ada pilihan role lain yang tersedia.
           </Typography>
         ) : (
-          availableRoles.map((item: any, idx: number) => {
+          roles.map((item: any, idx: number) => {
             const isActive = item.id_resource_role === activeResourceRoleId
             const isCurrentlyLoading = loadingId === item.id_resource_role
 
@@ -149,13 +195,16 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
                       <Typography variant='subtitle1' className='font-semibold text-primary'>
                         {item.role?.role_name || 'Role User'}
                       </Typography>
-                      {item.is_default === 1 && (
-                        <Chip label='Default' size='small' color='info' variant='outlined' />
-                      )}
+                      {item.is_default === 1 && <Chip label='Default' size='small' color='info' variant='outlined' />}
                       {isActive && <Chip label='Sedang Aktif' size='small' color='success' />}
                     </Box>
 
-                    <Typography variant='caption' component='div' color='text.secondary' className='flex flex-col gap-0.5'>
+                    <Typography
+                      variant='caption'
+                      component='div'
+                      color='text.secondary'
+                      className='flex flex-col gap-0.5'
+                    >
                       <span>
                         <strong>Cabang:</strong> {item.cabang?.nama_cabang || '-'}
                       </span>
@@ -188,7 +237,13 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
                         size='small'
                         disabled={!!loadingId}
                         onClick={() => handleSelectRole(item)}
-                        startIcon={isCurrentlyLoading ? <CircularProgress size={14} color='inherit' /> : <i className='tabler-switch-horizontal' />}
+                        startIcon={
+                          isCurrentlyLoading ? (
+                            <CircularProgress size={14} color='inherit' />
+                          ) : (
+                            <i className='tabler-switch-horizontal' />
+                          )
+                        }
                       >
                         Pilih
                       </Button>

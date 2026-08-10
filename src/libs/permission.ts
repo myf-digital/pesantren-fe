@@ -57,12 +57,14 @@ export const cannot = (
 //   }, {});
 // }
 
-/** new: bitmask */
 export function normalizeAbility(abilities: AbilityItem[]) {
-  return abilities.reduce<Record<string, number>>((acc, item) => {
-    const key = normalizeResource(item.module_name)
+  if (!Array.isArray(abilities)) return {}
 
-    acc[key] = (
+  return abilities.reduce<Record<string, number>>((acc, item) => {
+    if (!item?.module_name) return acc
+
+    const key = normalizeResource(item.module_name)
+    const mask =
       (item.role_menu_view ? 1 : 0) +
       (item.role_menu_create ? 2 : 0) +
       (item.role_menu_edit ? 4 : 0) +
@@ -70,7 +72,10 @@ export function normalizeAbility(abilities: AbilityItem[]) {
       (item.role_menu_import ? 16 : 0) +
       (item.role_menu_export ? 32 : 0) +
       (item.role_menu_approve ? 64 : 0)
-    )
+
+    if (mask > 0) {
+      acc[key] = mask
+    }
 
     return acc
   }, {})
@@ -80,6 +85,6 @@ export function normalizeResource(path: string): string {
   return path
     .toLowerCase()
     .split('?')[0]
-    .replace(/\/(list|form|edit|detail|access|import|approve)[^\/]*(\/.*)?$/, '')
+    .replace(/\/(list|form|edit|detail|access|import|approve|roles)[^\/]*(\/.*)?$/, '')
     .replace(/\/$/, '');
 }

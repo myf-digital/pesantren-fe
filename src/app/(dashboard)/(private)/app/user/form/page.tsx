@@ -274,29 +274,42 @@ const UserForm = () => {
   }
 
   const onSubmit = () => {
-    const formattedUserRoles = userRoles.map((r, idx) => ({
-      id_resource_role: r.id_resource_role,
-      role_id: r.role_id?.value || r.role_id,
-      id_pegawai: r.id_pegawai?.value || r.id_pegawai || state.id_eksternal?.value || null,
-      id_cabang: r.id_cabang?.value || r.id_cabang || null,
-      id_orgunit: r.id_orgunit?.value || r.id_orgunit || null,
-      id_lembaga: r.id_lembaga || null,
-      lembaga_type: r.lembaga_type || null,
-      is_default: r.is_default ? 1 : idx === 0 ? 1 : 0
-    }))
+    if (!id) {
+      const formattedUserRoles = userRoles.map((r, idx) => ({
+        id_resource_role: r.id_resource_role,
+        role_id: r.role_id?.value || r.role_id,
+        id_pegawai: r.id_pegawai?.value || r.id_pegawai || state.id_eksternal?.value || null,
+        id_cabang: r.id_cabang?.value || r.id_cabang || null,
+        id_orgunit: r.id_orgunit?.value || r.id_orgunit || null,
+        id_lembaga: r.id_lembaga || null,
+        lembaga_type: r.lembaga_type || null,
+        is_default: r.is_default ? 1 : idx === 0 ? 1 : 0
+      }))
 
-    const payload = {
-      ...state,
-      role_id: userRoles[0]?.role_id || state.role_id,
-      province_id: state.province_id,
-      regency_id: state.regency_id,
-      id_eksternal: state.id_eksternal?.value || null,
-      user_roles: formattedUserRoles,
-      status: state.status?.value || 'NV',
-      date_of_birth: state.date_of_birth ? formatDate(new Date(state.date_of_birth), 'yyyy-MM-dd') : null
+      const payload = {
+        ...state,
+        role_id: userRoles[0]?.role_id || state.role_id,
+        province_id: state.province_id,
+        regency_id: state.regency_id,
+        id_eksternal: state.id_eksternal?.value || null,
+        user_roles: formattedUserRoles,
+        status: state.status?.value || 'NV',
+        date_of_birth: state.date_of_birth ? formatDate(new Date(state.date_of_birth), 'yyyy-MM-dd') : null
+      }
+
+      dispatch(postUser(payload))
+    } else {
+      const payload = {
+        ...state,
+        province_id: state.province_id,
+        regency_id: state.regency_id,
+        id_eksternal: state.id_eksternal?.value || null,
+        status: state.status?.value || 'NV',
+        date_of_birth: state.date_of_birth ? formatDate(new Date(state.date_of_birth), 'yyyy-MM-dd') : null
+      }
+
+      dispatch(postUserUpdate({ id, params: payload }))
     }
-
-    id ? dispatch(postUserUpdate({ id, params: payload })) : dispatch(postUser(payload))
   }
 
   const fields = () => [
@@ -370,112 +383,114 @@ const UserForm = () => {
             <CardContent>{formColumn({ control, errors, state, setState, fields: fields() })}</CardContent>
           </Card>
 
-          {/* Multi Role & Akses Cabang Section */}
-          <Card className='mb-6'>
-            <CardHeader
-              title='Pengaturan Role & Cabang'
-              subheader='Kelola satu atau beberapa hak akses role, cabang, dan unit organisasi untuk pengguna ini.'
-              action={
-                !view && (
-                  <Button
-                    variant='contained'
-                    size='small'
-                    startIcon={<i className='tabler-plus' />}
-                    onClick={handleAddUserRole}
-                  >
-                    Tambah Role & Akses
-                  </Button>
-                )
-              }
-            />
-            <Divider sx={{ m: '0 !important' }} />
-            <CardContent className='space-y-4'>
-              {userRoles.length === 0 ? (
-                <Typography variant='body2' className='text-center py-4 italic' color='text.secondary'>
-                  Belum ada role yang ditambahkan. Klik tombol "Tambah Role & Akses" untuk menambahkan role.
-                </Typography>
-              ) : (
-                userRoles.map((roleRow, idx) => (
-                  <Card key={idx} variant='outlined' className='p-4 bg-background-paper border border-gray-200'>
-                    <Grid container spacing={4} alignItems='center'>
-                      <Grid item xs={12} className='flex items-center justify-between border-b pb-2 mb-2'>
-                        <Typography variant='subtitle2' className='font-bold text-primary'>
-                          Akses #{idx + 1} {roleRow.is_default ? '(Role Utama / Default)' : ''}
-                        </Typography>
-                        {!view && userRoles.length > 1 && (
-                          <IconButton size='small' color='error' onClick={() => handleRemoveUserRole(idx)}>
-                            <i className='tabler-trash' />
-                          </IconButton>
-                        )}
-                      </Grid>
+          {/* Multi Role & Akses Cabang Section (Hanya untuk Tambah User) */}
+          {!id && (
+            <Card className='mb-6'>
+              <CardHeader
+                title='Pengaturan Role & Cabang'
+                subheader='Kelola satu atau beberapa hak akses role, cabang, dan unit organisasi untuk pengguna ini.'
+                action={
+                  !view && (
+                    <Button
+                      variant='contained'
+                      size='small'
+                      startIcon={<i className='tabler-plus' />}
+                      onClick={handleAddUserRole}
+                    >
+                      Tambah Role & Akses
+                    </Button>
+                  )
+                }
+              />
+              <Divider sx={{ m: '0 !important' }} />
+              <CardContent className='space-y-4'>
+                {userRoles.length === 0 ? (
+                  <Typography variant='body2' className='text-center py-4 italic' color='text.secondary'>
+                    Belum ada role yang ditambahkan. Klik tombol "Tambah Role & Akses" untuk menambahkan role.
+                  </Typography>
+                ) : (
+                  userRoles.map((roleRow, idx) => (
+                    <Card key={idx} variant='outlined' className='p-4 bg-background-paper border border-gray-200'>
+                      <Grid container spacing={4} alignItems='center'>
+                        <Grid item xs={12} className='flex items-center justify-between border-b pb-2 mb-2'>
+                          <Typography variant='subtitle2' className='font-bold text-primary'>
+                            Akses #{idx + 1} {roleRow.is_default ? '(Role Utama / Default)' : ''}
+                          </Typography>
+                          {!view && userRoles.length > 1 && (
+                            <IconButton size='small' color='error' onClick={() => handleRemoveUserRole(idx)}>
+                              <i className='tabler-trash' />
+                            </IconButton>
+                          )}
+                        </Grid>
 
-                      {/* Role Select */}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <Autocomplete
-                          options={opt.roles}
-                          value={roleRow.role_id}
-                          onChange={(_, newValue) => handleUserRoleChange(idx, 'role_id', newValue)}
-                          getOptionLabel={(option: any) => option?.label || ''}
-                          disabled={!!view}
-                          renderInput={params => <TextField {...params} label='Role / Hak Akses *' size='small' />}
-                        />
-                      </Grid>
+                        {/* Role Select */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <Autocomplete
+                            options={opt.roles}
+                            value={roleRow.role_id}
+                            onChange={(_, newValue) => handleUserRoleChange(idx, 'role_id', newValue)}
+                            getOptionLabel={(option: any) => option?.label || ''}
+                            disabled={!!view}
+                            renderInput={params => <TextField {...params} label='Role / Hak Akses *' size='small' />}
+                          />
+                        </Grid>
 
-                      {/* Pegawai Select */}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <Autocomplete
-                          options={opt.pegawais}
-                          value={roleRow.id_pegawai}
-                          onChange={(_, newValue) => handleUserRoleChange(idx, 'id_pegawai', newValue)}
-                          getOptionLabel={(option: any) => option?.label || ''}
-                          disabled={!!view}
-                          renderInput={params => <TextField {...params} label='Pegawai Terkait' size='small' />}
-                        />
-                      </Grid>
+                        {/* Pegawai Select */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <Autocomplete
+                            options={opt.pegawais}
+                            value={roleRow.id_pegawai}
+                            onChange={(_, newValue) => handleUserRoleChange(idx, 'id_pegawai', newValue)}
+                            getOptionLabel={(option: any) => option?.label || ''}
+                            disabled={!!view}
+                            renderInput={params => <TextField {...params} label='Pegawai Terkait' size='small' />}
+                          />
+                        </Grid>
 
-                      {/* Cabang Select */}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <Autocomplete
-                          options={opt.cabangs}
-                          value={roleRow.id_cabang}
-                          onChange={(_, newValue) => handleUserRoleChange(idx, 'id_cabang', newValue)}
-                          getOptionLabel={(option: any) => option?.label || ''}
-                          disabled={!!view}
-                          renderInput={params => <TextField {...params} label='Cabang' size='small' />}
-                        />
-                      </Grid>
+                        {/* Cabang Select */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <Autocomplete
+                            options={opt.cabangs}
+                            value={roleRow.id_cabang}
+                            onChange={(_, newValue) => handleUserRoleChange(idx, 'id_cabang', newValue)}
+                            getOptionLabel={(option: any) => option?.label || ''}
+                            disabled={!!view}
+                            renderInput={params => <TextField {...params} label='Cabang' size='small' />}
+                          />
+                        </Grid>
 
-                      {/* OrgUnit Select */}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <Autocomplete
-                          options={opt.orgunits}
-                          value={roleRow.id_orgunit}
-                          onChange={(_, newValue) => handleUserRoleChange(idx, 'id_orgunit', newValue)}
-                          getOptionLabel={(option: any) => option?.label || ''}
-                          disabled={!!view}
-                          renderInput={params => <TextField {...params} label='Organization Unit' size='small' />}
-                        />
-                      </Grid>
+                        {/* OrgUnit Select */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <Autocomplete
+                            options={opt.orgunits}
+                            value={roleRow.id_orgunit}
+                            onChange={(_, newValue) => handleUserRoleChange(idx, 'id_orgunit', newValue)}
+                            getOptionLabel={(option: any) => option?.label || ''}
+                            disabled={!!view}
+                            renderInput={params => <TextField {...params} label='Organization Unit' size='small' />}
+                          />
+                        </Grid>
 
-                      {/* Default Role Radio */}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <FormControlLabel
-                          control={
-                            <Radio
-                              checked={!!roleRow.is_default}
-                              onChange={() => handleSetDefaultUserRole(idx)}
-                              disabled={!!view}
-                            />
-                          }
-                          label='Default Saat Login'
-                        />
+                        {/* Default Role Radio */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <FormControlLabel
+                            control={
+                              <Radio
+                                checked={!!roleRow.is_default}
+                                onChange={() => handleSetDefaultUserRole(idx)}
+                                disabled={!!view}
+                              />
+                            }
+                            label='Default Saat Login'
+                          />
+                        </Grid>
                       </Grid>
-                    </Grid>
-                  </Card>
-                ))
-              )}
-            </CardContent>
-          </Card>
+                    </Card>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Submit Action Buttons */}
           {formColumn({
@@ -484,7 +499,11 @@ const UserForm = () => {
             state,
             setState,
             fields: [
-              fieldBuildSubmit({ onCancel: () => router.push('/app/user/list'), loading: store.loading, disabled: !!view })
+              fieldBuildSubmit({
+                onCancel: () => router.push('/app/user/list'),
+                loading: store.loading,
+                disabled: !!view
+              })
             ]
           })}
         </form>

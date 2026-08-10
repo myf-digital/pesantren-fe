@@ -38,29 +38,28 @@ export const authOptions: NextAuthOptions = {
           const sanitizeRoleItem = (item: any) => {
             if (!item) return null
 
-            return {
-              id_resource_role: item.id_resource_role,
-              is_default: item.is_default,
-              id_lembaga: item.id_lembaga || null,
-              role: item.role ? { role_id: item.role.role_id, role_name: item.role.role_name } : null,
-              cabang: item.cabang ? { id_cabang: item.cabang.id_cabang, nama_cabang: item.cabang.nama_cabang } : null,
-              organizationUnit: item.organizationUnit
-                ? { id_orgunit: item.organizationUnit.id_orgunit, nama_orgunit: item.organizationUnit.nama_orgunit }
-                : null,
-              lembagaPendidikanFormal: item.lembagaPendidikanFormal
-                ? {
-                    id_lembaga_formal: item.lembagaPendidikanFormal.id_lembaga_formal,
-                    nama_lembaga_formal: item.lembagaPendidikanFormal.nama_lembaga_formal
-                  }
-                : null,
-              lembagaPendidikanKepesantrenan: item.lembagaPendidikanKepesantrenan
-                ? {
-                    id_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.id_lembaga_kepesantrenan,
-                    nama_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.nama_lembaga_kepesantrenan
-                  }
-                : null,
-              pegawai: item.pegawai ? { id_pegawai: item.pegawai.id_pegawai, nama_lengkap: item.pegawai.nama_lengkap } : null
-            }
+            const res: any = { id_resource_role: item.id_resource_role }
+
+            if (item.is_default) res.is_default = item.is_default
+            if (item.id_lembaga) res.id_lembaga = item.id_lembaga
+            if (item.role?.role_name) res.role = { role_id: item.role.role_id, role_name: item.role.role_name }
+            if (item.cabang?.nama_cabang) res.cabang = { id_cabang: item.cabang.id_cabang, nama_cabang: item.cabang.nama_cabang }
+            if (item.organizationUnit?.nama_orgunit)
+              res.organizationUnit = { id_orgunit: item.organizationUnit.id_orgunit, nama_orgunit: item.organizationUnit.nama_orgunit }
+            if (item.lembagaPendidikanFormal?.nama_lembaga_formal)
+              res.lembagaPendidikanFormal = {
+                id_lembaga_formal: item.lembagaPendidikanFormal.id_lembaga_formal,
+                nama_lembaga_formal: item.lembagaPendidikanFormal.nama_lembaga_formal
+              }
+            if (item.lembagaPendidikanKepesantrenan?.nama_lembaga_kepesantrenan)
+              res.lembagaPendidikanKepesantrenan = {
+                id_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.id_lembaga_kepesantrenan,
+                nama_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.nama_lembaga_kepesantrenan
+              }
+            if (item.pegawai?.nama_lengkap)
+              res.pegawai = { id_pegawai: item.pegawai.id_pegawai, nama_lengkap: item.pegawai.nama_lengkap }
+
+            return res
           }
 
           const sanitizeAvailableRoles = (roles: any[]) => {
@@ -77,6 +76,7 @@ export const authOptions: NextAuthOptions = {
             access_token: data.access_token,
             refresh_token: data.refresh_token,
             userdata: {
+              resource_id: data.userdata.resource_id,
               username: data.userdata.username,
               full_name: data.userdata.full_name,
               email: data.userdata.email,

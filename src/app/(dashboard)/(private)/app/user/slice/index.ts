@@ -159,6 +159,16 @@ export const postExport = createAsyncThunk<any, any>('user/export', async (param
   }
 })
 
+export const postUserRolesUpdate = createAsyncThunk('user/updateRoles', async ({ id, user_roles }: any, thunkAPI) => {
+  try {
+    const response = await api.post(`/app/resource/roles/${id}`, { user_roles })
+
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.rejectWithValue(e.response?.data)
+  }
+})
+
 export const userSlice = createSlice({
   name: 'user',
   initialState,
@@ -191,6 +201,12 @@ export const userSlice = createSlice({
       state.crud = action.payload
     })
     builder.addCase(postUserUpdate.rejected, (state, action: any) => {
+      state.crud = action.payload
+    })
+    builder.addCase(postUserRolesUpdate.fulfilled, (state, action) => {
+      state.crud = action.payload
+    })
+    builder.addCase(postUserRolesUpdate.rejected, (state, action: any) => {
       state.crud = action.payload
     })
     builder.addCase(postUserUpdatePassword.fulfilled, (state, action: any) => {

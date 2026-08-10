@@ -62,6 +62,11 @@ const RowAction = ({ row, onDeleteSuccess }: { row: any; onDeleteSuccess: (id: s
             <i className='tabler-edit' style={{ marginRight: 8 }} /> Edit
           </MenuItem>
         )}
+        {canEdit && (
+          <MenuItem component={Link} href={`/app/user/roles?id=${row.resource_id}`}>
+            <i className='tabler-user-check' style={{ marginRight: 8 }} /> Manajemen Roles
+          </MenuItem>
+        )}
         {canDelete && (
           <MenuItem onClick={() => setOpenConfirm(true)} sx={{ color: 'error.main' }}>
             <i className='tabler-trash' style={{ marginRight: 8 }} /> Delete

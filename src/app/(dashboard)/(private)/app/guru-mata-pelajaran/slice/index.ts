@@ -171,7 +171,7 @@ export const fetchLembagaAll = createAsyncThunk<any, FetchParams>('lembaga/fetch
   }
 })
 
-export const fetchPegawaiAll = createAsyncThunk<any, FetchParams>('pegawai/fetchAll', async (params, thunkAPI) => {
+export const fetchPegawaiAll = createAsyncThunk<any, FetchParams | void>('pegawai/fetchAll', async (params, thunkAPI) => {
   try {
     const response = await api.get(`/app/pegawai/all-data`, { params })
 
@@ -181,7 +181,7 @@ export const fetchPegawaiAll = createAsyncThunk<any, FetchParams>('pegawai/fetch
   }
 })
 
-export const fetchLembagaKepesantrenanAll = createAsyncThunk<any, FetchParams>(
+export const fetchLembagaKepesantrenanAll = createAsyncThunk<any, FetchParams | void>(
   'lembaga_kepesantrenan/fetchAll',
   async (params, thunkAPI) => {
     try {
