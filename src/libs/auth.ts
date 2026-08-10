@@ -43,18 +43,22 @@ export const authOptions: NextAuthOptions = {
             if (item.is_default) res.is_default = item.is_default
             if (item.id_lembaga) res.id_lembaga = item.id_lembaga
             if (item.role?.role_name) res.role = { role_id: item.role.role_id, role_name: item.role.role_name }
-            if (item.cabang?.nama_cabang) res.cabang = { id_cabang: item.cabang.id_cabang, nama_cabang: item.cabang.nama_cabang }
+            if (item.cabang?.nama_cabang)
+              res.cabang = { id_cabang: item.cabang.id_cabang, nama_cabang: item.cabang.nama_cabang }
             if (item.organizationUnit?.nama_orgunit)
-              res.organizationUnit = { id_orgunit: item.organizationUnit.id_orgunit, nama_orgunit: item.organizationUnit.nama_orgunit }
-            if (item.lembagaPendidikanFormal?.nama_lembaga_formal)
-              res.lembagaPendidikanFormal = {
-                id_lembaga_formal: item.lembagaPendidikanFormal.id_lembaga_formal,
-                nama_lembaga_formal: item.lembagaPendidikanFormal.nama_lembaga_formal
+              res.organizationUnit = {
+                id_orgunit: item.organizationUnit.id_orgunit,
+                nama_orgunit: item.organizationUnit.nama_orgunit
               }
-            if (item.lembagaPendidikanKepesantrenan?.nama_lembaga_kepesantrenan)
+            if (item.lembagaPendidikanFormal?.nama_lembaga)
+              res.lembagaPendidikanFormal = {
+                id_lembaga: item.lembagaPendidikanFormal.id_lembaga,
+                nama_lembaga: item.lembagaPendidikanFormal.nama_lembaga
+              }
+            if (item.lembagaPendidikanKepesantrenan?.nama_lembaga)
               res.lembagaPendidikanKepesantrenan = {
-                id_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.id_lembaga_kepesantrenan,
-                nama_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.nama_lembaga_kepesantrenan
+                id_lembaga: item.lembagaPendidikanKepesantrenan.id_lembaga,
+                nama_lembaga: item.lembagaPendidikanKepesantrenan.nama_lembaga
               }
             if (item.pegawai?.nama_lengkap)
               res.pegawai = { id_pegawai: item.pegawai.id_pegawai, nama_lengkap: item.pegawai.nama_lengkap }

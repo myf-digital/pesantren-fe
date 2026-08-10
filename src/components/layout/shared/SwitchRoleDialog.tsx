@@ -41,15 +41,17 @@ const sanitizeRoleItem = (item: any) => {
       id_orgunit: item.organizationUnit.id_orgunit,
       nama_orgunit: item.organizationUnit.nama_orgunit
     }
-  if (item.lembagaPendidikanFormal?.nama_lembaga_formal)
+  const formalNama = item.lembagaPendidikanFormal?.nama_lembaga || null
+  if (formalNama)
     res.lembagaPendidikanFormal = {
-      id_lembaga_formal: item.lembagaPendidikanFormal.id_lembaga_formal,
-      nama_lembaga_formal: item.lembagaPendidikanFormal.nama_lembaga_formal
+      id_lembaga: item.lembagaPendidikanFormal.id_lembaga || item.id_lembagal,
+      nama_lembaga: formalNama
     }
-  if (item.lembagaPendidikanKepesantrenan?.nama_lembaga_kepesantrenan)
+  const pesantrenNama = item.lembagaPendidikanKepesantrenan?.nama_lembaga || null
+  if (pesantrenNama)
     res.lembagaPendidikanKepesantrenan = {
-      id_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.id_lembaga_kepesantrenan,
-      nama_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.nama_lembaga_kepesantrenan
+      id_lembaga: item.lembagaPendidikanKepesantrenan.id_lembaga || item.id_lembaga,
+      nama_lembaga: pesantrenNama
     }
   if (item.pegawai?.nama_lengkap)
     res.pegawai = { id_pegawai: item.pegawai.id_pegawai, nama_lengkap: item.pegawai.nama_lengkap }
@@ -209,14 +211,13 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
                         <strong>Cabang:</strong> {item.cabang?.nama_cabang || '-'}
                       </span>
                       <span>
-                        <strong>Org Unit:</strong> {item.organizationUnit?.nama_orgunit || '-'}
+                        <strong>Lembaga:</strong>{' '}
+                        {item.lembagaPendidikanFormal?.nama_lembaga ||
+                          item.lembagaPendidikanKepesantrenan?.nama_lembaga ||
+                          '-'}
                       </span>
                       <span>
-                        <strong>Lembaga:</strong>{' '}
-                        {item.lembagaPendidikanFormal?.nama_lembaga_formal ||
-                          item.lembagaPendidikanKepesantrenan?.nama_lembaga_kepesantrenan ||
-                          item.id_lembaga ||
-                          '-'}
+                        <strong>Org Unit:</strong> {item.organizationUnit?.nama_orgunit || '-'}
                       </span>
                       {item.pegawai?.nama_lengkap && (
                         <span>

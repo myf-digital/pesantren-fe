@@ -31,17 +31,18 @@ import { fetchProvinces, fetchRegenciesByProvince } from '../../areas/slice'
 import { fetchPegawaiAll } from '../../guru-mata-pelajaran/slice'
 import { fetchCabangAll } from '../../cabang/slice'
 import { fetchOrgUnitAll } from '../../organisasi/slice'
-import { fetchLocationAll } from '../../location/slice'
+import { fetchLembagaFormalAll } from '../../lembaga-formal/slice'
+import { fetchLembagaAll as fetchLembagaKepesantrenanAll } from '../../lembaga-kepesantrenan/slice'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
 
 interface UserRoleItem {
   id_resource_role?: string
   role_id: { label: string; value: string } | null
-  id_pegawai?: { label: string; value: string } | null
+  id_pegawai?: { label: string; value: string; raw?: any } | null
   id_cabang?: { label: string; value: string } | null
   id_orgunit?: { label: string; value: string } | null
-  id_lembaga?: string | null
+  id_lembaga?: { label: string; value: string; type?: string } | null
   lembaga_type?: string | null
   is_default: boolean
 }
@@ -62,6 +63,7 @@ const UserForm = () => {
     cabangs: [],
     orgunits: [],
     lokasis: [],
+    lembagas: [],
     status: [
       { label: 'Belum Verifikasi', value: 'NV' },
       { label: 'Aktif', value: 'A' }
@@ -115,23 +117,54 @@ const UserForm = () => {
     }
   }
 
+  const getList = (res: any) => {
+    if (Array.isArray(res)) return res
+    if (Array.isArray(res?.data?.values)) return res.data.values
+    if (Array.isArray(res?.data)) return res.data
+    if (Array.isArray(res?.values)) return res.values
+    return []
+  }
+
   const initForm = useCallback(async () => {
     try {
-      const [resRole, resProv, resPegawai, resCabang, resOrgUnit, resLokasi] = await Promise.all([
+      const [resRole, resProv, resPegawai, resCabang, resOrgUnit, resFormal, resPesantren] = await Promise.all([
         dispatch(fetchRoleAll()).unwrap(),
         dispatch(fetchProvinces()).unwrap(),
         dispatch(fetchPegawaiAll({})).unwrap(),
         dispatch(fetchCabangAll({})).unwrap(),
         dispatch(fetchOrgUnitAll({})).unwrap(),
-        dispatch(fetchLocationAll({})).unwrap()
+        dispatch(fetchLembagaFormalAll({})).unwrap(),
+        dispatch(fetchLembagaKepesantrenanAll({})).unwrap()
       ])
 
       const roleOpts = (resRole?.data || []).map((i: any) => ({ label: i.role_name, value: i.role_id }))
       const provOpts = (resProv?.data || []).map((i: any) => ({ label: i.name, value: i.id }))
-      const pegawaiOpts = (resPegawai?.data || []).map((i: any) => ({ label: i.nama_lengkap, value: i.id_pegawai }))
+      const pegawaiOpts = getList(resPegawai).map((i: any) => ({ label: i.nama_lengkap, value: i.id_pegawai, raw: i }))
       const cabangOpts = (resCabang?.data || []).map((i: any) => ({ label: i.nama_cabang, value: i.id_cabang }))
-      const orgUnitOpts = (resOrgUnit?.data || []).map((i: any) => ({ label: i.nama_orgunit, value: i.id_orgunit }))
-      const lokasiOpts = (resLokasi?.data || []).map((i: any) => ({ label: i.nama_lokasi, value: i.id_lokasi }))
+      const orgUnitOpts = (resOrgUnit?.data || []).map((i: any) => ({
+        label: i.nama_orgunit,
+        value: i.id_orgunit,
+        id_cabang: i.id_cabang,
+        id_lembaga: i.id_lembaga,
+        lembaga_type: i.lembaga_type,
+        raw: i
+      }))
+
+      const lembagasFormalOpt = getList(resFormal).map((m: any) => ({
+        label: `[Formal] ${m.nama_lembaga || ''}`,
+        value: m.id_lembaga || m.id_lembaga_formal,
+        type: 'FORMAL',
+        id_cabang: m.id_cabang,
+        raw: m
+      }))
+
+      const lembagasPesantrenOpt = getList(resPesantren).map((m: any) => ({
+        label: `[Pesantren] ${m.nama_lembaga || ''}`,
+        value: m.id_lembaga || m.id_lembaga_kepesantrenan,
+        type: 'PESANTREN',
+        id_cabang: m.id_cabang,
+        raw: m
+      }))
 
       setOpt((prev: any) => ({
         ...prev,
@@ -140,7 +173,7 @@ const UserForm = () => {
         pegawais: pegawaiOpts,
         cabangs: cabangOpts,
         orgunits: orgUnitOpts,
-        lokasis: lokasiOpts
+        lembagas: [...lembagasFormalOpt, ...lembagasPesantrenOpt]
       }))
 
       if (id) {
@@ -161,52 +194,17 @@ const UserForm = () => {
             regency_id: d.regency ? { label: d.regency.name, value: d.regency.id } : null,
             id_eksternal: matchedPegawai
               ? { label: matchedPegawai.nama_lengkap, value: matchedPegawai.id_pegawai }
-              : d.pegawai
-                ? { label: d.pegawai.nama_lengkap, value: d.pegawai.id_pegawai }
-                : null,
+              : d.id_eksternal,
             status: opt.status.find((o: any) => o.value === d.status) || { label: 'Aktif', value: 'A' },
             password: ''
           }
 
           setState(formatted)
           reset(formatted)
-
-          // Load user_roles if available
-          if (Array.isArray(d.user_roles) && d.user_roles.length > 0) {
-            const mappedRoles: UserRoleItem[] = d.user_roles.map((r: any) => ({
-              id_resource_role: r.id_resource_role,
-              role_id: r.role ? { label: r.role.role_name, value: r.role.role_id } : null,
-              id_pegawai: r.pegawai ? { label: r.pegawai.nama_lengkap, value: r.pegawai.id_pegawai } : null,
-              id_cabang: r.cabang ? { label: r.cabang.nama_cabang, value: r.cabang.id_cabang } : null,
-              id_orgunit: r.organizationUnit
-                ? { label: r.organizationUnit.nama_orgunit, value: r.organizationUnit.id_orgunit }
-                : null,
-              id_lembaga: r.id_lembaga || null,
-              lembaga_type: r.lembaga_type || null,
-              is_default: r.is_default === 1
-            }))
-
-            setUserRoles(mappedRoles)
-          } else if (d.role) {
-            setUserRoles([
-              {
-                role_id: { label: d.role.role_name, value: d.role.role_id },
-                id_pegawai: matchedPegawai
-                  ? { label: matchedPegawai.nama_lengkap, value: matchedPegawai.id_pegawai }
-                  : null,
-                id_cabang: null,
-                id_orgunit: null,
-                id_lembaga: null,
-                lembaga_type: null,
-                is_default: true
-              }
-            ])
-          }
         }
       }
     } catch (err) {
       console.error(err)
-      toast.error('Gagal memuat referensi data')
     }
   }, [id, dispatch, reset])
 
@@ -216,12 +214,12 @@ const UserForm = () => {
 
   useEffect(() => {
     if (store.crud) {
-      if (store.crud.status) {
-        toast.success(store.crud.message)
+      if (store.crud.status !== false) {
+        toast.success(store.crud.message || 'Berhasil menyimpan data user')
         dispatch(resetRedux())
         router.replace('/app/user/list')
       } else {
-        toast.error(store.crud.message)
+        toast.error(store.crud.message || 'Gagal menyimpan data user')
         dispatch(resetRedux())
       }
     }
@@ -232,7 +230,7 @@ const UserForm = () => {
       ...prev,
       {
         role_id: null,
-        id_pegawai: state.id_eksternal || null,
+        id_pegawai: null,
         id_cabang: null,
         id_orgunit: null,
         id_lembaga: null,
@@ -254,12 +252,171 @@ const UserForm = () => {
     })
   }
 
+  const getFilteredLembagaOptions = (roleRow: any) => {
+    const selectedCabangId = roleRow.id_cabang?.value || roleRow.id_cabang
+    if (!selectedCabangId) return opt.lembagas || []
+
+    return (opt.lembagas || []).filter((l: any) => {
+      const lemCabangId = l.id_cabang || l.raw?.id_cabang
+      return !lemCabangId || lemCabangId === selectedCabangId
+    })
+  }
+
+  const getFilteredOrgUnitOptions = (roleRow: any) => {
+    const selectedCabangId = roleRow.id_cabang?.value || roleRow.id_cabang
+    const selectedLembagaId = roleRow.id_lembaga?.value || roleRow.id_lembaga
+
+    return (opt.orgunits || []).filter((o: any) => {
+      const orgCabangId = o.id_cabang || o.raw?.id_cabang
+      const orgLembagaId = o.id_lembaga || o.raw?.id_lembaga
+
+      if (selectedLembagaId) {
+        if (orgLembagaId && orgLembagaId !== selectedLembagaId) {
+          return false
+        }
+      }
+
+      if (selectedCabangId) {
+        if (orgCabangId && orgCabangId !== selectedCabangId) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }
+
   const handleUserRoleChange = (index: number, fieldName: keyof UserRoleItem, value: any) => {
     setUserRoles(prev => {
       const updated = [...prev]
+      const currentRow: any = { ...updated[index] }
 
-      updated[index] = { ...updated[index], [fieldName]: value }
+      currentRow[fieldName] = value
 
+      if (fieldName === 'id_pegawai') {
+        if (value && value.raw) {
+          const rawPegawai = value.raw
+
+          const targetCabangId =
+            rawPegawai.id_cabang ||
+            rawPegawai.cabang?.id_cabang ||
+            rawPegawai.organizationUnit?.id_cabang ||
+            rawPegawai.organizationUnit?.cabang?.id_cabang
+
+          const targetOrgUnitId = rawPegawai.id_orgunit || rawPegawai.organizationUnit?.id_orgunit
+
+          const targetLembagaId =
+            rawPegawai.id_lembaga ||
+            rawPegawai.organizationUnit?.id_lembaga ||
+            rawPegawai.lembaga?.id_lembaga ||
+            rawPegawai.lembagaPendidikanFormal?.id_lembaga ||
+            rawPegawai.lembagaPendidikanFormal?.id_lembaga_formal ||
+            rawPegawai.lembagaPendidikanKepesantrenan?.id_lembaga ||
+            rawPegawai.lembagaPendidikanKepesantrenan?.id_lembaga_kepesantrenan
+
+          const targetLembagaType = rawPegawai.lembaga_type || rawPegawai.organizationUnit?.lembaga_type
+
+          if (targetCabangId) {
+            const foundCabang = opt.cabangs?.find((c: any) => c.value === targetCabangId)
+            if (foundCabang) {
+              currentRow.id_cabang = foundCabang
+            }
+          }
+
+          if (targetOrgUnitId) {
+            const foundOrg = opt.orgunits?.find((o: any) => o.value === targetOrgUnitId)
+            if (foundOrg) {
+              currentRow.id_orgunit = foundOrg
+            }
+          }
+
+          if (targetLembagaId) {
+            const foundLembaga = opt.lembagas?.find((l: any) => l.value === targetLembagaId)
+            if (foundLembaga) {
+              currentRow.id_lembaga = foundLembaga
+              currentRow.lembaga_type = foundLembaga.type || targetLembagaType || null
+            } else {
+              const labelName =
+                rawPegawai.lembagaPendidikanFormal?.nama_lembaga ||
+                rawPegawai.lembagaPendidikanKepesantrenan?.nama_lembaga ||
+                targetLembagaId
+              currentRow.id_lembaga = {
+                label: labelName,
+                value: targetLembagaId,
+                type: targetLembagaType
+              }
+              currentRow.lembaga_type = targetLembagaType || null
+            }
+          }
+        }
+      }
+
+      if (fieldName === 'id_cabang') {
+        const newCabangId = value?.value || value
+        if (currentRow.id_lembaga) {
+          const lemCabangId = currentRow.id_lembaga.id_cabang || currentRow.id_lembaga.raw?.id_cabang
+          if (newCabangId && lemCabangId && lemCabangId !== newCabangId) {
+            currentRow.id_lembaga = null
+            currentRow.lembaga_type = null
+          }
+        }
+        if (currentRow.id_orgunit) {
+          const orgCabangId = currentRow.id_orgunit.id_cabang || currentRow.id_orgunit.raw?.id_cabang
+          if (newCabangId && orgCabangId && orgCabangId !== newCabangId) {
+            currentRow.id_orgunit = null
+          }
+        }
+      }
+
+      if (fieldName === 'id_lembaga') {
+        if (value) {
+          currentRow.lembaga_type = value.type || value.raw?.lembaga_type || currentRow.lembaga_type || null
+
+          const lemCabangId = value.id_cabang || value.raw?.id_cabang
+          if (
+            lemCabangId &&
+            (!currentRow.id_cabang ||
+              (currentRow.id_cabang.value !== lemCabangId && currentRow.id_cabang !== lemCabangId))
+          ) {
+            const foundCabang = opt.cabangs?.find((c: any) => c.value === lemCabangId)
+            if (foundCabang) {
+              currentRow.id_cabang = foundCabang
+            }
+          }
+
+          if (currentRow.id_orgunit) {
+            const orgLembagaId = currentRow.id_orgunit.id_lembaga || currentRow.id_orgunit.raw?.id_lembaga
+            if (orgLembagaId && orgLembagaId !== value.value) {
+              currentRow.id_orgunit = null
+            }
+          }
+        } else {
+          currentRow.lembaga_type = null
+        }
+      }
+
+      if (fieldName === 'id_orgunit') {
+        if (value) {
+          const orgCabangId = value.id_cabang || value.raw?.id_cabang
+          const orgLembagaId = value.id_lembaga || value.raw?.id_lembaga
+          const orgLembagaType = value.lembaga_type || value.raw?.lembaga_type
+
+          if (orgCabangId && !currentRow.id_cabang) {
+            const foundCabang = opt.cabangs?.find((c: any) => c.value === orgCabangId)
+            if (foundCabang) currentRow.id_cabang = foundCabang
+          }
+
+          if (orgLembagaId && !currentRow.id_lembaga) {
+            const foundLembaga = opt.lembagas?.find((l: any) => l.value === orgLembagaId)
+            if (foundLembaga) {
+              currentRow.id_lembaga = foundLembaga
+              currentRow.lembaga_type = foundLembaga.type || orgLembagaType || null
+            }
+          }
+        }
+      }
+
+      updated[index] = currentRow
       return updated
     })
   }
@@ -281,8 +438,8 @@ const UserForm = () => {
         id_pegawai: r.id_pegawai?.value || r.id_pegawai || state.id_eksternal?.value || null,
         id_cabang: r.id_cabang?.value || r.id_cabang || null,
         id_orgunit: r.id_orgunit?.value || r.id_orgunit || null,
-        id_lembaga: r.id_lembaga || null,
-        lembaga_type: r.lembaga_type || null,
+        id_lembaga: r.id_lembaga?.value || r.id_lembaga || null,
+        lembaga_type: r.lembaga_type || r.id_lembaga?.type || null,
         is_default: r.is_default ? 1 : idx === 0 ? 1 : 0
       }))
 
@@ -459,10 +616,22 @@ const UserForm = () => {
                           />
                         </Grid>
 
+                        {/* Lembaga Select */}
+                        <Grid item xs={12} sm={6} md={4}>
+                          <Autocomplete
+                            options={getFilteredLembagaOptions(roleRow)}
+                            value={roleRow.id_lembaga}
+                            onChange={(_, newValue) => handleUserRoleChange(idx, 'id_lembaga', newValue)}
+                            getOptionLabel={(option: any) => option?.label || ''}
+                            disabled={!!view}
+                            renderInput={params => <TextField {...params} label='Lembaga' size='small' />}
+                          />
+                        </Grid>
+
                         {/* OrgUnit Select */}
                         <Grid item xs={12} sm={6} md={4}>
                           <Autocomplete
-                            options={opt.orgunits}
+                            options={getFilteredOrgUnitOptions(roleRow)}
                             value={roleRow.id_orgunit}
                             onChange={(_, newValue) => handleUserRoleChange(idx, 'id_orgunit', newValue)}
                             getOptionLabel={(option: any) => option?.label || ''}
