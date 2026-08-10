@@ -68,23 +68,17 @@ const sanitizeAvailableRoles = (roles: any[]) => {
 export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClose }) => {
   const { data: session, update } = useSession()
   const [loadingId, setLoadingId] = useState<string | null>(null)
-  const [roles, setRoles] = useState<any[]>(sanitizeAvailableRoles(session?.userdata?.available_roles || []))
+  const [roles, setRoles] = useState<any[]>([])
   const [fetchingRoles, setFetchingRoles] = useState(false)
 
-  const activeResourceRoleId = session?.userdata?.active_role?.id_resource_role
-
-  React.useEffect(() => {
-    if (session?.userdata?.available_roles) {
-      setRoles(sanitizeAvailableRoles(session.userdata.available_roles))
-    }
-  }, [session?.userdata?.available_roles])
+  const activeResourceRoleId = session?.userdata?.id_resource_role || session?.userdata?.active_role?.id_resource_role
 
   React.useEffect(() => {
     if (open) {
       const fetchLatestRoles = async () => {
         try {
           setFetchingRoles(true)
-          const resourceId = (session?.userdata as any)?.resource_id
+          const resourceId = session?.userdata?.resource_id
           let resData: any = null
 
           if (resourceId) {
@@ -109,7 +103,7 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
 
       fetchLatestRoles()
     }
-  }, [open])
+  }, [open, session?.userdata?.resource_id])
 
   const handleSelectRole = async (item: any) => {
     try {
@@ -122,22 +116,23 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
       if (response.data && response.data.status !== false) {
         const { access_token, userdata } = response.data.data
 
-        const activeRole = sanitizeRoleItem(userdata.active_role)
-        const newAvailableRoles = sanitizeAvailableRoles(userdata.available_roles || roles || [])
+        const rawActiveRole = userdata.active_role
+        const activeRoleName = rawActiveRole?.role?.role_name || userdata.role_name || session?.userdata?.role_name
+        const activeCabangName = rawActiveRole?.cabang?.nama_cabang || userdata.cabang_name || session?.userdata?.cabang_name
 
         await update({
           access_token,
           userdata: {
-            resource_id: userdata.resource_id || (session?.userdata as any)?.resource_id,
+            resource_id: userdata.resource_id || session?.userdata?.resource_id,
             username: userdata.username || session?.userdata?.username,
             full_name: userdata.full_name || session?.userdata?.full_name,
             email: userdata.email || session?.userdata?.email,
-            role_name: activeRole?.role?.role_name || userdata.role_name || session?.userdata?.role_name,
+            role_name: activeRoleName,
+            id_resource_role: item.id_resource_role || rawActiveRole?.id_resource_role || userdata.id_resource_role,
+            cabang_name: activeCabangName,
             pegawai: userdata.pegawai
               ? { id_pegawai: userdata.pegawai.id_pegawai, nama_lengkap: userdata.pegawai.nama_lengkap }
-              : session?.userdata?.pegawai,
-            active_role: activeRole,
-            available_roles: newAvailableRoles
+              : session?.userdata?.pegawai
           },
           permissions: normalizeAbility(userdata.ability || [])
         })

@@ -34,46 +34,9 @@ export const authOptions: NextAuthOptions = {
           }
 
           const data = json.data
-
-          const sanitizeRoleItem = (item: any) => {
-            if (!item) return null
-
-            const res: any = { id_resource_role: item.id_resource_role }
-
-            if (item.is_default) res.is_default = item.is_default
-            if (item.id_lembaga) res.id_lembaga = item.id_lembaga
-            if (item.role?.role_name) res.role = { role_id: item.role.role_id, role_name: item.role.role_name }
-            if (item.cabang?.nama_cabang)
-              res.cabang = { id_cabang: item.cabang.id_cabang, nama_cabang: item.cabang.nama_cabang }
-            if (item.organizationUnit?.nama_orgunit)
-              res.organizationUnit = {
-                id_orgunit: item.organizationUnit.id_orgunit,
-                nama_orgunit: item.organizationUnit.nama_orgunit
-              }
-            if (item.lembagaPendidikanFormal?.nama_lembaga)
-              res.lembagaPendidikanFormal = {
-                id_lembaga: item.lembagaPendidikanFormal.id_lembaga,
-                nama_lembaga: item.lembagaPendidikanFormal.nama_lembaga
-              }
-            if (item.lembagaPendidikanKepesantrenan?.nama_lembaga)
-              res.lembagaPendidikanKepesantrenan = {
-                id_lembaga: item.lembagaPendidikanKepesantrenan.id_lembaga,
-                nama_lembaga: item.lembagaPendidikanKepesantrenan.nama_lembaga
-              }
-            if (item.pegawai?.nama_lengkap)
-              res.pegawai = { id_pegawai: item.pegawai.id_pegawai, nama_lengkap: item.pegawai.nama_lengkap }
-
-            return res
-          }
-
-          const sanitizeAvailableRoles = (roles: any[]) => {
-            if (!Array.isArray(roles)) return []
-
-            return roles.map(sanitizeRoleItem)
-          }
-
-          const activeRole = sanitizeRoleItem(data.userdata.active_role)
-          const availableRoles = sanitizeAvailableRoles(data.userdata.available_roles || [])
+          const rawActiveRole = data.userdata.active_role
+          const roleName = rawActiveRole?.role?.role_name || data.userdata.role_name || data.userdata.role?.role_name
+          const cabangName = rawActiveRole?.cabang?.nama_cabang || data.userdata.cabang_name
 
           return {
             id: String(data.userdata.resource_id),
@@ -84,12 +47,12 @@ export const authOptions: NextAuthOptions = {
               username: data.userdata.username,
               full_name: data.userdata.full_name,
               email: data.userdata.email,
-              role_name: activeRole?.role?.role_name || data.userdata.role?.role_name,
+              role_name: roleName,
+              id_resource_role: rawActiveRole?.id_resource_role || data.userdata.id_resource_role,
+              cabang_name: cabangName,
               pegawai: data.userdata.pegawai
                 ? { id_pegawai: data.userdata.pegawai.id_pegawai, nama_lengkap: data.userdata.pegawai.nama_lengkap }
-                : null,
-              active_role: activeRole,
-              available_roles: availableRoles
+                : null
             },
 
             permissions: normalizeAbility(data.userdata.ability || [])
