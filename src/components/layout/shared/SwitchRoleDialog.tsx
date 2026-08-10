@@ -82,7 +82,7 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
           let resData: any = null
 
           if (resourceId) {
-            const res = await api.get(`/app/resource/${resourceId}`)
+            const res = await api.get(`/app/resource/${resourceId}?roles=1`)
             resData = res.data?.data || res.data
           }
 
@@ -118,7 +118,8 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
 
         const rawActiveRole = userdata.active_role
         const activeRoleName = rawActiveRole?.role?.role_name || userdata.role_name || session?.userdata?.role_name
-        const activeCabangName = rawActiveRole?.cabang?.nama_cabang || userdata.cabang_name || session?.userdata?.cabang_name
+        const activeCabangName =
+          rawActiveRole?.cabang?.nama_cabang || userdata.cabang_name || session?.userdata?.cabang_name
 
         await update({
           access_token,
