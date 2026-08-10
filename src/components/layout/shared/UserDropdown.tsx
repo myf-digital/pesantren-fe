@@ -27,6 +27,9 @@ import { signOut, useSession } from 'next-auth/react'
 // Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
 
+// Component Imports
+import SwitchRoleDialog from './SwitchRoleDialog'
+
 // Styled component for badge content
 const BadgeContentSpan = styled('span')({
   width: 8,
@@ -40,6 +43,7 @@ const BadgeContentSpan = styled('span')({
 const UserDropdown = () => {
   // States
   const [open, setOpen] = useState(false)
+  const [switchRoleOpen, setSwitchRoleOpen] = useState(false)
 
   // Refs
   const anchorRef = useRef<HTMLDivElement>(null)
@@ -48,6 +52,9 @@ const UserDropdown = () => {
   const router = useRouter()
   const { data: session } = useSession()
   const { updateSettings, settings } = useSettings()
+
+  const activeRoleName = session?.userdata?.active_role?.role?.role_name || session?.userdata?.role_name
+  const activeCabangName = session?.userdata?.active_role?.cabang?.nama_cabang
 
   const handleDropdownOpen = () => {
     !open ? setOpen(true) : setOpen(false)
@@ -117,6 +124,17 @@ const UserDropdown = () => {
                         {session?.userdata?.full_name || ''}
                       </Typography>
                       <Typography variant='caption'>{session?.userdata?.email || ''}</Typography>
+                      {activeRoleName && (
+                        <Typography
+                          variant='caption'
+                          component='div'
+                          className='text-primary font-semibold mt-0.5'
+                          suppressHydrationWarning
+                          dangerouslySetInnerHTML={{
+                            __html: `${activeRoleName} ${activeCabangName ? `<br>${activeCabangName}` : ''}`
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                   <Divider className='mlb-1' />
@@ -124,6 +142,17 @@ const UserDropdown = () => {
                     <i className='tabler-user' />
                     <Typography color='text.primary'>Profile</Typography>
                   </MenuItem>
+                  <MenuItem
+                    className='mli-2 gap-3'
+                    onClick={() => {
+                      setOpen(false)
+                      setSwitchRoleOpen(true)
+                    }}
+                  >
+                    <i className='tabler-switch-horizontal' />
+                    <Typography color='text.primary'>Ubah Role</Typography>
+                  </MenuItem>
+                  <Divider className='mlb-1' />
                   <div className='flex items-center plb-2 pli-3'>
                     <Button
                       fullWidth
@@ -143,6 +172,8 @@ const UserDropdown = () => {
           </Fade>
         )}
       </Popper>
+
+      <SwitchRoleDialog open={switchRoleOpen} onClose={() => setSwitchRoleOpen(false)} />
     </>
   )
 }

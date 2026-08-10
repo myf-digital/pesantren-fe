@@ -81,7 +81,7 @@ export const postUser = createAsyncThunk('user/post', async (params: any, thunkA
         if (key === 'image_foto' && typeof params[key] === 'string' && params[key].startsWith('data:')) {
           const file = dataURLtoFile(params[key], 'image_foto.png')
           if (file) formData.append('image_foto', file)
-        } else if (key === 'role_id' || key === 'province_id' || key === 'regency_id') {
+        } else if (key === 'role_id' || key === 'province_id' || key === 'regency_id' || key === 'user_roles') {
           formData.append(key, JSON.stringify(params[key]))
         } else {
           formData.append(key, params[key])
@@ -108,7 +108,7 @@ export const postUserUpdate = createAsyncThunk('user/update', async ({ id, param
         if (key === 'image_foto' && typeof params[key] === 'string' && params[key].startsWith('data:')) {
           const file = dataURLtoFile(params[key], 'image_foto.png')
           if (file) formData.append('image_foto', file)
-        } else if (key === 'role_id' || key === 'province_id' || key === 'regency_id') {
+        } else if (key === 'role_id' || key === 'province_id' || key === 'regency_id' || key === 'user_roles') {
           formData.append(key, JSON.stringify(params[key]))
         } else if (key === 'password' && !params[key]) {
           continue

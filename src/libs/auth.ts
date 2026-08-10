@@ -35,6 +35,43 @@ export const authOptions: NextAuthOptions = {
 
           const data = json.data
 
+          const sanitizeRoleItem = (item: any) => {
+            if (!item) return null
+
+            return {
+              id_resource_role: item.id_resource_role,
+              is_default: item.is_default,
+              id_lembaga: item.id_lembaga || null,
+              role: item.role ? { role_id: item.role.role_id, role_name: item.role.role_name } : null,
+              cabang: item.cabang ? { id_cabang: item.cabang.id_cabang, nama_cabang: item.cabang.nama_cabang } : null,
+              organizationUnit: item.organizationUnit
+                ? { id_orgunit: item.organizationUnit.id_orgunit, nama_orgunit: item.organizationUnit.nama_orgunit }
+                : null,
+              lembagaPendidikanFormal: item.lembagaPendidikanFormal
+                ? {
+                    id_lembaga_formal: item.lembagaPendidikanFormal.id_lembaga_formal,
+                    nama_lembaga_formal: item.lembagaPendidikanFormal.nama_lembaga_formal
+                  }
+                : null,
+              lembagaPendidikanKepesantrenan: item.lembagaPendidikanKepesantrenan
+                ? {
+                    id_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.id_lembaga_kepesantrenan,
+                    nama_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.nama_lembaga_kepesantrenan
+                  }
+                : null,
+              pegawai: item.pegawai ? { id_pegawai: item.pegawai.id_pegawai, nama_lengkap: item.pegawai.nama_lengkap } : null
+            }
+          }
+
+          const sanitizeAvailableRoles = (roles: any[]) => {
+            if (!Array.isArray(roles)) return []
+
+            return roles.map(sanitizeRoleItem)
+          }
+
+          const activeRole = sanitizeRoleItem(data.userdata.active_role)
+          const availableRoles = sanitizeAvailableRoles(data.userdata.available_roles || [])
+
           return {
             id: String(data.userdata.resource_id),
             access_token: data.access_token,
@@ -43,11 +80,15 @@ export const authOptions: NextAuthOptions = {
               username: data.userdata.username,
               full_name: data.userdata.full_name,
               email: data.userdata.email,
-              role_name: data.userdata.role.role_name,
+              role_name: activeRole?.role?.role_name || data.userdata.role?.role_name,
               pegawai: data.userdata.pegawai
+                ? { id_pegawai: data.userdata.pegawai.id_pegawai, nama_lengkap: data.userdata.pegawai.nama_lengkap }
+                : null,
+              active_role: activeRole,
+              available_roles: availableRoles
             },
 
-            permissions: normalizeAbility(data.userdata.ability)
+            permissions: normalizeAbility(data.userdata.ability || [])
           }
         } catch (err) {
           console.error('LOGIN ERROR:', err)
@@ -68,8 +109,10 @@ export const authOptions: NextAuthOptions = {
         token.permissions = user.permissions
       }
 
-      if (trigger === 'update' && session?.permissions) {
-        token.permissions = session.permissions
+      if (trigger === 'update' && session) {
+        if (session.access_token) token.access_token = session.access_token
+        if (session.userdata) token.userdata = session.userdata
+        if (session.permissions) token.permissions = session.permissions
       }
 
       return token

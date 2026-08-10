@@ -11,6 +11,8 @@ declare module "next-auth" {
       email?: string
       role_name?: string
       pegawai?: any
+      active_role?: any
+      available_roles?: any[]
     } & DefaultSession["user"]
   }
 
@@ -23,6 +25,8 @@ declare module "next-auth" {
       email?: string
       role_name?: string
       pegawai?: any
+      active_role?: any
+      available_roles?: any[]
     }
   }
 }
@@ -37,6 +41,8 @@ declare module "next-auth/jwt" {
       email?: string
       role_name?: string
       pegawai?: any
+      active_role?: any
+      available_roles?: any[]
     }
   }
 }

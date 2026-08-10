@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import Link from 'next/link';
+import Link from 'next/link'
 
 import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
@@ -12,16 +12,19 @@ import ListItemIcon from '@mui/material/ListItemIcon'
 
 import { signOut, useSession } from 'next-auth/react'
 
-import { ListItemText } from '@mui/material';
+import { ListItemText } from '@mui/material'
 
 import { useSettings } from '@core/hooks/useSettings'
 
 import useVerticalNav from '../../../@menu/hooks/useVerticalNav'
+import { useState } from 'react'
+import SwitchRoleDialog from '../shared/SwitchRoleDialog'
 
 export default function NavbarFooterMobile() {
   const { data: session } = useSession()
   const { updateSettings } = useSettings()
   const { isToggled, toggleVerticalNav } = useVerticalNav()
+  const [switchRoleOpen, setSwitchRoleOpen] = useState(false)
 
   const handleUserLogout = async () => {
     try {
@@ -42,8 +45,7 @@ export default function NavbarFooterMobile() {
   return (
     <Box
       sx={{
-        borderTop: theme =>
-          `1px solid ${theme.palette.divider}`,
+        borderTop: theme => `1px solid ${theme.palette.divider}`,
         p: 3,
         backgroundColor: 'background.paper'
       }}
@@ -69,16 +71,26 @@ export default function NavbarFooterMobile() {
 
       <List dense>
         <ListItem disablePadding sx={{ marginBottom: 3 }}>
-          <ListItemButton
-            component={Link}
-            href='/pages/user-profile'
-            onClick={handleCloseSidebar}
-          >
+          <ListItemButton component={Link} href='/pages/user-profile' onClick={handleCloseSidebar}>
             <ListItemIcon>
               <i className='tabler-user' />
             </ListItemIcon>
 
             <ListItemText primary='Profile' />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding sx={{ marginBottom: 3 }}>
+          <ListItemButton
+            onClick={() => {
+              handleCloseSidebar()
+              setSwitchRoleOpen(true)
+            }}
+          >
+            <ListItemIcon>
+              <i className='tabler-switch-horizontal' />
+            </ListItemIcon>
+
+            <ListItemText primary='Ubah Role' />
           </ListItemButton>
         </ListItem>
 
@@ -101,6 +113,8 @@ export default function NavbarFooterMobile() {
           </ListItemButton>
         </ListItem>
       </List>
+
+      <SwitchRoleDialog open={switchRoleOpen} onClose={() => setSwitchRoleOpen(false)} />
     </Box>
   )
 }
