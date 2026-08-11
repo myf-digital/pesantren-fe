@@ -41,15 +41,17 @@ const sanitizeRoleItem = (item: any) => {
       id_orgunit: item.organizationUnit.id_orgunit,
       nama_orgunit: item.organizationUnit.nama_orgunit
     }
-  if (item.lembagaPendidikanFormal?.nama_lembaga_formal)
+  const formalNama = item.lembagaPendidikanFormal?.nama_lembaga || null
+  if (formalNama)
     res.lembagaPendidikanFormal = {
-      id_lembaga_formal: item.lembagaPendidikanFormal.id_lembaga_formal,
-      nama_lembaga_formal: item.lembagaPendidikanFormal.nama_lembaga_formal
+      id_lembaga: item.lembagaPendidikanFormal.id_lembaga || item.id_lembagal,
+      nama_lembaga: formalNama
     }
-  if (item.lembagaPendidikanKepesantrenan?.nama_lembaga_kepesantrenan)
+  const pesantrenNama = item.lembagaPendidikanKepesantrenan?.nama_lembaga || null
+  if (pesantrenNama)
     res.lembagaPendidikanKepesantrenan = {
-      id_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.id_lembaga_kepesantrenan,
-      nama_lembaga_kepesantrenan: item.lembagaPendidikanKepesantrenan.nama_lembaga_kepesantrenan
+      id_lembaga: item.lembagaPendidikanKepesantrenan.id_lembaga || item.id_lembaga,
+      nama_lembaga: pesantrenNama
     }
   if (item.pegawai?.nama_lengkap)
     res.pegawai = { id_pegawai: item.pegawai.id_pegawai, nama_lengkap: item.pegawai.nama_lengkap }
@@ -66,27 +68,21 @@ const sanitizeAvailableRoles = (roles: any[]) => {
 export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClose }) => {
   const { data: session, update } = useSession()
   const [loadingId, setLoadingId] = useState<string | null>(null)
-  const [roles, setRoles] = useState<any[]>(sanitizeAvailableRoles(session?.userdata?.available_roles || []))
+  const [roles, setRoles] = useState<any[]>([])
   const [fetchingRoles, setFetchingRoles] = useState(false)
 
-  const activeResourceRoleId = session?.userdata?.active_role?.id_resource_role
-
-  React.useEffect(() => {
-    if (session?.userdata?.available_roles) {
-      setRoles(sanitizeAvailableRoles(session.userdata.available_roles))
-    }
-  }, [session?.userdata?.available_roles])
+  const activeResourceRoleId = session?.userdata?.id_resource_role || session?.userdata?.active_role?.id_resource_role
 
   React.useEffect(() => {
     if (open) {
       const fetchLatestRoles = async () => {
         try {
           setFetchingRoles(true)
-          const resourceId = (session?.userdata as any)?.resource_id
+          const resourceId = session?.userdata?.resource_id
           let resData: any = null
 
           if (resourceId) {
-            const res = await api.get(`/app/resource/${resourceId}`)
+            const res = await api.get(`/app/resource/${resourceId}?roles=1`)
             resData = res.data?.data || res.data
           }
 
@@ -107,7 +103,7 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
 
       fetchLatestRoles()
     }
-  }, [open])
+  }, [open, session?.userdata?.resource_id])
 
   const handleSelectRole = async (item: any) => {
     try {
@@ -120,22 +116,24 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
       if (response.data && response.data.status !== false) {
         const { access_token, userdata } = response.data.data
 
-        const activeRole = sanitizeRoleItem(userdata.active_role)
-        const newAvailableRoles = sanitizeAvailableRoles(userdata.available_roles || roles || [])
+        const rawActiveRole = userdata.active_role
+        const activeRoleName = rawActiveRole?.role?.role_name || userdata.role_name || session?.userdata?.role_name
+        const activeCabangName =
+          rawActiveRole?.cabang?.nama_cabang || userdata.cabang_name || session?.userdata?.cabang_name
 
         await update({
           access_token,
           userdata: {
-            resource_id: userdata.resource_id || (session?.userdata as any)?.resource_id,
+            resource_id: userdata.resource_id || session?.userdata?.resource_id,
             username: userdata.username || session?.userdata?.username,
             full_name: userdata.full_name || session?.userdata?.full_name,
             email: userdata.email || session?.userdata?.email,
-            role_name: activeRole?.role?.role_name || userdata.role_name || session?.userdata?.role_name,
+            role_name: activeRoleName,
+            id_resource_role: item.id_resource_role || rawActiveRole?.id_resource_role || userdata.id_resource_role,
+            cabang_name: activeCabangName,
             pegawai: userdata.pegawai
               ? { id_pegawai: userdata.pegawai.id_pegawai, nama_lengkap: userdata.pegawai.nama_lengkap }
-              : session?.userdata?.pegawai,
-            active_role: activeRole,
-            available_roles: newAvailableRoles
+              : session?.userdata?.pegawai
           },
           permissions: normalizeAbility(userdata.ability || [])
         })
@@ -209,14 +207,13 @@ export const SwitchRoleDialog: React.FC<SwitchRoleDialogProps> = ({ open, onClos
                         <strong>Cabang:</strong> {item.cabang?.nama_cabang || '-'}
                       </span>
                       <span>
-                        <strong>Org Unit:</strong> {item.organizationUnit?.nama_orgunit || '-'}
+                        <strong>Lembaga:</strong>{' '}
+                        {item.lembagaPendidikanFormal?.nama_lembaga ||
+                          item.lembagaPendidikanKepesantrenan?.nama_lembaga ||
+                          '-'}
                       </span>
                       <span>
-                        <strong>Lembaga:</strong>{' '}
-                        {item.lembagaPendidikanFormal?.nama_lembaga_formal ||
-                          item.lembagaPendidikanKepesantrenan?.nama_lembaga_kepesantrenan ||
-                          item.id_lembaga ||
-                          '-'}
+                        <strong>Org Unit:</strong> {item.organizationUnit?.nama_orgunit || '-'}
                       </span>
                       {item.pegawai?.nama_lengkap && (
                         <span>
