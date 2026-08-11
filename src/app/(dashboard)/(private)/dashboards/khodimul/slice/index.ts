@@ -8,14 +8,8 @@ import api from '@/libs/axios'
    1. Types
 --------------------------- */
 export interface InitialState {
-  dataPage: {
-    values: any[]
-    total: number
-  }
-  data: any
-  datas: any[] // Untuk fetch all (kebutuhan dropdown)
-  crud: any
-  delete: any // Menggunakan any agar bisa menampung error object atau string
+  dataKepesantrenan: any
+  dataLembagaFormal: any
   loading: boolean
 }
 
@@ -23,14 +17,8 @@ export interface InitialState {
    2. Initial State
 --------------------------- */
 const initialState: InitialState = {
-  dataPage: {
-    values: [],
-    total: 0
-  },
-  data: {},
-  datas: [],
-  crud: null,
-  delete: null,
+  dataKepesantrenan: {},
+  dataLembagaFormal: {},
   loading: false
 }
 
@@ -51,18 +39,32 @@ export const fetchSummaryKepesantrenan = createAsyncThunk<any, any>(
   }
 )
 
-export const summaryKepesantrenanSlice = createSlice({
-  name: 'summary_kepesantrenan',
+export const fetchSummaryLembagaFormal = createAsyncThunk<any, any>(
+  'summary-lembaga-formal/fetchAll',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.get(`/summary-lembaga-formal`, { params })
+
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
+
+export const summaryKhodimulSlice = createSlice({
+  name: 'khodimul',
   initialState,
   reducers: {
-    resetRedux: state => {
-      state.crud = null
-      state.delete = null
-    }
+    resetRedux: state => {}
   },
   extraReducers: builder => {
     builder.addCase(fetchSummaryKepesantrenan.fulfilled, (state, action) => {
-      state.data = action.payload.data
+      state.dataKepesantrenan = action.payload.data
+    })
+
+    builder.addCase(fetchSummaryLembagaFormal.fulfilled, (state, action) => {
+      state.dataLembagaFormal = action.payload.data
     })
 
     builder.addMatcher(
@@ -80,5 +82,5 @@ export const summaryKepesantrenanSlice = createSlice({
   }
 })
 
-export const { resetRedux } = summaryKepesantrenanSlice.actions
-export default summaryKepesantrenanSlice.reducer
+export const { resetRedux } = summaryKhodimulSlice.actions
+export default summaryKhodimulSlice.reducer

@@ -16,6 +16,7 @@ import { fetchLembagaFormalAll } from '../../app/lembaga-formal/slice'
 import { fetchLembagaAll } from '../../app/lembaga-kepesantrenan/slice'
 
 import Kepesantrenan from './Kepesantrenan'
+import LembagaFormal from './LembagaFormal'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -58,6 +59,7 @@ const Dashboard = () => {
   const [cabang, setCabang] = React.useState<any>([])
   const [lembagaFormal, setLembagaFormal] = React.useState<any>([])
   const [lembaga, setLembaga] = React.useState<any>([])
+  const [mountedAccordion, setMountedAccordion] = React.useState<any>('')
 
   const getDataCabang = async () => {
     const res = await dispatch(fetchCabangAll({})).unwrap()
@@ -118,7 +120,7 @@ const Dashboard = () => {
             <TabPanel value={value} index={0}>
               {cabang.map((r: any, index: number) => {
                 return (
-                  <Accordion key={r.id_cabang}>
+                  <Accordion key={r.id_cabang} onChange={() => setMountedAccordion(`kepesantrenan-${r.id_cabang}`)}>
                     <AccordionSummary
                       expandIcon={<i className='tabler-chevron-down' />}
                       aria-controls={`${index}-panel1-content`}
@@ -129,7 +131,10 @@ const Dashboard = () => {
                       </Typography>
                     </AccordionSummary>
                     <AccordionDetails>
-                      <Kepesantrenan id_cabang={r.id_cabang} />
+                      <Kepesantrenan
+                        id_cabang={r.id_cabang}
+                        isMounted={`kepesantrenan-${r.id_cabang}` == mountedAccordion}
+                      />
                     </AccordionDetails>
                   </Accordion>
                 )
@@ -153,11 +158,27 @@ const Dashboard = () => {
                         .filter((l: any) => l.id_cabang == r.id_cabang)
                         .map((l: any, index: number) => {
                           return (
-                            <Grid size={12} key={l.id_cabang}>
-                              <Typography variant='h4' sx={{ fontWeight: 600, mt: 2 }}>
-                                {l.nama_lembaga}
-                              </Typography>
-                            </Grid>
+                            <Accordion
+                              key={l.id_lembaga}
+                              onChange={() => setMountedAccordion(`formal-${l.id_lembaga}`)}
+                            >
+                              <AccordionSummary
+                                expandIcon={<i className='tabler-chevron-down' />}
+                                aria-controls={`${index + l.id_lembaga}-panel1-content`}
+                                id={`${index + l.id_lembaga}-panel1-header`}
+                              >
+                                <Typography variant='h4' sx={{ fontWeight: 600, mt: 2 }}>
+                                  {l.nama_lembaga}
+                                </Typography>
+                              </AccordionSummary>
+                              <AccordionDetails>
+                                <LembagaFormal
+                                  id_cabang={r.id_cabang}
+                                  id_lembaga={l.id_lembaga}
+                                  isMounted={`formal-${l.id_lembaga}` == mountedAccordion}
+                                />
+                              </AccordionDetails>
+                            </Accordion>
                           )
                         })}
                     </AccordionDetails>
