@@ -48,6 +48,16 @@ export const fetchUserById = createAsyncThunk('user/fetchById', async (id: strin
   }
 })
 
+export const fetchUserRolesById = createAsyncThunk('user/fetchUserRolesById', async (id: string, thunkAPI) => {
+  try {
+    const response = await api.get(`/app/resource/${id}?roles=1`)
+
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.rejectWithValue(e.response?.data)
+  }
+})
+
 export const fetchUserByUsername = createAsyncThunk('user/fetchByUsername', async (username: string, thunkAPI) => {
   try {
     const response = await api.get(`/app/resource/check/${username}?type=data`)
@@ -186,6 +196,9 @@ export const userSlice = createSlice({
       }
     })
     builder.addCase(fetchUserById.fulfilled, (state, action) => {
+      state.data = action.payload.data
+    })
+    builder.addCase(fetchUserRolesById.fulfilled, (state, action) => {
       state.data = action.payload.data
     })
     builder.addCase(fetchUserByUsername.fulfilled, (state, action) => {

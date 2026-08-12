@@ -23,7 +23,7 @@ import {
 import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { fetchUserById, postUserRolesUpdate, resetRedux } from '../slice'
+import { fetchUserRolesById, postUserRolesUpdate, resetRedux } from '../slice'
 import { fetchRoleAll } from '../../role/slice'
 import { fetchPegawaiAll } from '../../guru-mata-pelajaran/slice'
 import { fetchCabangAll } from '../../cabang/slice'
@@ -71,7 +71,7 @@ const UserRolesManagement = () => {
         dispatch(fetchOrgUnitAll({})).unwrap(),
         dispatch(fetchLembagaFormalAll({})).unwrap(),
         dispatch(fetchLembagaKepesantrenanAll({})).unwrap(),
-        dispatch(fetchUserById(id)).unwrap()
+        dispatch(fetchUserRolesById(id)).unwrap()
       ])
 
       const getList = (res: any) => {
