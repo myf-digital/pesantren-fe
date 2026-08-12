@@ -27,6 +27,8 @@ import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchSantriAll } from '../../santri/slice'
 import { fetchLocationAll } from '../../location/slice'
 import { fetchTahunAjaranAll } from '../../tahun-ajaran/slice'
+import { stat } from 'fs'
+import { fetchPegawaiAll } from '../../pegawai/slice'
 
 const statusOption = {
   values: [
@@ -54,6 +56,7 @@ const FormValidationBasic = () => {
   const storeSantri = useAppSelector(state => state.santri)
   const storeLokasi = useAppSelector(state => state.location)
   const storeTahunAjaran = useAppSelector(state => state.tahun_ajaran)
+  const storePegawai = useAppSelector(state => state.pegawai)
 
   interface FormData {
     tanggal_masuk: string
@@ -72,6 +75,10 @@ const FormValidationBasic = () => {
       label: string
     }
     id_tahunajaran: {
+      value: string
+      label: string
+    }
+    id_waliasuh: {
       value: string
       label: string
     }
@@ -96,6 +103,10 @@ const FormValidationBasic = () => {
     id_tahunajaran: {
       value: '',
       label: ''
+    },
+    id_waliasuh: {
+      value: '',
+      label: ''
     }
   }
 
@@ -118,6 +129,7 @@ const FormValidationBasic = () => {
     dispatch(fetchSantriAll({ status: '1' }))
     dispatch(fetchLocationAll({ jenis_lokasi: 'Kamar' }))
     dispatch(fetchTahunAjaranAll({ status: 'Aktif' }))
+    dispatch(fetchPegawaiAll({ status_pegawai: 'Aktif' }))
 
     if (id) {
       dispatch(fetchPenempatanKamarSantriById(id)).then(res => {
@@ -139,6 +151,10 @@ const FormValidationBasic = () => {
           datas.id_tahunajaran = {
             value: datas.id_tahunajaran,
             label: datas.tahunAjaran?.tahun_ajaran
+          }
+          datas.id_waliasuh = {
+            value: datas.id_waliasuh,
+            label: datas.waliasuh?.nama_pegawai
           }
           datas.tanggal_masuk = datas.tanggal_masuk || ''
           datas.tanggal_keluar = datas.tanggal_keluar || ''
@@ -172,6 +188,7 @@ const FormValidationBasic = () => {
       id_santri: state.id_santri.value || null,
       id_lokasi: state.id_lokasi.value || null,
       id_tahunajaran: state.id_tahunajaran.value || null,
+      id_waliasuh: state.id_waliasuh.value || null,
       status: state.status.value || null,
       tanggal_masuk: state.tanggal_masuk || null,
       tanggal_keluar: state.tanggal_keluar || null,
@@ -265,6 +282,22 @@ const FormValidationBasic = () => {
         popperPlacement: 'top-start',
         required: false,
         readOnly: Boolean(view)
+      }),
+      field({
+        type: 'select',
+        key: 'id_waliasuh',
+        label: 'Wali Asuh',
+        placeholder: 'Pilih Wali Asuh',
+        required: true,
+        readOnly: Boolean(view),
+        options: {
+          values: storePegawai.datas.map(m => {
+            return {
+              label: m.nama_lengkap,
+              value: m.id_pegawai
+            }
+          })
+        }
       }),
       field({
         type: 'textarea',
