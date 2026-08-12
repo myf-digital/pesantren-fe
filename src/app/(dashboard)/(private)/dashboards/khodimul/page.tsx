@@ -17,6 +17,7 @@ import { fetchLembagaAll } from '../../app/lembaga-kepesantrenan/slice'
 
 import Kepesantrenan from './Kepesantrenan'
 import LembagaFormal from './LembagaFormal'
+import LembagaNonFormal from './LembagaNonFormal'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -204,11 +205,27 @@ const Dashboard = () => {
                         .filter((l: any) => l.id_cabang == r.id_cabang)
                         .map((l: any, index: number) => {
                           return (
-                            <Grid size={12} key={l.id_cabang}>
-                              <Typography variant='h4' sx={{ fontWeight: 600, mt: 2 }}>
-                                {l.nama_lembaga}
-                              </Typography>
-                            </Grid>
+                            <Accordion
+                              key={l.id_lembaga}
+                              onChange={() => setMountedAccordion(`formal-${l.id_lembaga}`)}
+                            >
+                              <AccordionSummary
+                                expandIcon={<i className='tabler-chevron-down' />}
+                                aria-controls={`${index + l.id_lembaga}-panel1-content`}
+                                id={`${index + l.id_lembaga}-panel1-header`}
+                              >
+                                <Typography variant='h4' sx={{ fontWeight: 600, mt: 2 }}>
+                                  {l.nama_lembaga}
+                                </Typography>
+                              </AccordionSummary>
+                              <AccordionDetails>
+                                <LembagaNonFormal
+                                  id_cabang={r.id_cabang}
+                                  id_lembaga={l.id_lembaga}
+                                  isMounted={`formal-${l.id_lembaga}` == mountedAccordion}
+                                />
+                              </AccordionDetails>
+                            </Accordion>
                           )
                         })}
                     </AccordionDetails>

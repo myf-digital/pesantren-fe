@@ -10,6 +10,7 @@ import api from '@/libs/axios'
 export interface InitialState {
   dataKepesantrenan: any
   dataLembagaFormal: any
+  dataLembagaNonFormal: any
   loading: boolean
 }
 
@@ -19,6 +20,7 @@ export interface InitialState {
 const initialState: InitialState = {
   dataKepesantrenan: {},
   dataLembagaFormal: {},
+  dataLembagaNonFormal: {},
   loading: false
 }
 
@@ -52,6 +54,19 @@ export const fetchSummaryLembagaFormal = createAsyncThunk<any, any>(
   }
 )
 
+export const fetchSummaryLembagaNonFormal = createAsyncThunk<any, any>(
+  'summary-lembaga-non-formal/fetchAll',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.get(`/summary-lembaga-non-formal`, { params })
+
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
+
 export const summaryKhodimulSlice = createSlice({
   name: 'khodimul',
   initialState,
@@ -65,6 +80,10 @@ export const summaryKhodimulSlice = createSlice({
 
     builder.addCase(fetchSummaryLembagaFormal.fulfilled, (state, action) => {
       state.dataLembagaFormal = action.payload.data
+    })
+
+    builder.addCase(fetchSummaryLembagaNonFormal.fulfilled, (state, action) => {
+      state.dataLembagaNonFormal = action.payload.data
     })
 
     builder.addMatcher(
