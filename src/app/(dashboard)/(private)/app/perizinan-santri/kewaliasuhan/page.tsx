@@ -482,7 +482,8 @@ const PerizinanSantriList = () => {
       setOpenDetailModal(false)
       setSelectedDetailRow(null)
     } catch (err: any) {
-      toast.error(err || 'Gagal memproses pembatalan izin')
+      const errorMessage = err?.message || (typeof err === 'string' ? err : 'Gagal memproses pembatalan izin')
+      toast.error(errorMessage)
     }
   }
 

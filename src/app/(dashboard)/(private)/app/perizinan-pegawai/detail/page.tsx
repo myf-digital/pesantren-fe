@@ -1018,7 +1018,9 @@ const DetailPerizinanPegawaiPage = () => {
         setData(res.data)
       })
       .catch((err: any) => {
-        toast.error(err || 'Gagal mengambil data detail perizinan pegawai')
+        const errorMessage =
+          err?.message || (typeof err === 'string' ? err : 'Gagal mengambil data detail perizinan pegawai')
+        toast.error(errorMessage)
       })
       .finally(() => {
         setLoading(false)
@@ -1143,7 +1145,8 @@ const DetailPerizinanPegawaiPage = () => {
       )
       router.push(redirectBackUrl)
     } catch (err: any) {
-      toast.error(err || 'Gagal memproses pembatalan izin pegawai')
+      const errorMessage = err?.message || (typeof err === 'string' ? err : 'Gagal memproses pembatalan izin pegawai')
+      toast.error(errorMessage)
     }
   }
 
@@ -1174,7 +1177,9 @@ const DetailPerizinanPegawaiPage = () => {
       toast.success(`Pengajuan izin pegawai berhasil dikonfirmasi sebagai: ${status}`)
       router.push(redirectBackUrl)
     } catch (err: any) {
-      toast.error(err || 'Gagal memproses keputusan perizinan pegawai')
+      const errorMessage =
+        err?.message || (typeof err === 'string' ? err : 'Gagal memproses keputusan perizinan pegawai')
+      toast.error(errorMessage)
     } finally {
       setSubmitting(false)
     }
@@ -1211,7 +1216,8 @@ const DetailPerizinanPegawaiPage = () => {
       toast.success('Permintaan pembatalan disetujui, perizinan dinas pegawai resmi dicabut.')
       router.push(redirectBackUrl)
     } catch (err: any) {
-      toast.error(err || 'Gagal menyetujui pembatalan izin pegawai')
+      const errorMessage = err?.message || (typeof err === 'string' ? err : 'Gagal menyetujui pembatalan izin pegawai')
+      toast.error(errorMessage)
     } finally {
       setSubmitting(false)
     }
@@ -1235,7 +1241,8 @@ const DetailPerizinanPegawaiPage = () => {
       toast.success('Permintaan pembatalan ditolak. Surat izin kerja pegawai tetap aktif.')
       router.push(redirectBackUrl)
     } catch (err: any) {
-      toast.error(err || 'Gagal menolak pembatalan izin pegawai')
+      const errorMessage = err?.message || (typeof err === 'string' ? err : 'Gagal menolak pembatalan izin pegawai')
+      toast.error(errorMessage)
     } finally {
       setSubmitting(false)
     }
