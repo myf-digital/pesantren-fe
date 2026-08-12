@@ -425,7 +425,9 @@ const TableTemuan = () => {
   }
 
   const imageView = (row: any) => {
-    if (row.foto_path.match(/^data:(.+);base64,(.+)$/)) {
+    if (!row?.foto_path) return '-'
+
+    if (typeof row.foto_path == 'string' && row.foto_path.match(/^data:(.+);base64,(.+)$/)) {
       return <img src={row.foto_path} alt='image' width={100} height={100} />
     }
 

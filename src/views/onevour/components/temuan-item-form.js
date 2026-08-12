@@ -248,7 +248,9 @@ const ItemForm = ({ temuanDetailsSelected, onAddTemuanDetail, onDeleteTemuanDeta
   }
 
   const imageView = (row, value) => {
-    if (row.foto_path.match(/^data:(.+);base64,(.+)$/)) {
+    if (!row?.foto_path) return '-'
+
+    if (typeof row.foto_path == 'string' && row.foto_path.match(/^data:(.+);base64,(.+)$/)) {
       return <img src={row.foto_path} alt='image' width={100} height={100} />
     }
 
