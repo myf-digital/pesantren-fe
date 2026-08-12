@@ -114,13 +114,11 @@ const PerizinanSantriList = () => {
   const { data: session } = useSession()
   const currentUser: any = session?.userdata
 
-  console.log(currentUser)
   const userRole = currentUser?.role_name || 'pegawai_kedisiplinan' // Default fallback
 
   // Hooks Otorisasi Multi-Aksi Konten Vuexy
   const canImport = useCan('import')
   const canExport = useCan('export')
-  console.log(useCan('approve'))
 
   // Deteksi Breakpoint Media Screen untuk layouting Responsif (Mobile & Tablet)
   const theme = useTheme()
@@ -484,7 +482,8 @@ const PerizinanSantriList = () => {
       setOpenDetailModal(false)
       setSelectedDetailRow(null)
     } catch (err: any) {
-      toast.error(err || 'Gagal memproses pembatalan izin')
+      const errorMessage = err?.message || (typeof err === 'string' ? err : 'Gagal memproses pembatalan izin')
+      toast.error(errorMessage)
     }
   }
 

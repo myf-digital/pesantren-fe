@@ -6,10 +6,13 @@ declare module "next-auth" {
   interface Session {
     access_token?: string
     userdata?: {
+      resource_id?: string
       username?: string
       full_name?: string
       email?: string
       role_name?: string
+      id_resource_role?: string
+      cabang_name?: string
       pegawai?: any
       active_role?: any
       available_roles?: any[]
@@ -20,10 +23,13 @@ declare module "next-auth" {
     access_token?: string
     permissions?: PermissionMap
     userdata?: {
+      resource_id?: string
       username?: string
       full_name?: string
       email?: string
       role_name?: string
+      id_resource_role?: string
+      cabang_name?: string
       pegawai?: any
       active_role?: any
       available_roles?: any[]
@@ -36,10 +42,13 @@ declare module "next-auth/jwt" {
     access_token?: string
     permissions?: PermissionMap
     userdata?: {
+      resource_id?: string
       username?: string
       full_name?: string
       email?: string
       role_name?: string
+      id_resource_role?: string
+      cabang_name?: string
       pegawai?: any
       active_role?: any
       available_roles?: any[]

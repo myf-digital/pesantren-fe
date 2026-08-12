@@ -130,7 +130,9 @@ const DetailPerizinanPage = () => {
         setData(res.data)
       })
       .catch((err: any) => {
-        toast.error(err || 'Gagal mengambil data detail')
+        const errorMessage =
+          err?.message || (typeof err === 'string' ? err : 'Gagal mengambil data detail perizinan pegawai')
+        toast.error(errorMessage)
       })
       .finally(() => {
         setLoading(false)
@@ -254,7 +256,8 @@ const DetailPerizinanPage = () => {
       )
       router.push(redirectBackUrl)
     } catch (err: any) {
-      toast.error(err || 'Gagal memproses pembatalan izin')
+      const errorMessage = err?.message || (typeof err === 'string' ? err : 'Gagal memproses pembatalan izin')
+      toast.error(errorMessage)
     }
   }
 
@@ -330,7 +333,8 @@ const DetailPerizinanPage = () => {
       toast.success('Permintaan pembatalan disetujui, surat izin dicabut.')
       router.push(redirectBackUrl)
     } catch (err: any) {
-      toast.error(err || 'Gagal menyetujui pembatalan')
+      const errorMessage = err?.message || (typeof err === 'string' ? err : 'Gagal menyetujui pembatalan')
+      toast.error(errorMessage)
     } finally {
       setSubmitting(false)
     }
@@ -353,7 +357,8 @@ const DetailPerizinanPage = () => {
       toast.success('Permintaan pembatalan ditolak. Surat izin tetap aktif.')
       router.push(redirectBackUrl)
     } catch (err: any) {
-      toast.error(err || 'Gagal menolak pembatalan')
+      const errorMessage = err?.message || (typeof err === 'string' ? err : 'Gagal menolak pembatalan')
+      toast.error(errorMessage)
     } finally {
       setSubmitting(false)
     }

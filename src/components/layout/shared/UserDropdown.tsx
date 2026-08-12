@@ -53,8 +53,8 @@ const UserDropdown = () => {
   const { data: session } = useSession()
   const { updateSettings, settings } = useSettings()
 
-  const activeRoleName = session?.userdata?.active_role?.role?.role_name || session?.userdata?.role_name
-  const activeCabangName = session?.userdata?.active_role?.cabang?.nama_cabang
+  const activeRoleName = session?.userdata?.role_name || session?.userdata?.active_role?.role?.role_name
+  const activeCabangName = session?.userdata?.cabang_name || session?.userdata?.active_role?.cabang?.nama_cabang
 
   const handleDropdownOpen = () => {
     !open ? setOpen(true) : setOpen(false)

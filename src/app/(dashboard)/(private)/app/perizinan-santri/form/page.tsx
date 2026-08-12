@@ -108,7 +108,6 @@ const FormPerizinanSantriPage = () => {
   }, [state.file_izin])
 
   const mapSantriToOption = (item: any) => {
-    console.log(item)
     const idLokasiKamar = item.penempatanKamar?.[0]?.id_lokasi || item.id_lokasi || null
 
     return {

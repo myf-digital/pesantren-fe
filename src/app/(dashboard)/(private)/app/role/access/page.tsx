@@ -321,8 +321,6 @@ const FormValidationBasic = () => {
       ...prev,
       menu: adjusted
     }))
-
-    console.log('adjust', adjusted)
   }, [navigation, roleMenusSafe, adjustParentPermissions])
 
   const isAllChecked = (action: ActionType) => leafMenus.length > 0 && leafMenus.every(menu => menu[action] === 1)
