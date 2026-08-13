@@ -2,7 +2,7 @@ import React, { useEffect, useState, forwardRef } from 'react'
 
 import { Autocomplete, CircularProgress, Grid2 as Grid, TextField, Typography } from '@mui/material'
 
-import { format, startOfMonth } from 'date-fns'
+import { format } from 'date-fns'
 
 import CRMCard from './Card'
 import ScrollRow from './Scroll'
@@ -82,7 +82,7 @@ const Component = ({ ...res }) => {
   const [selectedKamar, setSelectedKamar] = useState<KamarOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
   const [listKamar, setListKamar] = useState<KamarOption[]>([])
   const [loadingKamar, setLoadingKamar] = useState(false)
-  const [startDate, setStartDate] = useState<Date | null>(startOfMonth(new Date()))
+  const [startDate, setStartDate] = useState<Date | null>(new Date())
   const [endDate, setEndDate] = useState<Date | null>(new Date())
 
   useEffect(() => {
