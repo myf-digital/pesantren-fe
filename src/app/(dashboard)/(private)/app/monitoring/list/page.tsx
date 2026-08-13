@@ -191,7 +191,7 @@ const MonitoringPage = () => {
   // --- RENDER FILTERS ---
   const renderFilters = () => {
     return (
-      <Grid container spacing={3} alignItems='center' sx={{ mb: 4 }}>
+      <Grid container spacing={3} alignItems='center' sx={{ mb: 4, overflow: 'visible' }}>
         <Grid size={{ xs: 12, sm: 3 }}>
           <AppReactDatepicker
             selected={tanggal}
@@ -714,7 +714,7 @@ const MonitoringPage = () => {
   }
 
   return (
-    <Card>
+    <Card sx={{ overflow: 'visible' }}>
       <CardHeader title='Dashboard Monitoring Aktivitas' subheader='Pantau keterlambatan dan tunggakan absensi' />
       <Divider />
 
@@ -752,7 +752,7 @@ const MonitoringPage = () => {
         />
       </Tabs>
 
-      <CardContent sx={{ pt: 4 }}>
+      <CardContent sx={{ pt: 4, overflow: 'visible' }}>
         {/* FILTERS */}
         {renderFilters()}
 
