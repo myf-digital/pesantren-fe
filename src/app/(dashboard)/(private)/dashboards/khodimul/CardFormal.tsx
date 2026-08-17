@@ -10,11 +10,11 @@ import classnames from 'classnames'
 
 import CustomAvatar from '@/@core/components/mui/Avatar'
 
-import { fetchSummaryKepesantrenan } from './slice'
+import { fetchSummaryLembagaFormal } from './slice'
 
 import { useAppDispatch } from '@/redux-store/hook'
 
-const CardKepesantrenan = ({ ...res }) => {
+const CardFormal = ({ ...res }) => {
   const dispatch = useAppDispatch()
   const router = useRouter()
 
@@ -71,9 +71,9 @@ const CardKepesantrenan = ({ ...res }) => {
   })
 
   useEffect(() => {
-    const getSummaryKepesantrenan = async () => {
+    const getSummaryLembagaFormal = async () => {
       const result = await dispatch(
-        fetchSummaryKepesantrenan({
+        fetchSummaryLembagaFormal({
           tanggal_mulai: res.tanggal_mulai ? format(res.tanggal_mulai, 'yyyy-MM-dd') : undefined,
           tanggal_selesai: res.tanggal_selesai ? format(res.tanggal_selesai, 'yyyy-MM-dd') : undefined,
           id_cabang: res.id_cabang,
@@ -88,7 +88,7 @@ const CardKepesantrenan = ({ ...res }) => {
       }
     }
 
-    res.tanggal_selesai && getSummaryKepesantrenan()
+    res.tanggal_selesai && getSummaryLembagaFormal()
   }, [res.tanggal_selesai])
 
   const navigate = (url: string) => router.push(url)
@@ -113,7 +113,7 @@ const CardKepesantrenan = ({ ...res }) => {
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 <Typography variant='h6'>Total Santri</Typography>
                 <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
-                  {summaryData.total_santri.aktif}
+                  {summaryData.total_santri?.aktif}
                 </Typography>
               </Box>
             </Box>
@@ -129,7 +129,7 @@ const CardKepesantrenan = ({ ...res }) => {
                 <i className={classnames('tabler-user-plus', 'text-[18px]')} />
               </CustomAvatar>
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                <Typography variant='h6'>Total Pegawai</Typography>
+                <Typography variant='h6'>Total Guru</Typography>
                 <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
                   {summaryData.total_pegawai_aktif}
                 </Typography>
@@ -137,81 +137,7 @@ const CardKepesantrenan = ({ ...res }) => {
             </Box>
           </Box>
           <Typography variant='h6' sx={{ marginBottom: 2, marginTop: 2, fontWeight: 'bold' }}>
-            Perizinan Santri
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
-            <Button
-              variant='contained'
-              size='small'
-              color='warning'
-              sx={{ borderRadius: 10 }}
-              endIcon={
-                <Typography
-                  sx={{
-                    backgroundColor: '#ffffff94',
-                    color: 'black',
-                    borderRadius: 10,
-                    minWidth: 25,
-                    textAlign: 'center',
-                    paddingLeft: 2,
-                    paddingRight: 2
-                  }}
-                >
-                  {summaryData.perizinan_menunggu}
-                </Typography>
-              }
-            >
-              Menunggu
-            </Button>
-            <Button
-              variant='contained'
-              size='small'
-              color='success'
-              sx={{ borderRadius: 10 }}
-              endIcon={
-                <Typography
-                  sx={{
-                    backgroundColor: '#ffffff94',
-                    color: 'black',
-                    borderRadius: 10,
-                    minWidth: 25,
-                    textAlign: 'center',
-                    paddingLeft: 2,
-                    paddingRight: 2
-                  }}
-                >
-                  {summaryData.perizinan_disetujui}
-                </Typography>
-              }
-            >
-              Disetujui
-            </Button>
-            <Button
-              variant='contained'
-              size='small'
-              color='error'
-              sx={{ borderRadius: 10 }}
-              endIcon={
-                <Typography
-                  sx={{
-                    backgroundColor: '#ffffff94',
-                    color: 'black',
-                    borderRadius: 10,
-                    minWidth: 25,
-                    textAlign: 'center',
-                    paddingLeft: 2,
-                    paddingRight: 2
-                  }}
-                >
-                  {summaryData.perizinan_overdue}
-                </Typography>
-              }
-            >
-              Overdue
-            </Button>
-          </Box>
-          <Typography variant='h6' sx={{ marginBottom: 2, marginTop: 2, fontWeight: 'bold' }}>
-            Absensi Kamar Santri
+            Absensi Kelas
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
             <Button
@@ -231,7 +157,7 @@ const CardKepesantrenan = ({ ...res }) => {
                     paddingRight: 2
                   }}
                 >
-                  {summaryData.total_absensi.hadir}
+                  {summaryData.total_absensi_kelas?.hadir}
                 </Typography>
               }
             >
@@ -254,7 +180,7 @@ const CardKepesantrenan = ({ ...res }) => {
                     paddingRight: 2
                   }}
                 >
-                  {summaryData.total_absensi.izin}
+                  {summaryData.total_absensi_kelas?.izin}
                 </Typography>
               }
             >
@@ -277,7 +203,7 @@ const CardKepesantrenan = ({ ...res }) => {
                     paddingRight: 2
                   }}
                 >
-                  {summaryData.total_absensi.sakit}
+                  {summaryData.total_absensi_kelas?.sakit}
                 </Typography>
               }
             >
@@ -300,7 +226,7 @@ const CardKepesantrenan = ({ ...res }) => {
                     paddingRight: 2
                   }}
                 >
-                  {summaryData.total_absensi.alfa}
+                  {summaryData.total_absensi_kelas?.alfa}
                 </Typography>
               }
             >
@@ -308,81 +234,7 @@ const CardKepesantrenan = ({ ...res }) => {
             </Button>
           </Box>
           <Typography variant='h6' sx={{ marginBottom: 2, marginTop: 2, fontWeight: 'bold' }}>
-            Perizinan Pegawai
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
-            <Button
-              variant='contained'
-              size='small'
-              color='warning'
-              sx={{ borderRadius: 10 }}
-              endIcon={
-                <Typography
-                  sx={{
-                    backgroundColor: '#ffffff94',
-                    color: 'black',
-                    borderRadius: 10,
-                    minWidth: 25,
-                    textAlign: 'center',
-                    paddingLeft: 2,
-                    paddingRight: 2
-                  }}
-                >
-                  {summaryData.total_perizinan_pegawai?.menunggu}
-                </Typography>
-              }
-            >
-              Menunggu
-            </Button>
-            <Button
-              variant='contained'
-              size='small'
-              color='success'
-              sx={{ borderRadius: 10 }}
-              endIcon={
-                <Typography
-                  sx={{
-                    backgroundColor: '#ffffff94',
-                    color: 'black',
-                    borderRadius: 10,
-                    minWidth: 25,
-                    textAlign: 'center',
-                    paddingLeft: 2,
-                    paddingRight: 2
-                  }}
-                >
-                  {summaryData.total_perizinan_pegawai?.disetujui}
-                </Typography>
-              }
-            >
-              Disetujui
-            </Button>
-            <Button
-              variant='contained'
-              size='small'
-              color='error'
-              sx={{ borderRadius: 10 }}
-              endIcon={
-                <Typography
-                  sx={{
-                    backgroundColor: '#ffffff94',
-                    color: 'black',
-                    borderRadius: 10,
-                    minWidth: 25,
-                    textAlign: 'center',
-                    paddingLeft: 2,
-                    paddingRight: 2
-                  }}
-                >
-                  {summaryData.total_perizinan_pegawai?.overdue}
-                </Typography>
-              }
-            >
-              Overdue
-            </Button>
-          </Box>
-          <Typography variant='h6' sx={{ marginBottom: 2, marginTop: 2, fontWeight: 'bold' }}>
-            Absensi Pegawai
+            Absensi Guru
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
             <Button
@@ -402,7 +254,7 @@ const CardKepesantrenan = ({ ...res }) => {
                     paddingRight: 2
                   }}
                 >
-                  {summaryData.total_absensi_pegawai.hadir}
+                  {summaryData.total_absensi_pegawai?.hadir}
                 </Typography>
               }
             >
@@ -425,7 +277,7 @@ const CardKepesantrenan = ({ ...res }) => {
                     paddingRight: 2
                   }}
                 >
-                  {summaryData.total_absensi_pegawai.izin}
+                  {summaryData.total_absensi_pegawai?.izin}
                 </Typography>
               }
             >
@@ -448,7 +300,7 @@ const CardKepesantrenan = ({ ...res }) => {
                     paddingRight: 2
                   }}
                 >
-                  {summaryData.total_absensi_pegawai.sakit}
+                  {summaryData.total_absensi_pegawai?.sakit}
                 </Typography>
               }
             >
@@ -471,7 +323,7 @@ const CardKepesantrenan = ({ ...res }) => {
                     paddingRight: 2
                   }}
                 >
-                  {summaryData.total_absensi_pegawai.alfa}
+                  {summaryData.total_absensi_pegawai?.alfa}
                 </Typography>
               }
             >
@@ -484,4 +336,4 @@ const CardKepesantrenan = ({ ...res }) => {
   )
 }
 
-export default CardKepesantrenan
+export default CardFormal

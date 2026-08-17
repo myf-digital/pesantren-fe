@@ -29,7 +29,9 @@ import TableView from '@views/onevour/table/TableView'
 // Generated Icon CSS Imports
 import '@assets/iconify-icons/generated-icons.css'
 import { useCan } from '@/hooks/useCan'
+
 import { format, startOfWeek } from 'date-fns'
+
 import { fetchCabangAll } from '../../../cabang/slice'
 import { fetchLocationAll } from '../../../location/slice'
 import { fetchPegawaiAll } from '../../../guru-mata-pelajaran/slice'
@@ -92,6 +94,7 @@ function RowAction(data: any) {
     </TableCell>
   )
 }
+
 interface CabangOption {
   id_cabang: string
   nama_cabang: string
@@ -170,6 +173,8 @@ const TableTemuan = () => {
   const initialTanggalSelesai = searchParams.get('tanggal_selesai')
   const initialStatus = searchParams.get('status') || ''
   const initialKondisi = searchParams.get('status_kondisi') || searchParams.get('kondisi') || ''
+  const initialIdCabang = searchParams.get('id_cabang') || ''
+  const initialNamaCabang = searchParams.get('nama_cabang') || ''
 
   const [filter, setFilter] = useState(initialQ)
   const [page, setPage] = useState(1)
@@ -188,21 +193,32 @@ const TableTemuan = () => {
   const [tanggalAwal, setTanggalAwal] = useState<Date | null>(
     initialTanggalMulai ? new Date(initialTanggalMulai) : startOfWeek(new Date(), { weekStartsOn: 1 })
   )
+
   const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(
     initialTanggalSelesai ? new Date(initialTanggalSelesai) : new Date()
   )
-  const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>({ id_cabang: '', nama_cabang: 'Semua' })
+
+  const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>(
+    initialIdCabang
+      ? { id_cabang: initialIdCabang, nama_cabang: initialNamaCabang }
+      : { id_cabang: '', nama_cabang: 'Semua' }
+  )
+
   const [selectedLokasi, setSelectedLokasi] = useState<LokasiOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
+
   const [selectedPetugas, setSelectedPetugas] = useState<PetugasOption | null>({
     id_pegawai: '',
     nama_lengkap: 'Semua'
   })
+
   const [selectedStatus, setSelectedStatus] = useState<StatusOption | null>(
     statuss.find(s => String(s.value) === initialStatus) || { label: 'Semua', value: '' }
   )
+
   const [selectedKondisi, setSelectedKondisi] = useState<KondisiOption | null>(
     kondisis.find(k => k.value === initialKondisi) || { label: 'Semua', value: '' }
   )
+
   const [searchTyped, setSearchTyped] = useState(initialQ)
 
   // Ambil Master Data Cabang via fetchCabangAll
@@ -223,6 +239,7 @@ const TableTemuan = () => {
         setLoadingCabang(false)
       }
     }
+
     getCabangMaster()
   }, [dispatch])
 
@@ -244,6 +261,7 @@ const TableTemuan = () => {
         setLoadingLokasi(false)
       }
     }
+
     getLokasiMaster()
   }, [dispatch])
 
@@ -265,6 +283,7 @@ const TableTemuan = () => {
         setLoadingPetugas(false)
       }
     }
+
     getPetugasMaster()
   }, [dispatch])
 
@@ -307,6 +326,7 @@ const TableTemuan = () => {
   )
 
   const executeFetchRef = useRef(executeFetchData)
+
   useEffect(() => {
     executeFetchRef.current = executeFetchData
   }, [executeFetchData])
@@ -328,6 +348,7 @@ const TableTemuan = () => {
   const onExport = async () => {
     try {
       setLoadingExport(true)
+
       const res = await dispatch(
         postExport({
           q: searchTyped,
@@ -380,6 +401,7 @@ const TableTemuan = () => {
   const handleResetFilter = () => {
     const defaultTanggalAwal = startOfWeek(new Date(), { weekStartsOn: 1 })
     const defaultTanggalAkhir = new Date()
+
     setTanggalAwal(defaultTanggalAwal)
     setTanggalAkhir(defaultTanggalAkhir)
     setSelectedCabang(listCabang.find(s => s.id_cabang === '') || null)

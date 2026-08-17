@@ -6,7 +6,7 @@ import { Box, Card, Grid2 as Grid, TextField, Typography } from '@mui/material'
 
 import { useAppDispatch } from '@/redux-store/hook'
 import { fetchCabangAll } from '../../../app/cabang/slice'
-import CardKepesantrenan from '../CardKepesantrenan'
+import CardRumahTangga from '../CardRumahTangga'
 
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
@@ -50,7 +50,7 @@ const Dashboard = () => {
           >
             <Box>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Dashboard Kepesantrenan
+                Dashboard Kerumah Tanggaan
               </Typography>
               <Typography variant='body2' color='text.secondary'>
                 Data per rentang tanggal terpilih
@@ -73,7 +73,7 @@ const Dashboard = () => {
       </Grid>
       {cabang.map((r: any, index: number) => {
         return (
-          <CardKepesantrenan
+          <CardRumahTangga
             key={r.id_cabang}
             id_cabang={r.id_cabang}
             nama_cabang={r.nama_cabang}
