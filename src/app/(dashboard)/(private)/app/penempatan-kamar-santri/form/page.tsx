@@ -185,11 +185,11 @@ const FormValidationBasic = () => {
     setLoading(true)
 
     const payload = {
-      id_santri: state.id_santri.value || null,
-      id_lokasi: state.id_lokasi.value || null,
-      id_tahunajaran: state.id_tahunajaran.value || null,
-      id_waliasuh: state.id_waliasuh.value || null,
-      status: state.status.value || null,
+      id_santri: state.id_santri?.value || null,
+      id_lokasi: state.id_lokasi?.value || null,
+      id_tahunajaran: state.id_tahunajaran?.value || null,
+      id_waliasuh: state.id_waliasuh?.value || null,
+      status: state.status?.value || null,
       tanggal_masuk: state.tanggal_masuk || null,
       tanggal_keluar: state.tanggal_keluar || null,
       keterangan: state.keterangan || null

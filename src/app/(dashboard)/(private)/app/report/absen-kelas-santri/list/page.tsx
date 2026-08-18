@@ -141,13 +141,17 @@ const AbsenHarianSantriList = () => {
         const waktuSekarang = format(new Date(), 'HH:mm')
         const res = await dispatch(fetchMatchingJamPelajaran({ waktu_absen: waktuSekarang })).unwrap()
 
-        if (res?.status && res?.data) {
-          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...res.data])
-          if (res?.message.includes('jam pelajaran yang cocok')) {
-            setSelectedJamPel(res?.data[0] || null)
+        const rawData = res?.data || (Array.isArray(res) ? res : [])
+        if (Array.isArray(rawData)) {
+          const uniqueData = rawData.filter((item: any, index: number, self: any[]) =>
+            item && item.id_jampel ? index === self.findIndex(t => t.id_jampel === item.id_jampel) : true
+          )
+          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...uniqueData])
+          if (res?.message?.includes('jam pelajaran yang cocok') && uniqueData.length > 0) {
+            setSelectedJamPel(uniqueData[0] || null)
           }
-        } else if (Array.isArray(res)) {
-          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...res])
+        } else {
+          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }])
         }
       } catch {
         setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }])
@@ -166,11 +170,16 @@ const AbsenHarianSantriList = () => {
         const res = await dispatch(fetchKelasList({})).unwrap()
 
         const valuesData = res?.data || res || []
-        const formatted = valuesData.map((c: any) => ({
-          id_lokasi: c.id_kelas,
-          nama_lokasi: c.nama_kelas
-        }))
-        setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }, ...formatted])
+        const formatted = Array.isArray(valuesData)
+          ? valuesData.map((c: any) => ({
+              id_lokasi: c.id_kelas,
+              nama_lokasi: c.nama_kelas
+            }))
+          : []
+        const uniqueLokasi = formatted.filter((item: any, index: number, self: any[]) =>
+          item && item.id_lokasi ? index === self.findIndex(t => t.id_lokasi === item.id_lokasi) : true
+        )
+        setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }, ...uniqueLokasi])
       } catch {
         setListLokasi([{ id_lokasi: '', nama_lokasi: 'Semua' }])
       } finally {
