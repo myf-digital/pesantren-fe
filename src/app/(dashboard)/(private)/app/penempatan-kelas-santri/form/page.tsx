@@ -170,11 +170,11 @@ const PenempatanKelasSantriForm = () => {
     }
 
     const payload = {
-      id_santri: state.id_santri.value,
-      id_kelas_mda: state.id_kelas_mda.value || null,
-      id_kelas_formal: state.id_kelas_formal.value || null,
-      id_tahun_ajaran: state.id_tahun_ajaran.value,
-      status: state.status.value,
+      id_santri: state.id_santri?.value,
+      id_kelas_mda: state.id_kelas_mda?.value || null,
+      id_kelas_formal: state.id_kelas_formal?.value || null,
+      id_tahun_ajaran: state.id_tahun_ajaran?.value,
+      status: state.status?.value,
       tanggal_masuk: state.tanggal_masuk || null,
       tanggal_keluar: state.tanggal_keluar || null
     }
