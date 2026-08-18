@@ -8,6 +8,7 @@ import api from '@/libs/axios'
    1. Types
 --------------------------- */
 export interface InitialState {
+  dataKhodimul: []
   dataKepesantrenan: any
   dataLembagaFormal: any
   dataLembagaNonFormal: any
@@ -19,6 +20,7 @@ export interface InitialState {
    2. Initial State
 --------------------------- */
 const initialState: InitialState = {
+  dataKhodimul: [],
   dataKepesantrenan: {},
   dataLembagaFormal: {},
   dataLembagaNonFormal: {},
@@ -29,6 +31,19 @@ const initialState: InitialState = {
 /* --------------------------
    3. Async Thunks
 --------------------------- */
+
+export const fetchSummaryKhodimul = createAsyncThunk<any, any>(
+  'summary-khodimul/fetchAll',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.get(`/summary-khodimul`, { params })
+
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
 
 export const fetchSummaryKepesantrenan = createAsyncThunk<any, any>(
   'summary-kepesantrenan/fetchAll',
@@ -89,6 +104,10 @@ export const summaryKhodimulSlice = createSlice({
     resetRedux: state => {}
   },
   extraReducers: builder => {
+    builder.addCase(fetchSummaryKhodimul.fulfilled, (state, action) => {
+      state.dataKhodimul = action.payload.data || []
+    })
+
     builder.addCase(fetchSummaryKepesantrenan.fulfilled, (state, action) => {
       state.dataKepesantrenan = action.payload.data
     })

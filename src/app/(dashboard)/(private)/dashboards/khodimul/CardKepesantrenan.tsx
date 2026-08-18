@@ -42,6 +42,7 @@ const CardKepesantrenan = ({ ...res }) => {
       alfa: 0,
       persentase_alfa: 0
     },
+    total_inspeksi: 0,
     total_temuan: 0,
     temuan_kotor: 0,
     temuan_rusak: 0,
@@ -67,7 +68,11 @@ const CardKepesantrenan = ({ ...res }) => {
       menunggu: 0,
       disetujui: 0,
       overdue: 0
-    }
+    },
+    total_belum_diproses: 0,
+    total_sedang_diproses: 0,
+    total_sudah_diproses: 0,
+    total_tidak_dapat_diproses: 0
   })
 
   useEffect(() => {
@@ -84,7 +89,12 @@ const CardKepesantrenan = ({ ...res }) => {
       const { data } = result
 
       if (data) {
-        setSummaryData(data)
+        setSummaryData((prevState: any) => {
+          return {
+            ...prevState,
+            ...data
+          }
+        })
       }
     }
 
@@ -132,6 +142,60 @@ const CardKepesantrenan = ({ ...res }) => {
                 <Typography variant='h6'>Total Pegawai</Typography>
                 <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
                   {summaryData.total_pegawai_aktif}
+                </Typography>
+              </Box>
+            </Box>
+            <Box
+              sx={{ display: 'flex', flexDirection: 'row', gap: 2, cursor: 'pointer' }}
+              onClick={() =>
+                navigate(
+                  `/app/kebersihan-inspeksi/list?id_cabang=${res.id_cabang}&nama_cabang=${res.nama_cabang}&tanggal_mulai=${format(res.tanggal_mulai, 'yyyy-MM-dd')}&tanggal_selesai=${format(res.tanggal_selesai, 'yyyy-MM-dd')}`
+                )
+              }
+            >
+              <CustomAvatar variant='rounded' skin={'light'} size={44} color={'success'} sx={{ flexShrink: 0 }}>
+                <i className={classnames('tabler-check', 'text-[18px]')} />
+              </CustomAvatar>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography variant='h6'>Total Inspeksi</Typography>
+                <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
+                  {summaryData.total_inspeksi}
+                </Typography>
+              </Box>
+            </Box>
+            <Box
+              sx={{ display: 'flex', flexDirection: 'row', gap: 2, cursor: 'pointer' }}
+              onClick={() =>
+                navigate(
+                  `/app/report/kebersihan-temuan/list?id_cabang=${res.id_cabang}&nama_cabang=${res.nama_cabang}&status_kondisi=KOTOR&tanggal_mulai=${format(res.tanggal_mulai, 'yyyy-MM-dd')}&tanggal_selesai=${format(res.tanggal_selesai, 'yyyy-MM-dd')}`
+                )
+              }
+            >
+              <CustomAvatar variant='rounded' skin={'light'} size={44} color={'error'} sx={{ flexShrink: 0 }}>
+                <i className={classnames('tabler-x', 'text-[18px]')} />
+              </CustomAvatar>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography variant='h6'>Total Kotor</Typography>
+                <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
+                  {summaryData.temuan_kotor}
+                </Typography>
+              </Box>
+            </Box>
+            <Box
+              sx={{ display: 'flex', flexDirection: 'row', gap: 2, cursor: 'pointer' }}
+              onClick={() =>
+                navigate(
+                  `/app/report/kebersihan-temuan/list?id_cabang=${res.id_cabang}&nama_cabang=${res.nama_cabang}&status_kondisi=RUSAK&tanggal_mulai=${format(res.tanggal_mulai, 'yyyy-MM-dd')}&tanggal_selesai=${format(res.tanggal_selesai, 'yyyy-MM-dd')}`
+                )
+              }
+            >
+              <CustomAvatar variant='rounded' skin={'light'} size={44} color={'error'} sx={{ flexShrink: 0 }}>
+                <i className={classnames('tabler-x', 'text-[18px]')} />
+              </CustomAvatar>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography variant='h6'>Total Rusak</Typography>
+                <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
+                  {summaryData.temuan_rusak}
                 </Typography>
               </Box>
             </Box>
@@ -476,6 +540,103 @@ const CardKepesantrenan = ({ ...res }) => {
               }
             >
               Alfa
+            </Button>
+          </Box>
+          <Typography variant='h6' sx={{ marginBottom: 2, marginTop: 2, fontWeight: 'bold' }}>
+            Temuan
+          </Typography>
+          <Box sx={{ display: 'flexWrap', flexDirection: 'row', gap: 2 }}>
+            <Button
+              variant='contained'
+              size='small'
+              color='success'
+              sx={{ borderRadius: 10, marginBottom: 2, marginRight: 2 }}
+              endIcon={
+                <Typography
+                  sx={{
+                    backgroundColor: '#ffffff94',
+                    color: 'black',
+                    borderRadius: 10,
+                    minWidth: 25,
+                    textAlign: 'center',
+                    paddingLeft: 2,
+                    paddingRight: 2
+                  }}
+                >
+                  {summaryData.total_belum_diproses}
+                </Typography>
+              }
+            >
+              Belum Diproses
+            </Button>
+            <Button
+              variant='contained'
+              size='small'
+              color='info'
+              sx={{ borderRadius: 10, marginBottom: 2, marginRight: 2 }}
+              endIcon={
+                <Typography
+                  sx={{
+                    backgroundColor: '#ffffff94',
+                    color: 'black',
+                    borderRadius: 10,
+                    minWidth: 25,
+                    textAlign: 'center',
+                    paddingLeft: 2,
+                    paddingRight: 2
+                  }}
+                >
+                  {summaryData.total_sedang_diproses}
+                </Typography>
+              }
+            >
+              Sedang Diproses
+            </Button>
+            <Button
+              variant='contained'
+              size='small'
+              color='warning'
+              sx={{ borderRadius: 10, marginBottom: 2, marginRight: 2 }}
+              endIcon={
+                <Typography
+                  sx={{
+                    backgroundColor: '#ffffff94',
+                    color: 'black',
+                    borderRadius: 10,
+                    minWidth: 25,
+                    textAlign: 'center',
+                    paddingLeft: 2,
+                    paddingRight: 2
+                  }}
+                >
+                  {summaryData.total_sudah_diproses}
+                </Typography>
+              }
+            >
+              Sudah Diproses
+            </Button>
+            <Button
+              variant='contained'
+              size='small'
+              color='error'
+              sx={{ borderRadius: 10, marginBottom: 2, marginRight: 2 }}
+              endIcon={
+                <Typography
+                  sx={{
+                    backgroundColor: '#ffffff94',
+                    color: 'black',
+                    borderRadius: 10,
+                    minWidth: 25,
+                    textAlign: 'center',
+                    paddingLeft: 2,
+                    paddingRight: 2
+                  }}
+                >
+                  {summaryData.total_tidak_dapat_diproses}
+                </Typography>
+              }
+            >
+              Tidak Dapat Diproses
             </Button>
           </Box>
         </CardContent>

@@ -84,7 +84,12 @@ const CardFormal = ({ ...res }) => {
       const { data } = result
 
       if (data) {
-        setSummaryData(data)
+        setSummaryData((prevState: any) => {
+          return {
+            ...prevState,
+            ...data
+          }
+        })
       }
     }
 
