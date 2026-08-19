@@ -136,7 +136,7 @@ const CardFormal = ({ ...res }) => {
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 <Typography variant='h6'>Total Guru</Typography>
                 <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
-                  {summaryData.total_pegawai_aktif}
+                  {summaryData.total_guru_aktif}
                 </Typography>
               </Box>
             </Box>

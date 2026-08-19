@@ -49,7 +49,7 @@ const CardKhodimul = ({ ...res }) => {
                     justifyContent: 'center',
                     alignItems: 'center',
                     borderRadius: 2,
-                    backgroundColor: res.color || '#cfd1cc',
+                    backgroundColor: r.color || '#cfd1cc',
                     padding: 2
                   }}
                 >

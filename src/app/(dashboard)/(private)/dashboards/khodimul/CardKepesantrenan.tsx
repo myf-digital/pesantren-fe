@@ -22,6 +22,7 @@ const CardKepesantrenan = ({ ...res }) => {
     total_santri: { aktif: 0, keseluruhan: 0, persentase: 0 },
     total_guru_aktif: 0,
     total_pegawai_aktif: 0,
+    total_pegawai_aktif_sum: 0,
     total_absensi: {
       hadir: 0,
       persentase: 0,
@@ -141,7 +142,7 @@ const CardKepesantrenan = ({ ...res }) => {
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 <Typography variant='h6'>Total Pegawai</Typography>
                 <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
-                  {summaryData.total_pegawai_aktif}
+                  {summaryData.total_pegawai_aktif_sum}
                 </Typography>
               </Box>
             </Box>
@@ -549,7 +550,7 @@ const CardKepesantrenan = ({ ...res }) => {
             <Button
               variant='contained'
               size='small'
-              color='success'
+              color='warning'
               sx={{ borderRadius: 10, marginBottom: 2, marginRight: 2 }}
               endIcon={
                 <Typography
@@ -595,7 +596,7 @@ const CardKepesantrenan = ({ ...res }) => {
             <Button
               variant='contained'
               size='small'
-              color='warning'
+              color='success'
               sx={{ borderRadius: 10, marginBottom: 2, marginRight: 2 }}
               endIcon={
                 <Typography

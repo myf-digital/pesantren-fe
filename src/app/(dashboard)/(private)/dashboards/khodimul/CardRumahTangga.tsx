@@ -154,6 +154,24 @@ const CardFormal = ({ ...res }) => {
                 <i className={classnames('tabler-x', 'text-[18px]')} />
               </CustomAvatar>
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography variant='h6'>Total Temuan</Typography>
+                <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
+                  {summaryData.total_temuan}
+                </Typography>
+              </Box>
+            </Box>
+            <Box
+              sx={{ display: 'flex', flexDirection: 'row', gap: 2, cursor: 'pointer' }}
+              onClick={() =>
+                navigate(
+                  `/app/report/kebersihan-temuan/list?id_cabang=${res.id_cabang}&nama_cabang=${res.nama_cabang}&status_kondisi=KOTOR&tanggal_mulai=${format(res.tanggal_mulai, 'yyyy-MM-dd')}&tanggal_selesai=${format(res.tanggal_selesai, 'yyyy-MM-dd')}`
+                )
+              }
+            >
+              <CustomAvatar variant='rounded' skin={'light'} size={44} color={'error'} sx={{ flexShrink: 0 }}>
+                <i className={classnames('tabler-x', 'text-[18px]')} />
+              </CustomAvatar>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 <Typography variant='h6'>Total Kotor</Typography>
                 <Typography variant='h6' sx={{ fontWeight: 'bold' }}>
                   {summaryData.temuan_kotor}
@@ -186,7 +204,7 @@ const CardFormal = ({ ...res }) => {
             <Button
               variant='contained'
               size='small'
-              color='success'
+              color='warning'
               sx={{ borderRadius: 10, marginBottom: 2, marginRight: 2 }}
               endIcon={
                 <Typography
@@ -232,7 +250,7 @@ const CardFormal = ({ ...res }) => {
             <Button
               variant='contained'
               size='small'
-              color='warning'
+              color='success'
               sx={{ borderRadius: 10, marginBottom: 2, marginRight: 2 }}
               endIcon={
                 <Typography

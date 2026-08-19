@@ -2,6 +2,8 @@
 
 import { useState, useEffect, forwardRef } from 'react'
 
+import { useSearchParams } from 'next/navigation'
+
 import { Box, Card, Grid2 as Grid, TextField, Typography } from '@mui/material'
 
 import { useAppDispatch } from '@/redux-store/hook'
@@ -17,9 +19,20 @@ const PickersComponent = forwardRef(({ ...props }: any, ref) => {
 const Dashboard = () => {
   const dispatch = useAppDispatch()
 
+  const searchParams = useSearchParams()
+
+  const initialTanggalMulai = searchParams.get('tanggal_mulai')
+  const initialTanggalSelesai = searchParams.get('tanggal_selesai')
+
   const [cabang, setCabang] = useState<any>([])
-  const [startDate, setStartDate] = useState<Date | null>(new Date())
-  const [endDate, setEndDate] = useState<Date | null>(new Date())
+
+  const [startDate, setStartDate] = useState<Date | null>(
+    initialTanggalMulai ? new Date(initialTanggalMulai) : new Date()
+  )
+
+  const [endDate, setEndDate] = useState<Date | null>(
+    initialTanggalSelesai ? new Date(initialTanggalSelesai) : new Date()
+  )
 
   const getDataCabang = async () => {
     const res = await dispatch(fetchCabangAll({})).unwrap()
