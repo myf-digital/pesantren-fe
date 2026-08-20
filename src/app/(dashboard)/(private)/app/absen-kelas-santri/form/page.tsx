@@ -527,7 +527,7 @@ const PresensiFormPage = () => {
                     <Button size='small' variant='tonal' color='success' onClick={() => handleSetAllStatus('Hadir')}>
                       Semua Hadir
                     </Button>
-                    <Button size='small' variant='tonal' color='info' onClick={() => handleSetAllStatus('Izin')}>
+                    {/* <Button size='small' variant='tonal' color='info' onClick={() => handleSetAllStatus('Izin')}>
                       Semua Izin
                     </Button>
                     <Button size='small' variant='tonal' color='warning' onClick={() => handleSetAllStatus('Sakit')}>
@@ -535,7 +535,7 @@ const PresensiFormPage = () => {
                     </Button>
                     <Button size='small' variant='tonal' color='error' onClick={() => handleSetAllStatus('Alfa')}>
                       Semua Alfa
-                    </Button>
+                    </Button> */}
                   </Box>
                 )
               }
