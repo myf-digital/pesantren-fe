@@ -177,6 +177,8 @@ const TableSantri = () => {
 
   // Read initial filters from URL params
   const initialStatus = searchParams.get('status') || 'Semua'
+  const initialIdCabang = searchParams.get('id_cabang') || ''
+  const initialNamaCabang = searchParams.get('nama_cabang') || ''
 
   const [filter, setFilter] = useState('')
   const [page, setPage] = useState(1)
@@ -187,7 +189,9 @@ const TableSantri = () => {
   const [openDetail, setOpenDetail] = useState(false)
   const [detail, setDetail] = useState<any>(null)
 
-  const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>({ label: 'Semua', value: '' })
+  const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>(
+    initialIdCabang ? { label: initialNamaCabang, value: initialIdCabang } : { label: 'Semua', value: '' }
+  )
 
   const [selectedLembagaFormal, setSelectedLembagaFormal] = useState<LembagaOption | null>({
     label: 'Semua',

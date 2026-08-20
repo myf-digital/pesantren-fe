@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, forwardRef, useEffect } from 'react'
+import { useState, useEffect, forwardRef } from 'react'
+
+import { useSearchParams } from 'next/navigation'
 
 import { Box, Card, Grid2 as Grid, TextField, Typography } from '@mui/material'
 
-import { format } from 'date-fns'
+import { useAppDispatch } from '@/redux-store/hook'
+import { fetchCabangAll } from '../../../app/cabang/slice'
+import CardNonFormal from '../CardNonFormal'
 
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
-import CardKhodimul from './CardKhodimul'
-import { fetchSummaryKhodimul } from './slice'
-
-import { useAppDispatch } from '@/redux-store/hook'
 
 const PickersComponent = forwardRef(({ ...props }: any, ref) => {
   return <TextField inputRef={ref} fullWidth size='small' {...props} />
@@ -19,10 +19,33 @@ const PickersComponent = forwardRef(({ ...props }: any, ref) => {
 const Dashboard = () => {
   const dispatch = useAppDispatch()
 
-  const [startDate, setStartDate] = useState<Date | null>(new Date())
-  const [endDate, setEndDate] = useState<Date | null>(new Date())
+  const searchParams = useSearchParams()
 
-  const [summaryData, setSummaryData] = useState<any>([])
+  const initialTanggalMulai = searchParams.get('tanggal_mulai')
+  const initialTanggalSelesai = searchParams.get('tanggal_selesai')
+
+  const [cabang, setCabang] = useState<any>([])
+
+  const [startDate, setStartDate] = useState<Date | null>(
+    initialTanggalMulai ? new Date(initialTanggalMulai) : new Date()
+  )
+
+  const [endDate, setEndDate] = useState<Date | null>(
+    initialTanggalSelesai ? new Date(initialTanggalSelesai) : new Date()
+  )
+
+  const getDataCabang = async () => {
+    const res = await dispatch(fetchCabangAll({})).unwrap()
+    const { data } = res
+
+    if (data) {
+      setCabang(data)
+    }
+  }
+
+  useEffect(() => {
+    getDataCabang()
+  }, [])
 
   const handleDateChange = (dates: [Date | null, Date | null]) => {
     const [start, end] = dates
@@ -30,25 +53,6 @@ const Dashboard = () => {
     setStartDate(start)
     setEndDate(end)
   }
-
-  useEffect(() => {
-    const getSummaryKhodimul = async () => {
-      const result = await dispatch(
-        fetchSummaryKhodimul({
-          tanggal_mulai: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
-          tanggal_selesai: endDate ? format(endDate, 'yyyy-MM-dd') : undefined
-        })
-      ).unwrap()
-
-      const { data } = result
-
-      if (data.length > 0) {
-        setSummaryData(data)
-      }
-    }
-
-    endDate && getSummaryKhodimul()
-  }, [endDate])
 
   return (
     <Grid container spacing={6}>
@@ -59,7 +63,7 @@ const Dashboard = () => {
           >
             <Box>
               <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                Dashboard Khodimul
+                Dashboard Pendidikan Non Formal
               </Typography>
               <Typography variant='body2' color='text.secondary'>
                 Data per rentang tanggal terpilih
@@ -80,11 +84,17 @@ const Dashboard = () => {
           </Box>
         </Card>
       </Grid>
-      <Grid size={12}>
-        {summaryData.map((r: any, index: number) => {
-          return <CardKhodimul key={index} {...r} tanggal_mulai={startDate} tanggal_selesai={endDate} />
-        })}
-      </Grid>
+      {cabang.map((r: any, index: number) => {
+        return (
+          <CardNonFormal
+            key={r.id_cabang}
+            id_cabang={r.id_cabang}
+            nama_cabang={r.nama_cabang}
+            tanggal_mulai={startDate}
+            tanggal_selesai={endDate}
+          />
+        )
+      })}
     </Grid>
   )
 }

@@ -61,7 +61,8 @@
     "**/*.tsx",
     "**/*.js",
     ".next/types/**/*.ts",
-    "global.d.ts"
+    "global.d.ts",
+    "src/app/(dashboard)/(private)/dashboards/khodimul/page.tsx.old"
   ],
   "exclude": [
     "node_modules"

@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState, forwardRef } from 'react'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 // ** MUI Imports
 import Grid from '@mui/material/Grid2'
@@ -236,6 +236,7 @@ interface StatusOption {
 const TableInspeksi = () => {
   // ** Hooks
   const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.kebersihan_inspeksi)
   const storeCabang = useAppSelector(state => state.cabang)
@@ -249,20 +250,30 @@ const TableInspeksi = () => {
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
   const [loadingExport, setLoadingExport] = useState(false)
-  const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>({ label: 'Semua', value: '' })
+
+  const [selectedCabang, setSelectedCabang] = useState<CabangOption | null>(
+    searchParams.get('id_cabang')
+      ? { label: searchParams.get('nama_cabang') || 'Semua', value: searchParams.get('id_cabang') || '' }
+      : { label: 'Semua', value: '' }
+  )
+
   const [selectedLokasi, setSelectedLokasi] = useState<LokasiOption | null>({ label: 'Semua', value: '' })
   const [selectedStatus, setSelectedStatus] = useState<StatusOption | null>({ label: 'Semua', value: '' })
 
-  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfMonth(new Date()))
-  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(new Date())
+  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(
+    searchParams.get('tanggal_mulai') ? new Date(searchParams.get('tanggal_mulai') || '') : startOfMonth(new Date())
+  )
+
+  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(
+    searchParams.get('tanggal_selesai') ? new Date(searchParams.get('tanggal_selesai') || '') : new Date()
+  )
 
   const filteredLokasiDatas = storeLokasi.datas.filter(r => {
     if (!selectedCabang || selectedCabang.value === '') {
       return true
     }
 
-    
-return String(r.id_cabang) === String(selectedCabang.value)
+    return String(r.id_cabang) === String(selectedCabang.value)
   })
 
   useEffect(() => {
@@ -284,7 +295,17 @@ return String(r.id_cabang) === String(selectedCabang.value)
 
     dispatch(fetchCabangAll({ all_cabang: true }))
     dispatch(fetchLocationAll({ orderWithParent: true, all_cabang: true }))
-  }, [dispatch, filter, perPage, selectedCabang?.value, selectedLokasi?.value, selectedStatus?.value, store.delete, tanggalAkhir, tanggalAwal])
+  }, [
+    dispatch,
+    filter,
+    perPage,
+    selectedCabang?.value,
+    selectedLokasi?.value,
+    selectedStatus?.value,
+    store.delete,
+    tanggalAkhir,
+    tanggalAwal
+  ])
 
   useEffect(() => {
     const timer = setTimeout(() => {

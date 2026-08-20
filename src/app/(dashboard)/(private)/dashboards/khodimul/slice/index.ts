@@ -8,9 +8,11 @@ import api from '@/libs/axios'
    1. Types
 --------------------------- */
 export interface InitialState {
+  dataKhodimul: []
   dataKepesantrenan: any
   dataLembagaFormal: any
   dataLembagaNonFormal: any
+  dataRumahTangga: any
   loading: boolean
 }
 
@@ -18,15 +20,30 @@ export interface InitialState {
    2. Initial State
 --------------------------- */
 const initialState: InitialState = {
+  dataKhodimul: [],
   dataKepesantrenan: {},
   dataLembagaFormal: {},
   dataLembagaNonFormal: {},
+  dataRumahTangga: {},
   loading: false
 }
 
 /* --------------------------
    3. Async Thunks
 --------------------------- */
+
+export const fetchSummaryKhodimul = createAsyncThunk<any, any>(
+  'summary-khodimul/fetchAll',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.get(`/summary-khodimul`, { params })
+
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
 
 export const fetchSummaryKepesantrenan = createAsyncThunk<any, any>(
   'summary-kepesantrenan/fetchAll',
@@ -67,6 +84,19 @@ export const fetchSummaryLembagaNonFormal = createAsyncThunk<any, any>(
   }
 )
 
+export const fetchSummaryRumahTangga = createAsyncThunk<any, any>(
+  'summary-rumah-tangga/fetchAll',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.get(`/summary-rumah-tangga`, { params })
+
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
+
 export const summaryKhodimulSlice = createSlice({
   name: 'khodimul',
   initialState,
@@ -74,6 +104,10 @@ export const summaryKhodimulSlice = createSlice({
     resetRedux: state => {}
   },
   extraReducers: builder => {
+    builder.addCase(fetchSummaryKhodimul.fulfilled, (state, action) => {
+      state.dataKhodimul = action.payload.data || []
+    })
+
     builder.addCase(fetchSummaryKepesantrenan.fulfilled, (state, action) => {
       state.dataKepesantrenan = action.payload.data
     })
@@ -84,6 +118,10 @@ export const summaryKhodimulSlice = createSlice({
 
     builder.addCase(fetchSummaryLembagaNonFormal.fulfilled, (state, action) => {
       state.dataLembagaNonFormal = action.payload.data
+    })
+
+    builder.addCase(fetchSummaryRumahTangga.fulfilled, (state, action) => {
+      state.dataRumahTangga = action.payload.data
     })
 
     builder.addMatcher(
