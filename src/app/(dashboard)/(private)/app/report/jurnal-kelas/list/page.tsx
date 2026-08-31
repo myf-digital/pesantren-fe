@@ -22,6 +22,8 @@ import {
   fetchMatchingJamPelajaran,
   postJurnalKelasExport
 } from '../../../absen-kelas-santri/slice/index'
+import { fetchLembagaFormalAll } from '../../../lembaga-formal/slice'
+import { fetchLembagaAll as fetchLembagaKepesantrenanAll } from '../../../lembaga-kepesantrenan/slice'
 
 import { tableColumn } from '@views/onevour/table/TableViewBuilder'
 import TableView from '@views/onevour/table/TableView'
@@ -29,6 +31,12 @@ import { useCan } from '@/hooks/useCan'
 import { format, startOfWeek } from 'date-fns'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 import { toast } from 'react-toastify'
+
+interface LembagaOption {
+  label: string
+  value: string
+  type?: string
+}
 
 interface JamPelajaranOption {
   id_jampel: string
@@ -81,14 +89,20 @@ const JurnalKelasReportList = () => {
   const [loadingExport, setLoadingExport] = useState(false)
 
   // Opsi Data Dropdown Master
+  const [listLembaga, setListLembaga] = useState<LembagaOption[]>([{ label: 'Semua', value: '' }])
   const [listJamPel, setListJamPel] = useState<JamPelajaranOption[]>([])
   const [listLokasi, setListLokasi] = useState<LokasiOption[]>([])
+  const [loadingLembaga, setLoadingLembaga] = useState(false)
   const [loadingJamPel, setLoadingJamPel] = useState(false)
   const [loadingLokasi, setLoadingLokasi] = useState(false)
 
   // State Filter Utama UI
   const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfWeek(new Date(), { weekStartsOn: 1 }))
   const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(new Date())
+  const [selectedLembaga, setSelectedLembaga] = useState<LembagaOption | null>({
+    label: 'Semua',
+    value: ''
+  })
   const [selectedJamPel, setSelectedJamPel] = useState<JamPelajaranOption | null>({
     id_jampel: '',
     nama_jampel: 'Semua'
@@ -104,6 +118,45 @@ const JurnalKelasReportList = () => {
   // State Pagination
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
+
+  // Ambil Master Data Lembaga (Formal & Kepesantrenan)
+  useEffect(() => {
+    const getLembagaMaster = async () => {
+      try {
+        setLoadingLembaga(true)
+        const [resFormal, resPesantren] = await Promise.all([
+          dispatch(fetchLembagaFormalAll({}))
+            .unwrap()
+            .catch(() => []),
+          dispatch(fetchLembagaKepesantrenanAll({}))
+            .unwrap()
+            .catch(() => [])
+        ])
+
+        const formalData = resFormal?.data || (Array.isArray(resFormal) ? resFormal : [])
+        const pesantrenData = resPesantren?.data || (Array.isArray(resPesantren) ? resPesantren : [])
+
+        const formalOptions = formalData.map((item: any) => ({
+          label: `[Formal] ${item.nama_lembaga}`,
+          value: item.id_lembaga,
+          type: 'FORMAL'
+        }))
+
+        const pesantrenOptions = pesantrenData.map((item: any) => ({
+          label: `[Pesantren] ${item.nama_lembaga}`,
+          value: item.id_lembaga,
+          type: 'PESANTREN'
+        }))
+
+        setListLembaga([{ label: 'Semua', value: '' }, ...formalOptions, ...pesantrenOptions])
+      } catch {
+        setListLembaga([{ label: 'Semua', value: '' }])
+      } finally {
+        setLoadingLembaga(false)
+      }
+    }
+    getLembagaMaster()
+  }, [dispatch])
 
   // Ambil Master Data Jam Pelajaran
   useEffect(() => {
@@ -127,13 +180,13 @@ const JurnalKelasReportList = () => {
     getJamPelMaster()
   }, [dispatch])
 
-  // Ambil Master Data Kelas
-  useEffect(() => {
-    const getLokasiMaster = async () => {
+  // Ambil Master Data Kelas (Lokasi) - Disesuaikan dengan pilihan Lembaga jika ada
+  const getLokasiMaster = useCallback(
+    async (idLembaga?: string) => {
       try {
         setLoadingLokasi(true)
-        const res = await dispatch(fetchKelasList({})).unwrap()
-        const valuesData = res?.data || res || []
+        const res = await dispatch(fetchKelasList(idLembaga ? { id_lembaga: idLembaga } : {})).unwrap()
+        const valuesData = res?.data || (Array.isArray(res) ? res : [])
         const formatted = valuesData.map((c: any) => ({
           id_lokasi: c.id_kelas,
           nama_lokasi: c.nama_kelas
@@ -144,9 +197,18 @@ const JurnalKelasReportList = () => {
       } finally {
         setLoadingLokasi(false)
       }
-    }
-    getLokasiMaster()
-  }, [dispatch])
+    },
+    [dispatch]
+  )
+
+  useEffect(() => {
+    getLokasiMaster(selectedLembaga?.value)
+  }, [selectedLembaga?.value, getLokasiMaster])
+
+  const handleLembagaChange = (_: any, newValue: LembagaOption | null) => {
+    setSelectedLembaga(newValue)
+    setSelectedLokasi({ id_lokasi: '', nama_lokasi: 'Semua' })
+  }
 
   // Fungsi Fetch Data Jurnal
   const executeFetchData = useCallback(
@@ -169,6 +231,7 @@ const JurnalKelasReportList = () => {
             : tanggalAkhir
               ? format(tanggalAkhir, 'yyyy-MM-dd')
               : '',
+          id_lembaga: filters.id_lembaga || undefined,
           id_jam_pelajaran: filters.id_jam_pelajaran || undefined,
           id_lokasi: filters.id_lokasi || undefined,
           keyword: filters.searchTyped || undefined
@@ -180,11 +243,20 @@ const JurnalKelasReportList = () => {
 
   // Auto-load data pertama kali
   useEffect(() => {
-    if (!loadingJamPel && !loadingLokasi && listJamPel.length > 0 && listLokasi.length > 0 && !isInitialLoaded) {
+    if (
+      !loadingJamPel &&
+      !loadingLokasi &&
+      !loadingLembaga &&
+      listJamPel.length > 0 &&
+      listLokasi.length > 0 &&
+      listLembaga.length > 0 &&
+      !isInitialLoaded
+    ) {
       setIsInitialLoaded(true)
       const filters = {
         tanggal_awal: tanggalAwal || '',
         tanggal_akhir: tanggalAkhir || '',
+        id_lembaga: selectedLembaga?.value || '',
         id_jam_pelajaran: selectedJamPel?.id_jampel || '',
         id_lokasi: selectedLokasi?.id_lokasi || '',
         searchTyped
@@ -196,9 +268,12 @@ const JurnalKelasReportList = () => {
   }, [
     loadingJamPel,
     loadingLokasi,
+    loadingLembaga,
     listJamPel,
     listLokasi,
+    listLembaga,
     isInitialLoaded,
+    selectedLembaga,
     selectedJamPel,
     selectedLokasi,
     tanggalAwal,
@@ -219,6 +294,7 @@ const JurnalKelasReportList = () => {
     const filters = {
       tanggal_awal: tanggalAwal || '',
       tanggal_akhir: tanggalAkhir || '',
+      id_lembaga: selectedLembaga?.value || '',
       id_jam_pelajaran: selectedJamPel?.id_jampel || '',
       id_lokasi: selectedLokasi?.id_lokasi || '',
       searchTyped
@@ -235,6 +311,7 @@ const JurnalKelasReportList = () => {
     const filters = {
       tanggal_awal: format(defaultTanggalAwal, 'yyyy-MM-dd'),
       tanggal_akhir: format(defaultTanggalAkhir, 'yyyy-MM-dd'),
+      id_lembaga: '',
       id_jam_pelajaran: '',
       id_lokasi: '',
       searchTyped: ''
@@ -242,6 +319,7 @@ const JurnalKelasReportList = () => {
 
     setTanggalAwal(defaultTanggalAwal)
     setTanggalAkhir(defaultTanggalAkhir)
+    setSelectedLembaga(listLembaga.find(l => l.value === '') || { label: 'Semua', value: '' })
     setSelectedJamPel(listJamPel.find(s => s.id_jampel === '') || null)
     setSelectedLokasi(listLokasi.find(k => k.id_lokasi === '') || null)
     setSearchTyped('')
@@ -263,6 +341,7 @@ const JurnalKelasReportList = () => {
         postJurnalKelasExport({
           tanggal_awal: currentFilters.tanggal_awal,
           tanggal_akhir: currentFilters.tanggal_akhir,
+          id_lembaga: currentFilters.id_lembaga || undefined,
           id_jam_pelajaran: currentFilters.id_jam_pelajaran || undefined,
           id_lokasi: currentFilters.id_lokasi || undefined,
           keyword: currentFilters.searchTyped || undefined
@@ -297,6 +376,7 @@ const JurnalKelasReportList = () => {
       page: page,
       fields: [
         tableColumn('TANGGAL', 'tanggal'),
+        tableColumn('LEMBAGA', 'lembaga'),
         tableColumn('JAM PELAJARAN', 'jam_pelajaran'),
         tableColumn('KELAS', 'kelas'),
         tableColumn('GURU / PETUGAS', 'petugas'),
@@ -329,6 +409,7 @@ const JurnalKelasReportList = () => {
       values: tableValues.map((row: any) => ({
         ...row,
         tanggal: row.tanggal ? format(new Date(row.tanggal), 'dd/MM/yyyy') : '-',
+        lembaga: row.kelasFormal?.lembaga?.nama_lembaga || row.kelasMda?.lembaga?.nama_lembaga || '-',
         jam_pelajaran: row.jamPelajaran?.nama_jampel || '-',
         kelas: row.lokasi?.nama_lokasi || row.kelasFormal?.nama_kelas || row.kelasMda?.nama_kelas_mda || '-',
         petugas: row.petugas?.full_name || row.petugas?.username || '-',
@@ -360,7 +441,7 @@ const JurnalKelasReportList = () => {
       <Grid size={12}>
         <Card sx={{ p: 5, mb: 4, overflow: 'visible' }}>
           <Grid container spacing={4} sx={{ mb: 4 }}>
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <AppReactDatepicker
                 selected={tanggalAwal}
                 onChange={(date: Date | null) => setTanggalAwal(date)}
@@ -374,7 +455,7 @@ const JurnalKelasReportList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <AppReactDatepicker
                 selected={tanggalAkhir}
                 onChange={(date: Date | null) => setTanggalAkhir(date)}
@@ -388,7 +469,7 @@ const JurnalKelasReportList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <Autocomplete
                 size='small'
                 options={listJamPel}
@@ -415,7 +496,34 @@ const JurnalKelasReportList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+              <Autocomplete
+                size='small'
+                options={listLembaga}
+                loading={loadingLembaga}
+                value={selectedLembaga}
+                onChange={handleLembagaChange}
+                getOptionLabel={option => option.label || ''}
+                isOptionEqualToValue={(option, value) => option.value === value?.value}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label='Lembaga'
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: (
+                        <>
+                          {loadingLembaga ? <CircularProgress color='inherit' size={20} /> : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      )
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <Autocomplete
                 size='small'
                 options={listLokasi}
@@ -442,7 +550,7 @@ const JurnalKelasReportList = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <TextField
                 fullWidth
                 label='Cari Guru / Materi'
