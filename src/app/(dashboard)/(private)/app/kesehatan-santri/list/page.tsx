@@ -82,7 +82,7 @@ const DialogUpdateStatus = ({
       setTanggalDirujuk(
         row.tanggal_dirujuk ? format(new Date(row.tanggal_dirujuk), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
       )
-      setEstimasiHari(row.estimasi_hari ? String(row.estimasi_hari) : '')
+      setEstimasiHari(row.estimasi_hari ? String(row.estimasi_hari) : '1')
     }
   }, [row])
 
@@ -110,18 +110,14 @@ const DialogUpdateStatus = ({
         toast.error('Tanggal mulai rawat wajib diisi!')
         return
       }
+      const est = parseInt(estimasiHari, 10)
+      if (isNaN(est) || est <= 0) {
+        toast.error('Estimasi hari rawat wajib diisi minimal 1 hari!')
+        return
+      }
       payload.tempat_dirawat = tempatDirawat
       payload.tanggal_mulai_rawat = tanggalMulaiRawat
-      if (estimasiHari) {
-        const est = parseInt(estimasiHari, 10)
-        if (isNaN(est) || est <= 0) {
-          toast.error('Estimasi hari rawat harus berupa angka positif!')
-          return
-        }
-        payload.estimasi_hari = est
-      } else {
-        payload.estimasi_hari = null
-      }
+      payload.estimasi_hari = est
     } else if (progresStatus === 'Dirujuk') {
       if (!tempatRujukan.trim()) {
         toast.error('Tempat rujukan wajib diisi!')
@@ -133,7 +129,7 @@ const DialogUpdateStatus = ({
       }
       const est = parseInt(estimasiHari, 10)
       if (isNaN(est) || est <= 0) {
-        toast.error('Estimasi hari rujukan harus berupa angka positif!')
+        toast.error('Estimasi hari rujukan wajib diisi minimal 1 hari!')
         return
       }
       payload.tempat_rujukan = tempatRujukan.trim()
@@ -141,16 +137,26 @@ const DialogUpdateStatus = ({
       payload.estimasi_hari = est
     } else if (progresStatus === 'Selesai') {
       if (row.tempat_dirawat) payload.tempat_dirawat = row.tempat_dirawat
-      if (row.tanggal_mulai_rawat) payload.tanggal_mulai_rawat = row.tanggal_mulai_rawat
+      if (row.tanggal_mulai_rawat) {
+        payload.tanggal_mulai_rawat = format(new Date(row.tanggal_mulai_rawat), 'yyyy-MM-dd')
+      }
       if (row.tempat_rujukan) payload.tempat_rujukan = row.tempat_rujukan
-      if (row.tanggal_dirujuk) payload.tanggal_dirujuk = row.tanggal_dirujuk
-      if (row.estimasi_hari) payload.estimasi_hari = row.estimasi_hari
+      if (row.tanggal_dirujuk) {
+        payload.tanggal_dirujuk = format(new Date(row.tanggal_dirujuk), 'yyyy-MM-dd')
+      }
+      if (row.estimasi_hari) {
+        payload.estimasi_hari = row.estimasi_hari
+      } else if (row.tempat_dirawat || row.tempat_rujukan) {
+        payload.estimasi_hari = 1
+      }
     }
 
     onSave(row.id_kesehatan, payload)
   }
 
   const titleName = row.santri?.fullname || row.pegawai?.nama_lengkap || 'Pasien'
+  const isOriginalDirawat = row?.progres_status === 'Dirawat'
+  const isOriginalDirujuk = row?.progres_status === 'Dirujuk'
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth='xs'>
@@ -175,11 +181,12 @@ const DialogUpdateStatus = ({
 
         {progresStatus === 'Dirawat' && (
           <>
-            <FormControl fullWidth size='small'>
+            <FormControl fullWidth size='small' disabled={isOriginalDirawat}>
               <InputLabel>Lokasi Rawat</InputLabel>
               <Select
                 value={tempatDirawat}
                 label='Lokasi Rawat'
+                disabled={isOriginalDirawat}
                 onChange={e => setTempatDirawat(e.target.value as string)}
               >
                 <MenuItem value='UKS'>UKS</MenuItem>
@@ -192,6 +199,7 @@ const DialogUpdateStatus = ({
               type='date'
               label='Tanggal Mulai Rawat'
               value={tanggalMulaiRawat}
+              disabled={isOriginalDirawat}
               onChange={e => setTanggalMulaiRawat(e.target.value)}
               InputLabelProps={{ shrink: true }}
             />
@@ -200,6 +208,8 @@ const DialogUpdateStatus = ({
               size='small'
               type='number'
               label='Estimasi Hari Rawat'
+              required
+              inputProps={{ min: 1, max: 30 }}
               value={estimasiHari}
               onChange={e => setEstimasiHari(e.target.value)}
             />
@@ -214,6 +224,7 @@ const DialogUpdateStatus = ({
               type='date'
               label='Tanggal Dirujuk'
               value={tanggalDirujuk}
+              disabled={isOriginalDirujuk}
               onChange={e => setTanggalDirujuk(e.target.value)}
               InputLabelProps={{ shrink: true }}
             />
@@ -223,6 +234,7 @@ const DialogUpdateStatus = ({
               label='Tempat Rujukan'
               placeholder='Klinik / Rumah Sakit'
               value={tempatRujukan}
+              disabled={isOriginalDirujuk}
               onChange={e => setTempatRujukan(e.target.value)}
             />
             <TextField
@@ -230,6 +242,8 @@ const DialogUpdateStatus = ({
               size='small'
               type='number'
               label='Estimasi Hari Rujukan'
+              required
+              inputProps={{ min: 1, max: 30 }}
               value={estimasiHari}
               onChange={e => setEstimasiHari(e.target.value)}
             />
@@ -274,6 +288,7 @@ const RowAction = ({
   const handleClose = () => setAnchorEl(null)
 
   const hasIzin = !!row.perizinan_id || !!row.izin_auto_created
+  const isSelesai = row.progres_status === 'Selesai'
 
   const content = (
     <>
@@ -296,7 +311,7 @@ const RowAction = ({
           <i className='tabler-eye' style={{ marginRight: 8 }} /> View Detail
         </MenuItem>
 
-        {canEdit && (
+        {canEdit && !isSelesai && (
           <MenuItem
             onClick={() => {
               handleClose()
@@ -307,7 +322,7 @@ const RowAction = ({
           </MenuItem>
         )}
 
-        {canEdit && !hasIzin && (
+        {canEdit && !hasIzin && !isSelesai && (
           <MenuItem component={Link} href={`/app/kesehatan-santri/form?id=${row.id_kesehatan}`} onClick={handleClose}>
             <i className='tabler-edit' style={{ marginRight: 8 }} /> Edit
           </MenuItem>
@@ -580,6 +595,10 @@ const KesehatanSantriList = () => {
           />
         </Tooltip>
       )
+    }
+
+    if (status === 'Selesai') {
+      return <Chip label={status} size='small' color={mapColor[status] || 'primary'} variant='outlined' />
     }
 
     return (

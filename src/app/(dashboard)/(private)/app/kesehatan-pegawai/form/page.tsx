@@ -209,20 +209,14 @@ const KesehatanPegawaiForm = () => {
         return
       }
 
+      const estimasi = parseInt(state.estimasi_hari, 10)
+      if (isNaN(estimasi) || estimasi <= 0) {
+        toast.error('Estimasi hari rawat wajib diisi minimal 1 hari!')
+        return
+      }
       payload.tempat_dirawat = tempat
       payload.tanggal_mulai_rawat = tglMulai
-
-      const estimasiRaw = state.estimasi_hari?.toString().trim()
-      if (estimasiRaw) {
-        const estimasi = parseInt(estimasiRaw, 10)
-        if (isNaN(estimasi) || estimasi <= 0) {
-          toast.error('Estimasi hari rawat harus berupa angka positif!')
-          return
-        }
-        payload.estimasi_hari = estimasi
-      } else {
-        payload.estimasi_hari = null
-      }
+      payload.estimasi_hari = estimasi
     } else if (progres === 'Dirujuk') {
       const tempat = typeof state.tempat_rujukan === 'string' ? state.tempat_rujukan.trim() : state.tempat_rujukan
       const estimasi = parseInt(state.estimasi_hari, 10)
@@ -406,7 +400,7 @@ const KesehatanPegawaiForm = () => {
         type: 'numeral',
         key: 'estimasi_hari',
         label: 'Estimasi Hari Rawat',
-        required: false,
+        required: true,
         readOnly: !!view
       })
     )
