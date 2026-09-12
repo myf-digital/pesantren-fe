@@ -13,6 +13,7 @@ export interface InitialState {
   dataLembagaFormal: any
   dataLembagaNonFormal: any
   dataRumahTangga: any
+  dataExecutive: any
   loading: boolean
 }
 
@@ -25,6 +26,7 @@ const initialState: InitialState = {
   dataLembagaFormal: {},
   dataLembagaNonFormal: {},
   dataRumahTangga: {},
+  dataExecutive: {},
   loading: false
 }
 
@@ -97,6 +99,19 @@ export const fetchSummaryRumahTangga = createAsyncThunk<any, any>(
   }
 )
 
+export const fetchSummaryExecutive = createAsyncThunk<any, any>(
+  'summary-executive/fetchAll',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.get(`/summary-executive`, { params })
+
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
+
 export const summaryKhodimulSlice = createSlice({
   name: 'khodimul',
   initialState,
@@ -122,6 +137,10 @@ export const summaryKhodimulSlice = createSlice({
 
     builder.addCase(fetchSummaryRumahTangga.fulfilled, (state, action) => {
       state.dataRumahTangga = action.payload.data
+    })
+
+    builder.addCase(fetchSummaryExecutive.fulfilled, (state, action) => {
+      state.dataExecutive = action.payload.data
     })
 
     builder.addMatcher(
