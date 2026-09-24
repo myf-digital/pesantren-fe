@@ -52,14 +52,53 @@ const PickersComponent = forwardRef(({ ...props }: any, ref) => {
   return <TextField inputRef={ref} fullWidth size='small' {...props} />
 })
 
-const calculateDuration = (mulai: string, selesai: string | null) => {
+const formatTimeDisplay = (timeStr?: string | null) => {
+  if (!timeStr) return ''
+
+  const timeRegex = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/
+  const match = String(timeStr).trim().match(timeRegex)
+  if (match) {
+    const hours = match[1].padStart(2, '0')
+    const minutes = match[2]
+    return `${hours}:${minutes}`
+  }
+
+  const dateObj = new Date(timeStr)
+  if (!isNaN(dateObj.getTime())) {
+    return format(dateObj, 'HH:mm')
+  }
+
+  return String(timeStr)
+}
+
+const formatDateDisplay = (dateStr?: string | null) => {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr)
+  return !isNaN(d.getTime()) ? format(d, 'dd/MM/yyyy') : String(dateStr)
+}
+
+const calculateDuration = (mulai?: string | null, selesai?: string | null) => {
+  if (!mulai) return '-'
   if (!selesai) return 'Aktif (Sedang Berjalan)'
 
-  const [hStart, mStart, sStart] = mulai.split(':').map(Number)
-  const [hEnd, mEnd, sEnd] = selesai.split(':').map(Number)
+  const parseTime = (t: string) => {
+    const trimmed = String(t).trim()
+    const timeMatch = trimmed.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/)
+    if (timeMatch) {
+      return [Number(timeMatch[1]), Number(timeMatch[2]), Number(timeMatch[3] || 0)]
+    }
+    const d = new Date(trimmed)
+    if (!isNaN(d.getTime())) {
+      return [d.getHours(), d.getMinutes(), d.getSeconds()]
+    }
+    return [0, 0, 0]
+  }
 
-  const startSeconds = hStart * 3600 + mStart * 60 + (sStart || 0)
-  let endSeconds = hEnd * 3600 + mEnd * 60 + (sEnd || 0)
+  const [hStart, mStart, sStart] = parseTime(mulai)
+  const [hEnd, mEnd, sEnd] = parseTime(selesai)
+
+  const startSeconds = hStart * 3600 + mStart * 60 + sStart
+  let endSeconds = hEnd * 3600 + mEnd * 60 + sEnd
 
   if (endSeconds < startSeconds) {
     endSeconds += 24 * 3600
@@ -378,10 +417,9 @@ const JurnalKelasReportList = () => {
         tableColumn('TANGGAL', 'tanggal'),
         tableColumn('LEMBAGA', 'lembaga'),
         tableColumn('JAM PELAJARAN', 'jam_pelajaran'),
-        tableColumn('KELAS', 'kelas'),
         tableColumn('GURU / PETUGAS', 'petugas'),
-        tableColumn('JAM MULAI', 'jam_mulai'),
-        tableColumn('JAM SELESAI', 'jam_selesai'),
+        tableColumn('HARI', 'hari'),
+        tableColumn('JAM', 'jam'),
         tableColumn('DURASI SESI', 'durasi'),
         tableColumn(
           'MATERI',
@@ -408,13 +446,21 @@ const JurnalKelasReportList = () => {
       ],
       values: tableValues.map((row: any) => ({
         ...row,
-        tanggal: row.tanggal ? format(new Date(row.tanggal), 'dd/MM/yyyy') : '-',
+        tanggal: formatDateDisplay(row.tanggal),
         lembaga: row.kelasFormal?.lembaga?.nama_lembaga || row.kelasMda?.lembaga?.nama_lembaga || '-',
-        jam_pelajaran: row.jamPelajaran?.nama_jampel || '-',
-        kelas: row.lokasi?.nama_lokasi || row.kelasFormal?.nama_kelas || row.kelasMda?.nama_kelas_mda || '-',
         petugas: row.petugas?.full_name || row.petugas?.username || '-',
-        jam_mulai: row.jam_mulai || '-',
-        jam_selesai: row.jam_selesai || '-',
+        hari: row.jadwalPelajaran?.hari || '-',
+        jam: [formatTimeDisplay(row.jam_mulai), formatTimeDisplay(row.jam_selesai)].filter(Boolean).join(' - ') || '-',
+        jam_pelajaran: (
+          <Box>
+            <Typography variant='body2' sx={{ fontWeight: 600 }}>
+              {row.jamPelajaran?.nama_jampel || '-'}
+            </Typography>
+            <Typography variant='caption' color='text.disabled'>
+              Kelas: {row.lokasi?.nama_lokasi || row.kelasFormal?.nama_kelas || row.kelasMda?.nama_kelas_mda || '-'}
+            </Typography>
+          </Box>
+        ),
         durasi: (
           <Chip
             label={calculateDuration(row.jam_mulai, row.jam_selesai)}
