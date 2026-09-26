@@ -93,7 +93,7 @@ const Component = ({ ...res }) => {
         const valuesData = result?.data || result || []
 
         const formatted = valuesData
-          .filter((c: any) => c.id_lembaga == res.id_lembaga && c.type == 'MDA')
+          .filter((c: any) => c.id_lembaga == res.id_lembaga && ['MDA', 'PESANTREN'].includes(c.type))
           .map((c: any) => ({
             id_lokasi: c.id_kelas,
             nama_lokasi: c.nama_kelas

@@ -3,14 +3,23 @@
 import React, { useCallback, useEffect, useState } from 'react'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 // ** MUI Imports
 import Grid from '@mui/material/Grid2'
 import Card from '@mui/material/Card'
-
 import CardHeader from '@mui/material/CardHeader'
-import { Autocomplete, Box, TextField, Toolbar, useMediaQuery, useTheme } from '@mui/material'
+import {
+  Autocomplete,
+  Box,
+  TextField,
+  Toolbar,
+  useMediaQuery,
+  useTheme,
+  Tabs,
+  Tab,
+  Paper
+} from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
@@ -39,6 +48,9 @@ import '@assets/iconify-icons/generated-icons.css'
 import { useCan } from '@/hooks/useCan'
 import { fetchLocationAll } from '../../location/slice'
 import { fetchPegawaiAll } from '../../guru-mata-pelajaran/slice'
+import GuruAccordionList from '../components/GuruAccordionList'
+import MatriksJadwalKelas from '../components/MatriksJadwalKelas'
+import QuickJadwalDialog from '../components/QuickJadwalDialog'
 
 const statusObj: Record<string, { color: any; value: string }> = {
   Aktif: {
@@ -57,18 +69,9 @@ const statusObj: Record<string, { color: any; value: string }> = {
 
 const statuss = [
   { label: 'Semua', value: '' },
-  {
-    label: 'Aktif',
-    value: 'Aktif'
-  },
-  {
-    label: 'Nonaktif',
-    value: 'Nonaktif'
-  },
-  {
-    label: 'Arsip',
-    value: 'Arsip'
-  }
+  { label: 'Aktif', value: 'Aktif' },
+  { label: 'Nonaktif', value: 'Nonaktif' },
+  { label: 'Arsip', value: 'Arsip' }
 ]
 
 function RowAction(data: any) {
@@ -80,8 +83,6 @@ function RowAction(data: any) {
 
   const canEdit = useCan('edit')
   const canDelete = useCan('delete')
-
-  const rowOptionsOpen = Boolean(anchorEl)
 
   const setOpen = (event: any) => {
     setAnchorEl(event.currentTarget)
@@ -138,15 +139,15 @@ function RowAction(data: any) {
             Edit
           </MenuItem>,
 
-          data.row.status == 'Nonaktif' && (
-            <MenuItem onClick={() => data.handleAktifOrArsip(data.row, 'Aktif')} sx={{ '& svg': { mr: 2 } }}>
+          data.row.status === 'Nonaktif' && (
+            <MenuItem key='aktif' onClick={() => data.handleAktifOrArsip(data.row, 'Aktif')} sx={{ '& svg': { mr: 2 } }}>
               <i className='tabler-toggle-right' />
               Set Aktif
             </MenuItem>
           ),
 
-          data.row.status == 'Nonaktif' && (
-            <MenuItem onClick={() => data.handleAktifOrArsip(data.row, 'Arsip')} sx={{ '& svg': { mr: 2 } }}>
+          data.row.status === 'Nonaktif' && (
+            <MenuItem key='arsip' onClick={() => data.handleAktifOrArsip(data.row, 'Arsip')} sx={{ '& svg': { mr: 2 } }}>
               <i className='tabler-archive' />
               Arsip
             </MenuItem>
@@ -201,11 +202,6 @@ interface LokasiOption {
   value: string
 }
 
-interface KelasOption {
-  label: string
-  value: string
-}
-
 interface HariOption {
   label: string
   value: string
@@ -227,10 +223,11 @@ const haris = [
   { label: 'Ahad', value: 'Ahad' }
 ]
 
-const Table = () => {
-  // ** Hooks
+const JadwalPelajaranPage = () => {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
+
   const store = useAppSelector(state => state.jadwal_pelajaran)
   const storeLokasi = useAppSelector(state => state.location)
   const storePegawai = useAppSelector(state => state.guru_mata_pelajaran)
@@ -239,6 +236,19 @@ const Table = () => {
   const canImport = useCan('import')
   const canExport = useCan('export')
 
+  // Tab State: 0 = Accordion Guru, 1 = Matriks Jadwal Kelas, 2 = Tabel Semua
+  const [activeTab, setActiveTab] = useState<number>(0)
+
+  // Quick Dialog State
+  const [quickDialogOpen, setQuickDialogOpen] = useState(false)
+
+  // Target class selection when jumping from Accordion to Matrix
+  const [targetClassForMatrix, setTargetClassForMatrix] = useState<{
+    idKelas: string | null
+    lembagaType: string
+  }>({ idKelas: null, lembagaType: 'FORMAL' })
+
+  // Flat Table State (Tab 2)
   const [filter, setFilter] = useState('')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
@@ -249,28 +259,42 @@ const Table = () => {
   const [selectedHari, setSelectedHari] = useState<HariOption | null>({ label: 'Semua', value: '' })
   const [selectedGuru, setSelectedGuru] = useState<GuruOption | null>({ label: 'Semua', value: '' })
 
+  // Check query params if any
   useEffect(() => {
-    if (store.delete) {
-      dispatch(
-        fetchJadwalPelajaranPage({
-          page: 1,
-          perPage: perPage,
-          q: filter,
-          status: selectedStatus?.value,
-          id_lokasi: selectedLokasi?.value,
-          id_lokasi_parent: selectedLembagaParent?.value,
-          hari: selectedHari?.value,
-          id_pegawai: selectedGuru?.value
-        })
-      )
-      dispatch(resetRedux())
+    const tabParam = searchParams.get('tab')
+    if (tabParam === 'matrix') {
+      setActiveTab(1)
+    } else if (tabParam === 'table') {
+      setActiveTab(2)
     }
-
-    dispatch(fetchLocationAll({ orderWithParent: true, jenis_lokasi: 'RuangKelas' }))
-    dispatch(fetchPegawaiAll({}))
-  }, [dispatch, filter, perPage, store.delete])
+  }, [searchParams])
 
   useEffect(() => {
+    if (activeTab === 2) {
+      if (store.delete) {
+        dispatch(
+          fetchJadwalPelajaranPage({
+            page: 1,
+            perPage: perPage,
+            q: filter,
+            status: selectedStatus?.value,
+            id_lokasi: selectedLokasi?.value,
+            id_lokasi_parent: selectedLembagaParent?.value,
+            hari: selectedHari?.value,
+            id_pegawai: selectedGuru?.value
+          })
+        )
+        dispatch(resetRedux())
+      }
+
+      dispatch(fetchLocationAll({ orderWithParent: true, jenis_lokasi: 'RuangKelas' }))
+      dispatch(fetchPegawaiAll({}))
+    }
+  }, [dispatch, filter, perPage, store.delete, activeTab, selectedStatus, selectedLokasi, selectedLembagaParent, selectedHari, selectedGuru])
+
+  useEffect(() => {
+    if (activeTab !== 2) return
+
     const timer = setTimeout(() => {
       setPage(1)
       dispatch(
@@ -296,7 +320,8 @@ const Table = () => {
     selectedLokasi,
     selectedLembagaParent,
     selectedHari,
-    selectedGuru
+    selectedGuru,
+    activeTab
   ])
 
   const handleChangePage = useCallback(
@@ -332,15 +357,15 @@ const Table = () => {
 
     if (store.crud.status) {
       toast.success('Success saved')
-      handleChangePage(page)
+      if (activeTab === 2) handleChangePage(page)
       dispatch(resetRedux())
     } else {
       toast.error('Error saved: ' + store.crud.message)
     }
-  }, [dispatch, handleChangePage, page, store.crud])
+  }, [dispatch, handleChangePage, page, store.crud, activeTab])
 
   const onAddForm = () => {
-    router.replace('/app/jadwal-pelajaran/form')
+    setQuickDialogOpen(true)
   }
 
   const onImport = () => {
@@ -377,24 +402,12 @@ const Table = () => {
         params: {
           ...data,
           status: status,
-          id_tahunajaran: {
-            value: data.id_tahunajaran
-          },
-          id_kelas: {
-            value: data.id_kelas
-          },
-          id_gmapel: {
-            value: data.id_gmapel
-          },
-          id_jam_pelajaran: {
-            value: data.id_jam_pelajaran
-          },
-          id_lokasi: {
-            value: data.id_lokasi
-          },
-          id_semester: {
-            value: data.id_semester
-          }
+          id_tahunajaran: { value: data.id_tahunajaran },
+          id_kelas: { value: data.id_kelas },
+          id_gmapel: { value: data.id_gmapel },
+          id_jam_pelajaran: { value: data.id_jam_pelajaran },
+          id_lokasi: { value: data.id_lokasi },
+          id_semester: { value: data.id_semester }
         }
       })
     )
@@ -406,7 +419,6 @@ const Table = () => {
 
   const handleChangePerPage = (event: any) => {
     const newPerPage = parseInt(event.target.value, 10)
-
     setPage(1)
     setPerPage(newPerPage)
     dispatch(
@@ -486,7 +498,7 @@ const Table = () => {
         changePage: (_: any, newPage: number) => {
           handleChangePage(newPage + 1)
         },
-        changePerPage: (event: any, o: any) => {
+        changePerPage: (event: any) => {
           handleChangePerPage(event)
         }
       }
@@ -495,7 +507,6 @@ const Table = () => {
 
   const getLembagaParentOptions = () => {
     const parentsMap = new Map<string, { label: string; value: string }>()
-
     storeLokasi.datas.forEach(r => {
       if (r.parent) {
         parentsMap.set(r.parent.id_lokasi, {
@@ -504,7 +515,6 @@ const Table = () => {
         })
       }
     })
-
     return [
       { label: 'Semua', value: '' },
       ...Array.from(parentsMap.values()).sort((a, b) => a.label.localeCompare(b.label))
@@ -528,193 +538,232 @@ const Table = () => {
     return [{ label: 'Semua', value: '' }, ...filtered]
   }
 
+  // Handler to jump to Matrix View with target class
+  const handleOpenClassMatrix = (idKelas: string, lembagaType: string = 'FORMAL') => {
+    setTargetClassForMatrix({ idKelas, lembagaType })
+    setActiveTab(1)
+  }
+
   return (
     <Grid container spacing={6} sx={{ width: '100%' }}>
+      {/* Top Header & Tab Navigation */}
       <Grid size={12}>
-        <Card sx={{ p: 5 }}>
-          <Grid container spacing={4}>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <Autocomplete
-                size='small'
-                options={haris}
-                value={selectedHari}
-                onChange={(_, newValue) => setSelectedHari(newValue)}
-                getOptionLabel={option => option.label || ''}
-                getOptionKey={option => option.value}
-                isOptionEqualToValue={(option, value) => option.value === value?.value}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    label='Hari'
-                    InputProps={{
-                      ...params.InputProps,
-                      endAdornment: <>{params.InputProps.endAdornment}</>
-                    }}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <Autocomplete
-                size='small'
-                options={[
-                  { label: 'Semua', value: '' },
-                  ...storePegawai.pegawai.map(r => ({
-                    label: `${r.nama_lengkap} (${r.nip || '-'})`,
-                    value: r.id_pegawai
-                  }))
-                ]}
-                value={selectedGuru}
-                onChange={(_, newValue) => setSelectedGuru(newValue)}
-                getOptionLabel={option => option.label || ''}
-                getOptionKey={option => option.value}
-                isOptionEqualToValue={(option, value) => option.value === value?.value}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    label='Guru'
-                    InputProps={{
-                      ...params.InputProps,
-                      endAdornment: <>{params.InputProps.endAdornment}</>
-                    }}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <Autocomplete
-                size='small'
-                options={statuss}
-                value={selectedStatus}
-                onChange={(_, newValue) => setSelectedStatus(newValue)}
-                getOptionLabel={option => option.label || ''}
-                getOptionKey={option => option.value}
-                isOptionEqualToValue={(option, value) => option.value === value?.value}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    label='Status'
-                    InputProps={{
-                      ...params.InputProps,
-                      endAdornment: <>{params.InputProps.endAdornment}</>
-                    }}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <Autocomplete
-                size='small'
-                options={getLembagaParentOptions()}
-                value={selectedLembagaParent}
-                onChange={(_, newValue) => {
-                  setSelectedLembagaParent(newValue)
-                  setSelectedLokasi({ label: 'Semua', value: '' })
-                }}
-                getOptionLabel={option => option.label || ''}
-                getOptionKey={option => option.value}
-                isOptionEqualToValue={(option, value) => option.value === value?.value}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    label='Lembaga / Gedung'
-                    InputProps={{
-                      ...params.InputProps,
-                      endAdornment: <>{params.InputProps.endAdornment}</>
-                    }}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <Autocomplete
-                size='small'
-                options={getLokasiOptions()}
-                value={selectedLokasi}
-                onChange={(_, newValue) => setSelectedLokasi(newValue)}
-                getOptionLabel={option => option.label || ''}
-                getOptionKey={option => option.value}
-                isOptionEqualToValue={(option, value) => option.value === value?.value}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    label='Lokasi (Ruang Kelas)'
-                    InputProps={{
-                      ...params.InputProps,
-                      endAdornment: <>{params.InputProps.endAdornment}</>
-                    }}
-                  />
-                )}
-              />
-            </Grid>
-          </Grid>
-        </Card>
-      </Grid>
-      <Grid size={12}>
-        <Card>
-          <CardHeader title='Jadwal Pelajaran' sx={{ paddingBottom: 0 }} />
-          <Toolbar
+        <Paper
+          elevation={2}
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2
+          }}
+        >
+          {/* Tabs */}
+          <Tabs
+            value={activeTab}
+            onChange={(_, val) => setActiveTab(val)}
+            textColor='primary'
+            indicatorColor='primary'
             sx={{
-              px: '1.5rem !important',
-              minHeight: 'auto',
-              gap: 2,
-              flexWrap: 'wrap',
-              mb: '10px'
+              '& .MuiTab-root': {
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                textTransform: 'none',
+                minHeight: 44,
+                gap: 1.5
+              }
             }}
           >
+            <Tab
+              icon={<i className='tabler-users' style={{ fontSize: '1.2rem' }} />}
+              iconPosition='start'
+              label='Jadwal Mengajar Guru'
+            />
+            <Tab
+              icon={<i className='tabler-layout-grid' style={{ fontSize: '1.2rem' }} />}
+              iconPosition='start'
+              label='Matriks Jadwal Kelas'
+            />
+            <Tab
+              icon={<i className='tabler-table' style={{ fontSize: '1.2rem' }} />}
+              iconPosition='start'
+              label='Semua Data Jadwal'
+            />
+          </Tabs>
+
+          {/* Action Buttons */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             {canCreate && (
-              <Tooltip title='Tambah'>
-                <Button
-                  size='small'
-                  variant='outlined'
-                  sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
-                  onClick={onAddForm}
-                  startIcon={<i className='tabler-plus' />}
-                >
-                  Tambah
-                </Button>
-              </Tooltip>
+              <Button
+                size='small'
+                variant='contained'
+                startIcon={<i className='tabler-plus' />}
+                onClick={onAddForm}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                Tambah Jadwal
+              </Button>
             )}
 
             {canImport && (
-              <Tooltip title='Import Excel'>
-                <Button
-                  size='small'
-                  color='success'
-                  variant='outlined'
-                  sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
-                  onClick={onImport}
-                  startIcon={<i className='tabler-file-import' />}
-                >
-                  Import Excel
-                </Button>
-              </Tooltip>
+              <Button
+                size='small'
+                color='success'
+                variant='outlined'
+                startIcon={<i className='tabler-file-import' />}
+                onClick={onImport}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                Import Excel
+              </Button>
             )}
 
             {canExport && (
-              <Tooltip title='Export Excel'>
-                <Button
-                  size='small'
-                  color='warning'
-                  variant='outlined'
-                  sx={{ height: 32, fontSize: '0.75rem', px: 2 }}
-                  onClick={onExport}
-                  startIcon={<i className='tabler-file-export' />}
-                >
-                  {loadingExport ? 'Proses...' : 'Export Excel'}
-                </Button>
-              </Tooltip>
+              <Button
+                size='small'
+                color='warning'
+                variant='outlined'
+                startIcon={<i className='tabler-file-export' />}
+                onClick={onExport}
+                disabled={loadingExport}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                {loadingExport ? 'Proses...' : 'Export Excel'}
+              </Button>
             )}
-            <Typography sx={{ flex: '1 1 auto' }} />
-            <Tooltip title='Cari...'>
-              <TextField id='outlined-basic' label='Cari...' size='small' onChange={handleFilter} />
-            </Tooltip>
-          </Toolbar>
-          <TableView model={buildTable()} changeSort={null} />
-        </Card>
+          </Box>
+        </Paper>
       </Grid>
+
+      {/* Tab 0: Jadwal Mengajar Guru (Accordion) */}
+      {activeTab === 0 && (
+        <Grid size={12}>
+          <GuruAccordionList
+            onOpenClassMatrix={handleOpenClassMatrix}
+            onAddSchedule={onAddForm}
+          />
+        </Grid>
+      )}
+
+      {/* Tab 1: Matriks Jadwal Kelas (Grid Timetable) */}
+      {activeTab === 1 && (
+        <Grid size={12}>
+          <MatriksJadwalKelas
+            initialKelasId={targetClassForMatrix.idKelas}
+            initialLembagaType={targetClassForMatrix.lembagaType}
+          />
+        </Grid>
+      )}
+
+      {/* Tab 2: Tabel Semua Data (Flat Table) */}
+      {activeTab === 2 && (
+        <>
+          <Grid size={12}>
+            <Card sx={{ p: 5 }}>
+              <Grid container spacing={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Autocomplete
+                    size='small'
+                    options={haris}
+                    value={selectedHari}
+                    onChange={(_, newValue) => setSelectedHari(newValue)}
+                    getOptionLabel={option => option.label || ''}
+                    isOptionEqualToValue={(option, value) => option.value === value?.value}
+                    renderInput={params => <TextField {...params} label='Hari' />}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Autocomplete
+                    size='small'
+                    options={[
+                      { label: 'Semua', value: '' },
+                      ...storePegawai.pegawai.map(r => ({
+                        label: `${r.nama_lengkap} (${r.nip || '-'})`,
+                        value: r.id_pegawai
+                      }))
+                    ]}
+                    value={selectedGuru}
+                    onChange={(_, newValue) => setSelectedGuru(newValue)}
+                    getOptionLabel={option => option.label || ''}
+                    isOptionEqualToValue={(option, value) => option.value === value?.value}
+                    renderInput={params => <TextField {...params} label='Guru' />}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Autocomplete
+                    size='small'
+                    options={statuss}
+                    value={selectedStatus}
+                    onChange={(_, newValue) => setSelectedStatus(newValue)}
+                    getOptionLabel={option => option.label || ''}
+                    isOptionEqualToValue={(option, value) => option.value === value?.value}
+                    renderInput={params => <TextField {...params} label='Status' />}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Autocomplete
+                    size='small'
+                    options={getLembagaParentOptions()}
+                    value={selectedLembagaParent}
+                    onChange={(_, newValue) => {
+                      setSelectedLembagaParent(newValue)
+                      setSelectedLokasi({ label: 'Semua', value: '' })
+                    }}
+                    getOptionLabel={option => option.label || ''}
+                    isOptionEqualToValue={(option, value) => option.value === value?.value}
+                    renderInput={params => <TextField {...params} label='Lembaga / Gedung' />}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <Autocomplete
+                    size='small'
+                    options={getLokasiOptions()}
+                    value={selectedLokasi}
+                    onChange={(_, newValue) => setSelectedLokasi(newValue)}
+                    getOptionLabel={option => option.label || ''}
+                    isOptionEqualToValue={(option, value) => option.value === value?.value}
+                    renderInput={params => <TextField {...params} label='Lokasi (Ruang Kelas)' />}
+                  />
+                </Grid>
+              </Grid>
+            </Card>
+          </Grid>
+
+          <Grid size={12}>
+            <Card>
+              <CardHeader title='Jadwal Pelajaran' sx={{ paddingBottom: 0 }} />
+              <Toolbar
+                sx={{
+                  px: '1.5rem !important',
+                  minHeight: 'auto',
+                  gap: 2,
+                  flexWrap: 'wrap',
+                  mb: '10px'
+                }}
+              >
+                <Typography sx={{ flex: '1 1 auto' }} />
+                <Tooltip title='Cari...'>
+                  <TextField id='outlined-basic' label='Cari...' size='small' onChange={handleFilter} />
+                </Tooltip>
+              </Toolbar>
+              <TableView model={buildTable()} changeSort={null} />
+            </Card>
+          </Grid>
+        </>
+      )}
+
+      {/* Global Quick Add Dialog */}
+      <QuickJadwalDialog
+        open={quickDialogOpen}
+        onClose={() => setQuickDialogOpen(false)}
+        onSuccess={() => {
+          if (activeTab === 2) handleChangePage(page)
+        }}
+      />
     </Grid>
   )
 }
 
-export default Table
+export default JadwalPelajaranPage

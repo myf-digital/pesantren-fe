@@ -54,10 +54,20 @@ const initialState: InitialState = {
 --------------------------- */
 
 export interface FetchParamAlls {
-  status: string
+  status?: string
+  id_kelas?: string
+  id_kelas_mda?: string
+  id_tahunajaran?: string
+  id_semester?: string
+  id_pegawai?: string
+  hari?: string
+  id_tingkat?: string
+  id_lokasi?: string
+  id_lokasi_parent?: string
+  [key: string]: any
 }
 
-export const fetchJadwalPelajaranAll = createAsyncThunk<any, FetchParamAlls>(
+export const fetchJadwalPelajaranAll = createAsyncThunk<any, FetchParamAlls | void>(
   'jadwal-pelajaran/fetchAll',
   async (params, thunkAPI) => {
     try {

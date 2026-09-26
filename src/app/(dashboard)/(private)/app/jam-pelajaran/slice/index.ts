@@ -12,6 +12,8 @@ export interface FetchParams {
   q?: string
   parent?: string
   lembaga_type?: string
+  id_kelas?: string
+  [key: string]: any
 }
 
 export interface InitialState {
