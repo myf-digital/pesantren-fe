@@ -51,6 +51,7 @@ import { fetchPegawaiAll } from '../../guru-mata-pelajaran/slice'
 import GuruAccordionList from '../components/GuruAccordionList'
 import MatriksJadwalKelas from '../components/MatriksJadwalKelas'
 import QuickJadwalDialog from '../components/QuickJadwalDialog'
+import RekapJadwalGuruView from '../../report/rekap-jadwal-guru/components/RekapJadwalGuruView'
 
 const statusObj: Record<string, { color: any; value: string }> = {
   Aktif: {
@@ -591,6 +592,11 @@ const JadwalPelajaranPage = () => {
               iconPosition='start'
               label='Semua Data Jadwal'
             />
+            <Tab
+              icon={<i className='tabler-file-analytics' style={{ fontSize: '1.2rem' }} />}
+              iconPosition='start'
+              label='Rekap Mengajar Guru'
+            />
           </Tabs>
 
           {/* Action Buttons */}
@@ -752,6 +758,13 @@ const JadwalPelajaranPage = () => {
             </Card>
           </Grid>
         </>
+      )}
+
+      {/* Tab 3: Rekap Mengajar Guru (Monthly Teacher Report) */}
+      {activeTab === 3 && (
+        <Grid size={12}>
+          <RekapJadwalGuruView isStandalone={false} />
+        </Grid>
       )}
 
       {/* Global Quick Add Dialog */}

@@ -15,6 +15,15 @@ export interface InitialState {
     values: any[]
     total: number
   }
+  rekapGuruPage: {
+    values: any[]
+    total: number
+    summary?: {
+      total_guru: number
+      total_sesi: number
+      total_jam: number
+    }
+  }
   data: any
   jamPel: any
   santriList: any[]
@@ -35,6 +44,15 @@ const initialState: InitialState = {
   jurnalPage: {
     values: [],
     total: 0
+  },
+  rekapGuruPage: {
+    values: [],
+    total: 0,
+    summary: {
+      total_guru: 0,
+      total_sesi: 0,
+      total_jam: 0
+    }
   },
   data: {},
   jamPel: null,
@@ -220,6 +238,30 @@ export const fetchJurnalKelasPage = createAsyncThunk(
   }
 )
 
+export const fetchRekapGuruPage = createAsyncThunk(
+  'absenKelasSantri/fetchRekapGuruPage',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await api.get('/app/jurnal-kelas/rekap-guru', { params })
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.rejectWithValue(e.response?.data)
+    }
+  }
+)
+
+export const postRekapGuruExport = createAsyncThunk<any, any>(
+  'absenKelasSantri/exportRekapGuru',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.post('/app/jurnal-kelas/rekap-guru/export', params)
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
+
 export const postJurnalKelasExport = createAsyncThunk<any, any>(
   'absenKelasSantri/exportJurnal',
   async (params, thunkAPI) => {
@@ -261,6 +303,14 @@ export const absenKelasSantriSlice = createSlice({
       state.jurnalPage = {
         values: action.payload.data?.values || [],
         total: action.payload.data?.total || 0
+      }
+    })
+
+    builder.addCase(fetchRekapGuruPage.fulfilled, (state, action) => {
+      state.rekapGuruPage = {
+        values: action.payload?.data?.values || [],
+        total: action.payload?.data?.total || 0,
+        summary: action.payload?.data?.summary || { total_guru: 0, total_sesi: 0, total_jam: 0 }
       }
     })
 

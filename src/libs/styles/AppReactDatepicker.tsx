@@ -24,10 +24,10 @@ const StyledReactDatePicker = styled(Box)<BoxProps>(({ theme }) => {
   return {
     '&:has(.react-datepicker-popper)': {
       position: 'relative',
-      zIndex: 9999
+      zIndex: 99999
     },
     '& .react-datepicker-popper': {
-      zIndex: '9999 !important',
+      zIndex: '99999 !important',
       paddingTop: `${theme.spacing(0.5)} !important`
     },
     '& .react-datepicker-wrapper': {
@@ -38,16 +38,17 @@ const StyledReactDatePicker = styled(Box)<BoxProps>(({ theme }) => {
     },
     '& .react-datepicker': {
       color: 'var(--mui-palette-text-primary)',
-      borderRadius: 'var(--mui-shape-borderRadius)',
+      borderRadius: '8px !important',
       fontFamily: theme.typography.fontFamily,
-      backgroundColor: 'var(--mui-palette-background-paper)',
-      boxShadow: 'var(--mui-customShadows-md)',
-      border: 'none',
+      backgroundColor: 'var(--mui-palette-background-paper, #ffffff) !important',
+      boxShadow: '0 4px 20px 0 rgba(47, 43, 61, 0.18) !important',
+      border: '1px solid var(--mui-palette-divider, #e2e8f0) !important',
+      overflow: 'hidden',
       '& .react-datepicker__header': {
         padding: 0,
         border: 'none',
         fontWeight: 'normal',
-        backgroundColor: 'var(--mui-palette-background-paper)',
+        backgroundColor: 'var(--mui-palette-background-paper, #ffffff) !important',
         '& .react-datepicker__current-month, &.react-datepicker-year-header': {
           textAlign: 'left'
         },
