@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useMemo } from 'react'
 
 import Card from '@mui/material/Card'
-import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
 import Grid from '@mui/material/Grid2'
 import Typography from '@mui/material/Typography'
@@ -21,22 +20,16 @@ import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
-import Chip from '@mui/material/Chip'
 import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import {
-  deleteJadwalPelajaran,
-  fetchJadwalPelajaranAll,
-  resetRedux
-} from '../slice/index'
+import { deleteJadwalPelajaran, fetchJadwalPelajaranAll } from '../slice/index'
 import { fetchTahunAjaranAll } from '../../tahun-ajaran/slice'
 import { fetchSemesterAll } from '../../semester/slice'
 import { fetchTingkatAll } from '../../tingkat/slice'
 import { fetchKelasFormalAll } from '../../kelas-formal/slice'
 import { fetchKelasMdaAll } from '../../kelas-mda/slice'
 import { fetchJamPelajaranAll } from '../../jam-pelajaran/slice'
-import { fetchLembagaAll } from '../../guru-mata-pelajaran/slice'
 import DialogDelete from '@views/onevour/components/dialog-delete'
 import QuickJadwalDialog from './QuickJadwalDialog'
 
@@ -52,19 +45,21 @@ const DAYS = [
 
 const LEMBAGA_TYPES = [
   { label: 'Formal (SD/SMP/SMA)', value: 'FORMAL' },
-  { label: 'Kepesantrenan / MDA', value: 'PESANTREN' }
+  { label: 'Kepesantrenan (MDA)', value: 'PESANTREN' }
 ]
 
 interface MatriksJadwalKelasProps {
   initialKelasId?: string | null
   initialLembagaType?: string | null
   onOpenGuruView?: (idPegawai: string) => void
+  onFilterChange?: (filters: Record<string, any>) => void
 }
 
 export default function MatriksJadwalKelas({
   initialKelasId,
   initialLembagaType = 'FORMAL',
-  onOpenGuruView
+  onOpenGuruView,
+  onFilterChange
 }: MatriksJadwalKelasProps) {
   const dispatch = useAppDispatch()
 
@@ -76,7 +71,6 @@ export default function MatriksJadwalKelas({
   const storeJam = useAppSelector(state => state.jam_pelajaran)
   const storeJadwal = useAppSelector(state => state.jadwal_pelajaran)
 
-  // Filters State
   const [selectedLembagaType, setSelectedLembagaType] = useState<any>(
     LEMBAGA_TYPES.find(l => l.value === initialLembagaType) || LEMBAGA_TYPES[0]
   )
@@ -85,11 +79,9 @@ export default function MatriksJadwalKelas({
   const [selectedTingkat, setSelectedTingkat] = useState<any>(null)
   const [selectedKelas, setSelectedKelas] = useState<any>(null)
 
-  // Data State
   const [matrixData, setMatrixData] = useState<any[]>([])
   const [loadingMatrix, setLoadingMatrix] = useState(false)
 
-  // Dialog State
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [presetSlot, setPresetSlot] = useState<any>(null)
@@ -99,13 +91,21 @@ export default function MatriksJadwalKelas({
     title: ''
   })
 
-  // Initial master fetch
+  // Report active filters to parent (for Export)
+  useEffect(() => {
+    onFilterChange?.({
+      id_kelas: selectedKelas?.value || undefined,
+      id_tahunajaran: selectedTahunAjaran?.value || undefined,
+      id_semester: selectedSemester?.value || undefined,
+      status: 'Aktif'
+    })
+  }, [selectedKelas, selectedTahunAjaran, selectedSemester, onFilterChange])
+
   useEffect(() => {
     dispatch(fetchTahunAjaranAll({ status: 'Aktif' }))
     dispatch(fetchTingkatAll({ type: selectedLembagaType?.value || 'FORMAL' }))
   }, [dispatch, selectedLembagaType])
 
-  // Fetch Jam Pelajaran with id_kelas filter when selectedKelas or selectedLembagaType changes
   useEffect(() => {
     const params: any = {
       lembaga_type: selectedLembagaType?.value || 'FORMAL'
@@ -116,7 +116,6 @@ export default function MatriksJadwalKelas({
     dispatch(fetchJamPelajaranAll(params))
   }, [dispatch, selectedLembagaType, selectedKelas?.value])
 
-  // Set default Tahun Ajaran & load Semester
   useEffect(() => {
     if (storeTahunAjaran.datas.length > 0 && !selectedTahunAjaran) {
       const activeTa = storeTahunAjaran.datas.find(t => t.status === 'Aktif') || storeTahunAjaran.datas[0]
@@ -125,7 +124,6 @@ export default function MatriksJadwalKelas({
     }
   }, [storeTahunAjaran.datas, selectedTahunAjaran, dispatch])
 
-  // Set default Semester
   useEffect(() => {
     if (storeSemester.datas.length > 0 && !selectedSemester) {
       const activeSem = storeSemester.datas.find(s => s.status === 'Aktif') || storeSemester.datas[0]
@@ -133,7 +131,6 @@ export default function MatriksJadwalKelas({
     }
   }, [storeSemester.datas, selectedSemester])
 
-  // Fetch Kelas options when Tingkat or LembagaType changes
   useEffect(() => {
     if (selectedLembagaType?.value === 'PESANTREN') {
       dispatch(fetchKelasMdaAll({ status: 'Aktif', id_tingkat: selectedTingkat?.value }))
@@ -142,7 +139,6 @@ export default function MatriksJadwalKelas({
     }
   }, [dispatch, selectedLembagaType, selectedTingkat])
 
-  // Set default Kelas if initialKelasId provided or choose first available
   useEffect(() => {
     const list = selectedLembagaType?.value === 'PESANTREN' ? storeKelasMda.datas : storeKelasFormal.datas
     if (list.length > 0) {
@@ -166,7 +162,6 @@ export default function MatriksJadwalKelas({
     }
   }, [storeKelasFormal.datas, storeKelasMda.datas, selectedLembagaType, initialKelasId, selectedKelas])
 
-  // Fetch Matrix Data when filters change or refresh requested
   const loadScheduleMatrix = async () => {
     if (!selectedKelas?.value) return
 
@@ -205,7 +200,6 @@ export default function MatriksJadwalKelas({
     }
   }, [selectedKelas, selectedTahunAjaran, selectedSemester])
 
-  // Filter jam pelajaran sorted
   const sortedJamPelajaran = useMemo(() => {
     return [...storeJam.datas].sort((a, b) => {
       if (a.urutan !== undefined && b.urutan !== undefined) return a.urutan - b.urutan
@@ -213,7 +207,6 @@ export default function MatriksJadwalKelas({
     })
   }, [storeJam.datas])
 
-  // Matrix Map helper: key `${hari}_${id_jam_pelajaran}` => list of jadwal items
   const matrixMap = useMemo(() => {
     const map = new Map<string, any[]>()
     matrixData.forEach(item => {
@@ -228,7 +221,6 @@ export default function MatriksJadwalKelas({
     return map
   }, [matrixData])
 
-  // Handle Quick Add for a specific slot
   const handleSlotAdd = (hari: string, jamId: string) => {
     setEditId(null)
     setPresetSlot({
@@ -243,14 +235,12 @@ export default function MatriksJadwalKelas({
     setDialogOpen(true)
   }
 
-  // Handle Edit for a specific schedule item
   const handleSlotEdit = (item: any) => {
     setPresetSlot(null)
     setEditId(item.id_jadwal)
     setDialogOpen(true)
   }
 
-  // Handle Delete for a specific schedule item
   const handleSlotDeletePrompt = (item: any) => {
     const mapelName = item.jenis_guru?.mata_pelajaran?.nama_mapel || 'Jadwal'
     const guruName = item.jenis_guru?.pegawai?.nama_lengkap || ''
@@ -274,36 +264,44 @@ export default function MatriksJadwalKelas({
 
   return (
     <Card sx={{ width: '100%', overflow: 'hidden', boxShadow: 3 }}>
-      {/* Header Bar with JIBAS-like aesthetic banner & filters */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-          color: '#fff',
+          bgcolor: 'background.paper',
           p: 4,
-          borderBottom: '2px solid #0284c7'
+          borderBottom: 1,
+          borderColor: 'divider'
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+            flexWrap: 'wrap',
+            gap: 2
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Box
               sx={{
                 width: 42,
                 height: 42,
                 borderRadius: '8px',
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                bgcolor: 'rgba(2, 132, 199, 0.1)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
+                border: '1px solid rgba(2, 132, 199, 0.2)'
               }}
             >
-              <i className='tabler-calendar-event' style={{ fontSize: '1.6rem', color: '#38bdf8' }} />
+              <i className='tabler-calendar-event' style={{ fontSize: '1.6rem', color: '#0284c7' }} />
             </Box>
             <Box>
-              <Typography variant='h6' sx={{ color: '#fff', fontWeight: 700, lineHeight: 1.2 }}>
+              <Typography variant='h6' sx={{ color: 'text.primary', fontWeight: 700, lineHeight: 1.2 }}>
                 Jadwal Berdasarkan Kelas
               </Typography>
-              <Typography variant='caption' sx={{ color: '#94a3b8' }}>
+              <Typography variant='caption' color='text.secondary'>
                 Atur dan susun jadwal pelajaran mingguan per kelas secara visual
               </Typography>
             </Box>
@@ -314,8 +312,6 @@ export default function MatriksJadwalKelas({
               variant='contained'
               size='small'
               sx={{
-                bgcolor: '#0284c7',
-                '&:hover': { bgcolor: '#0369a1' },
                 textTransform: 'none',
                 fontWeight: 600
               }}
@@ -336,7 +332,12 @@ export default function MatriksJadwalKelas({
             <Tooltip title='Segarkan Data'>
               <IconButton
                 size='small'
-                sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}
+                sx={{
+                  color: 'text.secondary',
+                  border: 1,
+                  borderColor: 'divider',
+                  '&:hover': { bgcolor: 'action.hover' }
+                }}
                 onClick={loadScheduleMatrix}
               >
                 <i className='tabler-refresh' />
@@ -345,22 +346,20 @@ export default function MatriksJadwalKelas({
           </Box>
         </Box>
 
-        {/* Filter Toolbar (Departemen, Tahun Ajaran, Semester, Tingkat, Kelas) */}
         <Paper
           elevation={0}
           sx={{
             p: 3,
             borderRadius: 2,
-            bgcolor: 'rgba(15, 23, 42, 0.65)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)'
+            bgcolor: 'action.hover',
+            border: 1,
+            borderColor: 'divider'
           }}
         >
           <Grid container spacing={3} alignItems='center'>
-            {/* Lembaga Type */}
             <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-              <Typography variant='caption' sx={{ color: '#cbd5e1', fontWeight: 600, mb: 0.5, display: 'block' }}>
-                Departemen / Jalur:
+              <Typography variant='caption' sx={{ color: 'text.primary', fontWeight: 600, mb: 0.5, display: 'block' }}>
+                Lembaga Tipe:
               </Typography>
               <Autocomplete
                 size='small'
@@ -373,14 +372,13 @@ export default function MatriksJadwalKelas({
                 }}
                 getOptionLabel={o => o.label || ''}
                 isOptionEqualToValue={(o, v) => o.value === v?.value}
-                sx={{ bgcolor: '#fff', borderRadius: 1 }}
+                sx={{ bgcolor: 'background.paper', borderRadius: 1 }}
                 renderInput={params => <TextField {...params} placeholder='Pilih Lembaga' />}
               />
             </Grid>
 
-            {/* Tahun Ajaran */}
             <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-              <Typography variant='caption' sx={{ color: '#cbd5e1', fontWeight: 600, mb: 0.5, display: 'block' }}>
+              <Typography variant='caption' sx={{ color: 'text.primary', fontWeight: 600, mb: 0.5, display: 'block' }}>
                 Tahun Ajaran:
               </Typography>
               <Autocomplete
@@ -395,14 +393,13 @@ export default function MatriksJadwalKelas({
                 }}
                 getOptionLabel={o => o.label || ''}
                 isOptionEqualToValue={(o, v) => o.value === v?.value}
-                sx={{ bgcolor: '#fff', borderRadius: 1 }}
+                sx={{ bgcolor: 'background.paper', borderRadius: 1 }}
                 renderInput={params => <TextField {...params} placeholder='Pilih Tahun Ajaran' />}
               />
             </Grid>
 
-            {/* Semester / Info Jadwal */}
             <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-              <Typography variant='caption' sx={{ color: '#cbd5e1', fontWeight: 600, mb: 0.5, display: 'block' }}>
+              <Typography variant='caption' sx={{ color: 'text.primary', fontWeight: 600, mb: 0.5, display: 'block' }}>
                 Semester / Info Jadwal:
               </Typography>
               <Autocomplete
@@ -412,14 +409,13 @@ export default function MatriksJadwalKelas({
                 onChange={(_, val) => setSelectedSemester(val)}
                 getOptionLabel={o => o.label || ''}
                 isOptionEqualToValue={(o, v) => o.value === v?.value}
-                sx={{ bgcolor: '#fff', borderRadius: 1 }}
+                sx={{ bgcolor: 'background.paper', borderRadius: 1 }}
                 renderInput={params => <TextField {...params} placeholder='Pilih Semester' />}
               />
             </Grid>
 
-            {/* Tingkat */}
             <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-              <Typography variant='caption' sx={{ color: '#cbd5e1', fontWeight: 600, mb: 0.5, display: 'block' }}>
+              <Typography variant='caption' sx={{ color: 'text.primary', fontWeight: 600, mb: 0.5, display: 'block' }}>
                 Tingkat:
               </Typography>
               <Autocomplete
@@ -435,14 +431,13 @@ export default function MatriksJadwalKelas({
                 }}
                 getOptionLabel={o => o.label || ''}
                 isOptionEqualToValue={(o, v) => o.value === v?.value}
-                sx={{ bgcolor: '#fff', borderRadius: 1 }}
+                sx={{ bgcolor: 'background.paper', borderRadius: 1 }}
                 renderInput={params => <TextField {...params} placeholder='Semua Tingkat' />}
               />
             </Grid>
 
-            {/* Kelas */}
             <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-              <Typography variant='caption' sx={{ color: '#cbd5e1', fontWeight: 600, mb: 0.5, display: 'block' }}>
+              <Typography variant='caption' sx={{ color: 'text.primary', fontWeight: 600, mb: 0.5, display: 'block' }}>
                 Kelas:
               </Typography>
               <Autocomplete
@@ -456,7 +451,7 @@ export default function MatriksJadwalKelas({
                 onChange={(_, val) => setSelectedKelas(val)}
                 getOptionLabel={o => o.label || ''}
                 isOptionEqualToValue={(o, v) => o.value === v?.value}
-                sx={{ bgcolor: '#fff', borderRadius: 1 }}
+                sx={{ bgcolor: 'background.paper', borderRadius: 1 }}
                 renderInput={params => <TextField {...params} placeholder='Pilih Kelas' />}
               />
             </Grid>
@@ -464,7 +459,6 @@ export default function MatriksJadwalKelas({
         </Paper>
       </Box>
 
-      {/* Timetable Grid Matrix */}
       <CardContent sx={{ p: 0 }}>
         {loadingMatrix ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 12, gap: 2 }}>
@@ -507,13 +501,12 @@ export default function MatriksJadwalKelas({
               }}
             >
               <TableHead>
-                <TableRow sx={{ bgcolor: '#0f172a' }}>
-                  {/* Jam Column */}
+                <TableRow sx={{ bgcolor: 'background.paper' }}>
                   <TableCell
                     sx={{
                       width: 140,
-                      bgcolor: '#1e293b',
-                      color: '#fff',
+                      bgcolor: 'background.paper',
+                      color: 'text.primary',
                       fontWeight: 700,
                       textAlign: 'center',
                       py: 1.8,
@@ -523,13 +516,12 @@ export default function MatriksJadwalKelas({
                     Jam
                   </TableCell>
 
-                  {/* Day Columns */}
                   {DAYS.map(day => (
                     <TableCell
                       key={day.key}
                       sx={{
-                        bgcolor: '#1e293b',
-                        color: '#fff',
+                        bgcolor: 'background.paper',
+                        color: 'text.primary',
                         fontWeight: 700,
                         textAlign: 'center',
                         py: 1.8,
@@ -551,7 +543,6 @@ export default function MatriksJadwalKelas({
 
                   return (
                     <TableRow key={jamId} hover sx={{ '&:nth-of-type(even)': { bgcolor: 'action.hover' } }}>
-                      {/* Jam Cell */}
                       <TableCell
                         sx={{
                           bgcolor: 'background.default',
@@ -569,7 +560,6 @@ export default function MatriksJadwalKelas({
                         </Typography>
                       </TableCell>
 
-                      {/* Day Cells */}
                       {DAYS.map(day => {
                         const cellKey = `${day.key}_${jamId}`
                         const slotItems = matrixMap.get(cellKey) || []
@@ -642,14 +632,16 @@ export default function MatriksJadwalKelas({
 
                                       {lokasi && (
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.3 }}>
-                                          <i className='tabler-map-pin' style={{ fontSize: '0.7rem', color: '#64748b' }} />
+                                          <i
+                                            className='tabler-map-pin'
+                                            style={{ fontSize: '0.7rem', color: '#64748b' }}
+                                          />
                                           <Typography variant='caption' sx={{ color: '#64748b', fontSize: '0.7rem' }}>
                                             {lokasi}
                                           </Typography>
                                         </Box>
                                       )}
 
-                                      {/* Action Buttons: Edit (Pensil) & Delete (Silang/Trash) */}
                                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mt: 1 }}>
                                         <Tooltip title='Edit Jadwal Slot Ini'>
                                           <IconButton
@@ -686,7 +678,6 @@ export default function MatriksJadwalKelas({
                                 })}
                               </Box>
                             ) : (
-                              /* Empty Cell: Green Plus Button (persis seperti SS) */
                               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 2 }}>
                                 <Tooltip title={`Tambah Jadwal Hari ${day.label} (${timeLabel})`}>
                                   <IconButton
@@ -722,7 +713,6 @@ export default function MatriksJadwalKelas({
         )}
       </CardContent>
 
-      {/* Quick Add / Edit Dialog */}
       <QuickJadwalDialog
         open={dialogOpen}
         onClose={() => {
@@ -735,7 +725,6 @@ export default function MatriksJadwalKelas({
         presetData={presetSlot}
       />
 
-      {/* Delete Confirmation */}
       <DialogDelete
         id={deleteConfirm.title}
         open={deleteConfirm.open}

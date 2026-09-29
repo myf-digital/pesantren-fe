@@ -13,8 +13,6 @@ import Grid from '@mui/material/Grid2'
 import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import Card from '@mui/material/Card'
-import CardHeader from '@mui/material/CardHeader'
-import CardContent from '@mui/material/CardContent'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -24,15 +22,10 @@ import TableRow from '@mui/material/TableRow'
 import TablePagination from '@mui/material/TablePagination'
 import Tooltip from '@mui/material/Tooltip'
 import CircularProgress from '@mui/material/CircularProgress'
-import Paper from '@mui/material/Paper'
 import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import {
-  deleteJadwalPelajaran,
-  fetchJadwalPelajaranAll,
-  resetRedux
-} from '../slice/index'
+import { deleteJadwalPelajaran, fetchJadwalPelajaranAll } from '../slice/index'
 import { fetchGuruMataPelajaranAll, fetchPegawaiAll } from '../../guru-mata-pelajaran/slice'
 import { fetchLocationAll } from '../../location/slice'
 import CustomAvatar from '@core/components/mui/Avatar'
@@ -68,34 +61,30 @@ const statusObj: Record<string, { color: any; value: string }> = {
 interface GuruAccordionListProps {
   onOpenClassMatrix?: (idKelas: string, lembagaType?: string) => void
   onAddSchedule?: () => void
+  onFilterChange?: (filters: Record<string, any>) => void
 }
 
 export default function GuruAccordionList({
   onOpenClassMatrix,
-  onAddSchedule
+  onAddSchedule,
+  onFilterChange
 }: GuruAccordionListProps) {
   const dispatch = useAppDispatch()
 
-  const storeJadwal = useAppSelector(state => state.jadwal_pelajaran)
-  const storePegawai = useAppSelector(state => state.guru_mata_pelajaran)
   const storeLokasi = useAppSelector(state => state.location)
 
-  // Filter States
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedHari, setSelectedHari] = useState<any>(HARI_OPTIONS[0])
   const [selectedStatus, setSelectedStatus] = useState<any>(STATUS_OPTIONS[0])
   const [selectedGedung, setSelectedGedung] = useState<any>({ label: 'Semua Gedung', value: '' })
 
-  // Data States
   const [rawJadwal, setRawJadwal] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [expandedGuru, setExpandedGuru] = useState<string | false>(false)
 
-  // Pagination State (standard template model: 0-indexed page)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
-  // Dialog States
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [presetSlot, setPresetSlot] = useState<any>(null)
@@ -105,14 +94,21 @@ export default function GuruAccordionList({
     title: ''
   })
 
-  // Load master data
   useEffect(() => {
     dispatch(fetchPegawaiAll({}))
     dispatch(fetchGuruMataPelajaranAll({}))
     dispatch(fetchLocationAll({ orderWithParent: true, jenis_lokasi: 'RuangKelas' }))
   }, [dispatch])
 
-  // Load all schedules for grouping
+  useEffect(() => {
+    onFilterChange?.({
+      hari: selectedHari?.value || undefined,
+      status: selectedStatus?.value || undefined,
+      id_lokasi_parent: selectedGedung?.value || undefined,
+      q: searchTerm.trim() || undefined
+    })
+  }, [selectedHari, selectedStatus, selectedGedung, searchTerm, onFilterChange])
+
   const loadJadwalList = async () => {
     setLoading(true)
     try {
@@ -138,22 +134,15 @@ export default function GuruAccordionList({
     loadJadwalList()
   }, [selectedHari, selectedStatus, selectedGedung])
 
-  // Group schedules by Guru (Pegawai)
   const groupedGuruList = useMemo(() => {
-    const guruMap = new Map<string, {
-      guru: any
-      schedules: any[]
-    }>()
+    const guruMap = new Map<
+      string,
+      {
+        guru: any
+        schedules: any[]
+      }
+    >()
 
-    // First populate from storePegawai.pegawai or from jadwal data
-    storePegawai.pegawai.forEach((p: any) => {
-      guruMap.set(p.id_pegawai, {
-        guru: p,
-        schedules: []
-      })
-    })
-
-    // Assign schedules into guruMap
     rawJadwal.forEach((item: any) => {
       const pegawai = item.jenis_guru?.pegawai
       if (pegawai) {
@@ -169,8 +158,7 @@ export default function GuruAccordionList({
       }
     })
 
-    // Convert map to array and apply search filtering
-    let list = Array.from(guruMap.values())
+    let list = Array.from(guruMap.values()).filter(item => item.schedules.length > 0)
 
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase()
@@ -181,17 +169,11 @@ export default function GuruAccordionList({
       })
     }
 
-    // Sort: teachers with schedules first, then alphabetically
-    list.sort((a, b) => {
-      if (a.schedules.length > 0 && b.schedules.length === 0) return -1
-      if (a.schedules.length === 0 && b.schedules.length > 0) return 1
-      return (a.guru.nama_lengkap || '').localeCompare(b.guru.nama_lengkap || '')
-    })
+    list.sort((a, b) => (a.guru.nama_lengkap || '').localeCompare(b.guru.nama_lengkap || ''))
 
     return list
-  }, [rawJadwal, storePegawai.pegawai, searchTerm])
+  }, [rawJadwal, searchTerm])
 
-  // Pagination slice
   const paginatedList = useMemo(() => {
     const start = page * rowsPerPage
     return groupedGuruList.slice(start, start + rowsPerPage)
@@ -297,12 +279,12 @@ export default function GuruAccordionList({
               options={getGedungOptions()}
               value={selectedGedung}
               onChange={(_, val) => {
-                setSelectedGedung(val || { label: 'Semua Gedung', value: '' })
+                setSelectedGedung(val || { label: 'Semua Lembaga', value: '' })
                 setPage(0)
               }}
               getOptionLabel={o => o.label || ''}
               isOptionEqualToValue={(o, v) => o.value === v?.value}
-              renderInput={params => <TextField {...params} label='Lembaga / Gedung' />}
+              renderInput={params => <TextField {...params} label='Lembaga' />}
             />
           </Grid>
 
@@ -521,9 +503,7 @@ export default function GuruAccordionList({
                                   <TableCell>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                       <i className='tabler-map-pin' style={{ fontSize: '0.8rem', color: '#64748b' }} />
-                                      <Typography variant='body2'>
-                                        {slot.lokasi?.nama_lokasi || '-'}
-                                      </Typography>
+                                      <Typography variant='body2'>{slot.lokasi?.nama_lokasi || '-'}</Typography>
                                     </Box>
                                   </TableCell>
 
