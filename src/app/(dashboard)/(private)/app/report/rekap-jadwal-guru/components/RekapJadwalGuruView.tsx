@@ -3,16 +3,13 @@
 import React, { forwardRef, useCallback, useEffect, useState } from 'react'
 import {
   Card,
-  CardHeader,
   TextField,
-  Toolbar,
   Button,
   Chip,
   Autocomplete,
   CircularProgress,
   Box,
   Typography,
-  Paper,
   Table,
   TableHead,
   TableBody,
@@ -20,7 +17,6 @@ import {
   TableCell,
   TableContainer,
   IconButton,
-  Tooltip,
   Pagination
 } from '@mui/material'
 import Grid from '@mui/material/Grid2'
@@ -29,63 +25,40 @@ import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchRekapGuruPage, postRekapGuruExport } from '../../../absen-kelas-santri/slice/index'
 import { fetchLembagaFormalAll } from '../../../lembaga-formal/slice'
 import { fetchLembagaAll as fetchLembagaKepesantrenanAll } from '../../../lembaga-kepesantrenan/slice'
-import { fetchTahunAjaranAll } from '../../../tahun-ajaran/slice'
-import { fetchSemesterAll } from '../../../semester/slice'
 
 import { useCan } from '@/hooks/useCan'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 import { toast } from 'react-toastify'
-import DetailJurnalGuruDialog from './DetailJurnalGuruDialog'
 
 interface OptionType {
   label: string
   value: string
-  status?: string
 }
 
 const PickersComponent = forwardRef(({ ...props }: any, ref) => {
   return <TextField inputRef={ref} fullWidth size='small' {...props} />
 })
 
-const RekapJadwalGuruView: React.FC<{ isStandalone?: boolean }> = ({ isStandalone = true }) => {
+const RekapJadwalGuruView: React.FC<{ isStandalone?: boolean }> = () => {
   const dispatch = useAppDispatch()
   const store = useAppSelector(state => state.absen_kelas_santri)
 
-  // Permissions
   const canExport = useCan('export')
 
-  // Loading States
   const [loadingExport, setLoadingExport] = useState(false)
-  const [loadingFilter, setLoadingFilter] = useState(false)
 
-  // Master Dropdown States
-  const [listLembaga, setListLembaga] = useState<OptionType[]>([{ label: 'Semua Departemen', value: '' }])
-  const [listTahunAjaran, setListTahunAjaran] = useState<OptionType[]>([{ label: 'Semua Tahun Ajaran', value: '' }])
-  const [listSemester, setListSemester] = useState<OptionType[]>([{ label: 'Semua Info Jadwal', value: '' }])
-
-  // Selected Filters
+  const [listLembaga, setListLembaga] = useState<OptionType[]>([{ label: 'Semua Lembaga', value: '' }])
   const [selectedLembaga, setSelectedLembaga] = useState<OptionType | null>({
-    label: 'Semua Departemen',
+    label: 'Semua Lembaga',
     value: ''
   })
-  const [selectedTahunAjaran, setSelectedTahunAjaran] = useState<OptionType | null>(null)
-  const [selectedSemester, setSelectedSemester] = useState<OptionType | null>(null)
 
-  // Date Range (default: Current Month)
-  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfMonth(new Date()))
-  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(endOfMonth(new Date()))
-
-  // Search & Pagination State
+  const [selectedBulan, setSelectedBulan] = useState<Date>(new Date())
   const [searchKeyword, setSearchKeyword] = useState('')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
 
-  // Detail Modal State
-  const [detailModalOpen, setDetailModalOpen] = useState(false)
-  const [selectedTeacher, setSelectedTeacher] = useState<any | null>(null)
-
-  // 1. Fetch Master Departemen (Lembaga)
   useEffect(() => {
     const loadLembaga = async () => {
       try {
@@ -108,116 +81,39 @@ const RekapJadwalGuruView: React.FC<{ isStandalone?: boolean }> = ({ isStandalon
           value: item.id_lembaga
         }))
 
-        setListLembaga([{ label: 'Semua Departemen', value: '' }, ...formalOptions, ...pesantrenOptions])
+        setListLembaga([{ label: 'Semua Lembaga', value: '' }, ...formalOptions, ...pesantrenOptions])
       } catch {
-        setListLembaga([{ label: 'Semua Departemen', value: '' }])
+        setListLembaga([{ label: 'Semua Lembaga', value: '' }])
       }
     }
 
     loadLembaga()
   }, [dispatch])
 
-  // 2. Fetch Master Tahun Ajaran
-  useEffect(() => {
-    const loadTahunAjaran = async () => {
-      try {
-        const res = await dispatch(fetchTahunAjaranAll({})).unwrap()
-        const dataArr = res?.data || (Array.isArray(res) ? res : [])
-        const options: OptionType[] = dataArr.map((ta: any) => ({
-          label: `${ta.tahun_ajaran || ta.nama} ${ta.status === 'Aktif' ? '(Aktif)' : ''}`.trim(),
-          value: ta.id_tahunajaran,
-          status: ta.status
-        }))
-
-        setListTahunAjaran([{ label: 'Semua Tahun Ajaran', value: '' }, ...options])
-
-        // Auto select active tahun ajaran if available
-        const activeTa = options.find(o => o.status === 'Aktif')
-        if (activeTa) {
-          setSelectedTahunAjaran(activeTa)
-        }
-      } catch {
-        setListTahunAjaran([{ label: 'Semua Tahun Ajaran', value: '' }])
-      }
-    }
-
-    loadTahunAjaran()
-  }, [dispatch])
-
-  // 3. Fetch Master Semester (dependent on selected Tahun Ajaran)
-  useEffect(() => {
-    const loadSemester = async () => {
-      try {
-        const params: any = {}
-        if (selectedTahunAjaran?.value) {
-          params.id_tahunajaran = selectedTahunAjaran.value
-        }
-        const res = await dispatch(fetchSemesterAll(params)).unwrap()
-        const dataArr = res?.data || (Array.isArray(res) ? res : [])
-        const options: OptionType[] = dataArr.map((sem: any) => ({
-          label: `${sem.nama_semester || sem.semester || 'Semester'} ${sem.status === 'Aktif' ? '(Aktif)' : ''}`.trim(),
-          value: sem.id_semester,
-          status: sem.status
-        }))
-
-        setListSemester([{ label: 'Semua Info Jadwal', value: '' }, ...options])
-
-        // Auto select active semester if available
-        const activeSem = options.find(o => o.status === 'Aktif')
-        if (activeSem) {
-          setSelectedSemester(activeSem)
-        }
-      } catch {
-        setListSemester([{ label: 'Semua Info Jadwal', value: '' }])
-      }
-    }
-
-    loadSemester()
-  }, [dispatch, selectedTahunAjaran?.value])
-
-  // 4. Fetch Report Data
   const executeFetch = useCallback(
     (currentPage: number, currentPerPage: number) => {
+      const start = startOfMonth(selectedBulan)
+      const end = endOfMonth(selectedBulan)
+
       const params: any = {
         page: currentPage,
         perPage: currentPerPage,
-        keyword: searchKeyword || undefined
-      }
-
-      if (selectedLembaga?.value) {
-        params.id_lembaga = selectedLembaga.value
-      }
-      if (selectedTahunAjaran?.value) {
-        params.id_tahunajaran = selectedTahunAjaran.value
-      }
-      if (selectedSemester?.value) {
-        params.id_semester = selectedSemester.value
-      }
-      if (tanggalAwal) {
-        params.tanggal_awal = format(tanggalAwal, 'yyyy-MM-dd')
-      }
-      if (tanggalAkhir) {
-        params.tanggal_akhir = format(tanggalAkhir, 'yyyy-MM-dd')
+        keyword: searchKeyword.trim() || undefined,
+        id_lembaga: selectedLembaga?.value || undefined,
+        bulan: format(selectedBulan, 'yyyy-MM'),
+        tanggal_awal: format(start, 'yyyy-MM-dd'),
+        tanggal_akhir: format(end, 'yyyy-MM-dd')
       }
 
       dispatch(fetchRekapGuruPage(params))
     },
-    [
-      dispatch,
-      searchKeyword,
-      selectedLembaga?.value,
-      selectedTahunAjaran?.value,
-      selectedSemester?.value,
-      tanggalAwal,
-      tanggalAkhir
-    ]
+    [dispatch, searchKeyword, selectedLembaga?.value, selectedBulan]
   )
 
   useEffect(() => {
     executeFetch(page, perPage)
   }, [page, perPage, executeFetch])
 
-  // Handlers
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setPage(1)
@@ -226,19 +122,22 @@ const RekapJadwalGuruView: React.FC<{ isStandalone?: boolean }> = ({ isStandalon
 
   const handleRefresh = () => {
     executeFetch(page, perPage)
-    toast.info('Data rekap guru diperbarui')
+    toast.info('Data kehadiran guru diperbarui')
   }
 
   const handleExportExcel = async () => {
     try {
       setLoadingExport(true)
+      const start = startOfMonth(selectedBulan)
+      const end = endOfMonth(selectedBulan)
+
       const payload: any = {
-        keyword: searchKeyword || undefined,
+        keyword: searchKeyword.trim() || undefined,
         id_lembaga: selectedLembaga?.value || undefined,
-        id_tahunajaran: selectedTahunAjaran?.value || undefined,
-        id_semester: selectedSemester?.value || undefined,
-        tanggal_awal: tanggalAwal ? format(tanggalAwal, 'yyyy-MM-dd') : undefined,
-        tanggal_akhir: tanggalAkhir ? format(tanggalAkhir, 'yyyy-MM-dd') : undefined
+        nama_lembaga: selectedLembaga?.label || 'Semua Lembaga',
+        bulan: format(selectedBulan, 'yyyy-MM'),
+        tanggal_awal: format(start, 'yyyy-MM-dd'),
+        tanggal_akhir: format(end, 'yyyy-MM-dd')
       }
 
       const res = await dispatch(postRekapGuruExport(payload)).unwrap()
@@ -262,79 +161,40 @@ const RekapJadwalGuruView: React.FC<{ isStandalone?: boolean }> = ({ isStandalon
     }
   }
 
-  const handleOpenDetail = (teacher: any) => {
-    setSelectedTeacher(teacher)
-    setDetailModalOpen(true)
-  }
-
-  const summary = store.rekapGuruPage?.summary || {
-    total_guru: store.rekapGuruPage?.total || 0,
-    total_sesi: 0,
-    total_jam: 0
-  }
-
   const tableData = store.rekapGuruPage?.values || []
   const totalCount = store.rekapGuruPage?.total || 0
   const isLoading = store.loading
 
-  // Periode Label Text
-  const periodeText = `Periode ${tanggalAwal ? format(tanggalAwal, 'dd MMMM yyyy') : '-'} s/d ${tanggalAkhir ? format(tanggalAkhir, 'dd MMMM yyyy') : '-'}`
+  const bulanFormatted = format(selectedBulan, 'MMMM yyyy')
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* 1. Header Filter Card (Matching JIBAS Screenshot Design) */}
-      <Card
-        sx={{
-          p: 3,
-          boxShadow: '0 4px 18px 0 rgba(0,0,0,0.06)',
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2
-        }}
-        className='no-print'
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            mb: 3,
-            flexWrap: 'wrap',
-            gap: 2
-          }}
-        >
-          <Box>
-            <Typography
-              variant='h5'
-              sx={{ fontWeight: 700, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}
-            >
-              <i className='tabler-file-analytics text-primary text-2xl' />
-              Rekap Jadwal Guru / Laporan Bulanan Guru
-            </Typography>
-            <Typography variant='body2' color='text.secondary'>
-              Rekapitulasi aktivitas mengajar guru bersumber dari data jurnal kelas
-            </Typography>
-          </Box>
-
-          <Box sx={{ textAlign: 'right' }}>
-            <Typography
-              variant='caption'
-              sx={{ color: 'warning.dark', fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase' }}
-            >
-              Rekap Jadwal Guru
-            </Typography>
-            <Typography variant='caption' sx={{ display: 'block', color: 'text.secondary' }}>
-              Jadwal &gt; Rekap Jadwal Guru
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Filter Controls Grid */}
-        <Grid container spacing={3} alignItems='center'>
-          {/* Departemen / Lembaga */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <Card sx={{ p: 4, borderRadius: 2 }} className='no-print'>
+        <Grid container spacing={4} alignItems='center'>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <Typography variant='caption' sx={{ fontWeight: 600, mb: 0.5, display: 'block' }}>
-              Departemen / Lembaga
+              Bulan (Periode Bulan & Tahun)
+            </Typography>
+            <AppReactDatepicker
+              selected={selectedBulan}
+              id='filter-bulan'
+              onChange={(date: Date | null) => {
+                if (date) {
+                  setSelectedBulan(date)
+                  setPage(1)
+                }
+              }}
+              showMonthYearPicker
+              dateFormat='MMMM yyyy'
+              popperPlacement='bottom-start'
+              popperProps={{ strategy: 'fixed' }}
+              customInput={<PickersComponent placeholder='Pilih Bulan' />}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Typography variant='caption' sx={{ fontWeight: 600, mb: 0.5, display: 'block' }}>
+              Lembaga
             </Typography>
             <Autocomplete
               fullWidth
@@ -342,57 +202,16 @@ const RekapJadwalGuruView: React.FC<{ isStandalone?: boolean }> = ({ isStandalon
               options={listLembaga}
               value={selectedLembaga}
               onChange={(_, val) => {
-                setSelectedLembaga(val)
+                setSelectedLembaga(val || { label: 'Semua Lembaga', value: '' })
                 setPage(1)
               }}
               getOptionLabel={option => option.label || ''}
-              isOptionEqualToValue={(option, value) => option.value === value.value}
-              renderInput={params => <TextField {...params} placeholder='Pilih Departemen' />}
+              isOptionEqualToValue={(option, value) => option.value === value?.value}
+              renderInput={params => <TextField {...params} placeholder='Pilih Lembaga' />}
             />
           </Grid>
 
-          {/* Tahun Ajaran */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Typography variant='caption' sx={{ fontWeight: 600, mb: 0.5, display: 'block' }}>
-              Tahun Ajaran
-            </Typography>
-            <Autocomplete
-              fullWidth
-              size='small'
-              options={listTahunAjaran}
-              value={selectedTahunAjaran}
-              onChange={(_, val) => {
-                setSelectedTahunAjaran(val)
-                setPage(1)
-              }}
-              getOptionLabel={option => option.label || ''}
-              isOptionEqualToValue={(option, value) => option.value === value.value}
-              renderInput={params => <TextField {...params} placeholder='Pilih Tahun Ajaran' />}
-            />
-          </Grid>
-
-          {/* Info Jadwal / Semester */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Typography variant='caption' sx={{ fontWeight: 600, mb: 0.5, display: 'block' }}>
-              Info Jadwal / Semester
-            </Typography>
-            <Autocomplete
-              fullWidth
-              size='small'
-              options={listSemester}
-              value={selectedSemester}
-              onChange={(_, val) => {
-                setSelectedSemester(val)
-                setPage(1)
-              }}
-              getOptionLabel={option => option.label || ''}
-              isOptionEqualToValue={(option, value) => option.value === value.value}
-              renderInput={params => <TextField {...params} placeholder='Pilih Semester' />}
-            />
-          </Grid>
-
-          {/* Search Box */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 12, sm: 12, md: 4 }}>
             <Typography variant='caption' sx={{ fontWeight: 600, mb: 0.5, display: 'block' }}>
               Pencarian Guru
             </Typography>
@@ -400,7 +219,7 @@ const RekapJadwalGuruView: React.FC<{ isStandalone?: boolean }> = ({ isStandalon
               <TextField
                 fullWidth
                 size='small'
-                placeholder='Cari NIP / Nama Guru...'
+                placeholder='Cari Nama / NIP Guru...'
                 value={searchKeyword}
                 onChange={e => setSearchKeyword(e.target.value)}
                 InputProps={{
@@ -413,170 +232,89 @@ const RekapJadwalGuruView: React.FC<{ isStandalone?: boolean }> = ({ isStandalon
               />
             </form>
           </Grid>
-
-          {/* Tanggal Range Filter */}
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Typography variant='caption' sx={{ fontWeight: 600, mb: 0.5, display: 'block' }}>
-              Tanggal Mulai
-            </Typography>
-            <AppReactDatepicker
-              selected={tanggalAwal}
-              id='tanggal-awal'
-              onChange={(date: Date | null) => {
-                setTanggalAwal(date)
-                setPage(1)
-              }}
-              placeholderText='dd/MM/yyyy'
-              dateFormat='dd/MM/yyyy'
-              popperPlacement='bottom-start'
-              popperProps={{ strategy: 'fixed' }}
-              customInput={<PickersComponent />}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Typography variant='caption' sx={{ fontWeight: 600, mb: 0.5, display: 'block' }}>
-              Tanggal Selesai
-            </Typography>
-            <AppReactDatepicker
-              selected={tanggalAkhir}
-              id='tanggal-akhir'
-              onChange={(date: Date | null) => {
-                setTanggalAkhir(date)
-                setPage(1)
-              }}
-              placeholderText='dd/MM/yyyy'
-              dateFormat='dd/MM/yyyy'
-              popperPlacement='bottom-start'
-              popperProps={{ strategy: 'fixed' }}
-              customInput={<PickersComponent />}
-            />
-          </Grid>
-
-          {/* Quick Presets */}
-          <Grid size={{ xs: 12, sm: 12, md: 6 }}>
-            <Typography variant='caption' sx={{ fontWeight: 600, mb: 0.5, display: 'block' }}>
-              Preset Periode Cepat
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Button
-                size='small'
-                variant='outlined'
-                onClick={() => {
-                  setTanggalAwal(startOfMonth(new Date()))
-                  setTanggalAkhir(endOfMonth(new Date()))
-                  setPage(1)
-                }}
-              >
-                Bulan Ini
-              </Button>
-              <Button
-                size='small'
-                variant='outlined'
-                onClick={() => {
-                  const now = new Date()
-                  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-                  setTanggalAwal(startOfMonth(prevMonth))
-                  setTanggalAkhir(endOfMonth(prevMonth))
-                  setPage(1)
-                }}
-              >
-                Bulan Lalu
-              </Button>
-              <Button
-                size='small'
-                variant='outlined'
-                onClick={() => {
-                  const now = new Date()
-                  setTanggalAwal(new Date(now.getFullYear(), 0, 1))
-                  setTanggalAkhir(new Date(now.getFullYear(), 11, 31))
-                  setPage(1)
-                }}
-              >
-                1 Tahun Penuh
-              </Button>
-            </Box>
-          </Grid>
         </Grid>
       </Card>
 
-      {/* 2. Main Report Table Card */}
-      <Card sx={{ boxShadow: '0 4px 18px 0 rgba(0,0,0,0.06)', borderRadius: 2 }}>
-        {/* Periode Banner & Action Buttons */}
-        <Box
-          sx={{
-            p: 2.5,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 2,
-            bgcolor: 'action.hover'
-          }}
-        >
-          {/* Left: Periode Text & Badges */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            <Typography variant='subtitle1' sx={{ fontWeight: 700, color: 'text.primary' }}>
-              {periodeText}
-            </Typography>
+      <Card sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: 2 }}>
+        <Box sx={{ p: 4, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              flexWrap: 'wrap',
+              gap: 2
+            }}
+          >
+            <Box>
+              <Typography
+                variant='h6'
+                sx={{
+                  fontWeight: 800,
+                  letterSpacing: 0.5,
+                  textTransform: 'uppercase',
+                  color: 'text.primary',
+                  fontSize: '1.15rem'
+                }}
+              >
+                PRESENTASE KEHADIRAN GURU
+              </Typography>
 
-            <Chip
-              size='small'
-              color='primary'
-              variant='tonal'
-              label={`Total Guru: ${totalCount}`}
-              icon={<i className='tabler-users' />}
-            />
-            <Chip
-              size='small'
-              color='info'
-              variant='tonal'
-              label={`Total Sesi: ${summary.total_sesi} sesi`}
-              icon={<i className='tabler-book' />}
-            />
-            <Chip
-              size='small'
-              color='success'
-              variant='tonal'
-              label={`Total Jam: ${Number(summary.total_jam || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} Jam`}
-              icon={<i className='tabler-clock' />}
-            />
-          </Box>
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <Typography variant='body2' sx={{ fontWeight: 700, minWidth: 80, color: 'text.primary' }}>
+                    Lembaga :
+                  </Typography>
+                  <Typography variant='body2' color='text.primary'>
+                    {selectedLembaga?.label || 'Semua Lembaga'}
+                  </Typography>
+                </Box>
 
-          {/* Right: Actions (Refresh, Cetak, Export) */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }} className='no-print'>
-            <Button
-              variant='tonal'
-              color='secondary'
-              size='small'
-              startIcon={<i className='tabler-refresh' />}
-              onClick={handleRefresh}
-            >
-              Refresh
-            </Button>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <Typography variant='body2' sx={{ fontWeight: 700, minWidth: 80, color: 'text.primary' }}>
+                    Bulan :
+                  </Typography>
+                  <Typography variant='body2' color='text.primary'>
+                    {bulanFormatted}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
 
-            <Button
-              variant='contained'
-              color='success'
-              size='small'
-              startIcon={
-                loadingExport ? (
-                  <CircularProgress size={16} color='inherit' />
-                ) : (
-                  <i className='tabler-file-spreadsheet' />
-                )
-              }
-              disabled={loadingExport || tableData.length === 0}
-              onClick={handleExportExcel}
-            >
-              Export Excel
-            </Button>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }} className='no-print'>
+              <Button
+                variant='outlined'
+                size='small'
+                startIcon={<i className='tabler-refresh' />}
+                onClick={handleRefresh}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                Segarkan
+              </Button>
+
+              {canExport && (
+                <Button
+                  variant='contained'
+                  color='success'
+                  size='small'
+                  startIcon={
+                    loadingExport ? (
+                      <CircularProgress size={16} color='inherit' />
+                    ) : (
+                      <i className='tabler-file-spreadsheet' />
+                    )
+                  }
+                  disabled={loadingExport || tableData.length === 0}
+                  onClick={handleExportExcel}
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                  Export Excel
+                </Button>
+              )}
+            </Box>
           </Box>
         </Box>
 
-        {/* Report Table */}
         <TableContainer sx={{ minHeight: 300, position: 'relative' }}>
           {isLoading && (
             <Box
@@ -597,116 +335,115 @@ const RekapJadwalGuruView: React.FC<{ isStandalone?: boolean }> = ({ isStandalon
             </Box>
           )}
 
-          <Table size='medium' sx={{ borderCollapse: 'collapse' }}>
-            {/* Table Header Structure */}
-            <TableHead sx={{ bgcolor: '#374151' }}>
-              <TableRow>
+          <Table
+            size='small'
+            sx={{
+              borderCollapse: 'collapse',
+              minWidth: 800,
+              '& th, & td': {
+                border: '1px solid',
+                borderColor: 'divider'
+              }
+            }}
+          >
+            <TableHead>
+              <TableRow sx={{ bgcolor: 'action.hover' }}>
                 <TableCell
                   rowSpan={2}
                   sx={{
-                    color: '#fff',
                     fontWeight: 700,
                     textAlign: 'center',
-                    width: 60,
-                    borderRight: '1px solid #4b5563'
+                    width: 60
                   }}
                 >
                   No
                 </TableCell>
                 <TableCell
                   rowSpan={2}
-                  sx={{ color: '#fff', fontWeight: 700, minWidth: 220, borderRight: '1px solid #4b5563' }}
+                  sx={{
+                    fontWeight: 700,
+                    minWidth: 240
+                  }}
                 >
                   Nama Guru
                 </TableCell>
                 <TableCell
-                  colSpan={6}
+                  rowSpan={2}
                   sx={{
-                    color: '#fff',
                     fontWeight: 700,
                     textAlign: 'center',
-                    bgcolor: '#1f2937',
-                    borderBottom: '1px solid #4b5563',
-                    borderRight: '1px solid #4b5563'
+                    width: 120
                   }}
                 >
-                  Jumlah
+                  Wajib Hadir
+                </TableCell>
+                <TableCell
+                  colSpan={4}
+                  sx={{
+                    fontWeight: 700,
+                    textAlign: 'center'
+                  }}
+                >
+                  Absensi (Sesi)
                 </TableCell>
                 <TableCell
                   rowSpan={2}
-                  sx={{ color: '#fff', fontWeight: 700, textAlign: 'center', width: 90 }}
-                  className='no-print'
+                  sx={{
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    width: 140
+                  }}
                 >
-                  Aksi
+                  Total Jam
+                </TableCell>
+                <TableCell
+                  rowSpan={2}
+                  sx={{
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    width: 120
+                  }}
+                >
+                  Kehadiran %
                 </TableCell>
               </TableRow>
 
-              <TableRow sx={{ bgcolor: '#4b5563' }}>
+              <TableRow sx={{ bgcolor: 'action.hover' }}>
                 <TableCell
                   sx={{
-                    color: '#fff',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     textAlign: 'center',
-                    width: 90,
-                    borderRight: '1px solid #6b7280'
+                    width: 70
                   }}
                 >
-                  Mengajar
+                  S
                 </TableCell>
                 <TableCell
                   sx={{
-                    color: '#fff',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     textAlign: 'center',
-                    width: 90,
-                    borderRight: '1px solid #6b7280'
+                    width: 70
                   }}
                 >
-                  Asistensi
+                  I
                 </TableCell>
                 <TableCell
                   sx={{
-                    color: '#fff',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     textAlign: 'center',
-                    width: 90,
-                    borderRight: '1px solid #6b7280'
+                    width: 70
                   }}
                 >
-                  Tambahan
+                  A
                 </TableCell>
                 <TableCell
                   sx={{
-                    color: '#fff',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     textAlign: 'center',
-                    width: 80,
-                    borderRight: '1px solid #6b7280'
+                    width: 80
                   }}
                 >
-                  Jam
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: '#fff',
-                    fontWeight: 600,
-                    textAlign: 'center',
-                    width: 80,
-                    borderRight: '1px solid #6b7280'
-                  }}
-                >
-                  Kelas
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: '#fff',
-                    fontWeight: 600,
-                    textAlign: 'center',
-                    width: 80,
-                    borderRight: '1px solid #6b7280'
-                  }}
-                >
-                  Hari
+                  Hadir
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -715,84 +452,55 @@ const RekapJadwalGuruView: React.FC<{ isStandalone?: boolean }> = ({ isStandalon
               {tableData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} sx={{ textAlign: 'center', py: 8 }}>
-                    <i className='tabler-database-off text-5xl text-secondary mb-2' />
+                    <i className='tabler-user-off text-5xl text-secondary mb-2' />
                     <Typography variant='body1' sx={{ fontWeight: 600 }}>
                       Data tidak ditemukan
                     </Typography>
                     <Typography variant='caption' color='text.secondary'>
-                      Tidak ada catatan jurnal mengajar pada filter / periode yang dipilih
+                      Tidak ada data guru atau jadwal mengajar pada filter yang dipilih
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 tableData.map((row: any, idx: number) => {
                   const rowNumber = (page - 1) * perPage + idx + 1
-                  const isEven = idx % 2 === 0
+                  const persen = row.kehadiran_persen ?? 0
 
                   return (
                     <TableRow
-                      key={row.id_petugas || idx}
-                      sx={{
-                        bgcolor: isEven ? '#f0f9ff' : '#ffffff',
-                        '&:hover': { bgcolor: '#e0f2fe' },
-                        transition: 'background-color 0.2s'
-                      }}
+                      key={row.id_pegawai || idx}
+                      hover
+                      sx={{ '&:nth-of-type(even)': { bgcolor: 'action.hover' } }}
                     >
-                      <TableCell sx={{ textAlign: 'center', fontWeight: 600, borderRight: '1px solid #e2e8f0' }}>
-                        {rowNumber}
-                      </TableCell>
-                      <TableCell sx={{ borderRight: '1px solid #e2e8f0' }}>
+                      <TableCell sx={{ textAlign: 'center', fontWeight: 600 }}>{rowNumber}</TableCell>
+                      <TableCell>
                         <Typography variant='body2' sx={{ fontWeight: 600, color: 'text.primary' }}>
-                          {row.nama || row.nama_guru}
+                          {row.nama_guru || row.nama}
                         </Typography>
-                        <Typography
-                          variant='caption'
-                          sx={{
-                            color: 'text.secondary',
-                            display: 'block',
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                            mt: 0.3
-                          }}
-                        >
-                          NIP: {row.nip && row.nip !== '-' ? row.nip : '-'}
-                        </Typography>
+                        {row.nip && row.nip !== '-' && (
+                          <Typography variant='caption' color='text.secondary'>
+                            NIP: {row.nip}
+                          </Typography>
+                        )}
                       </TableCell>
-                      <TableCell sx={{ textAlign: 'center', fontWeight: 600, borderRight: '1px solid #e2e8f0' }}>
-                        {row.mengajar ?? 0}
+                      <TableCell sx={{ textAlign: 'center', fontWeight: 700 }}>{row.wajib_hadir || 0}</TableCell>
+                      <TableCell sx={{ textAlign: 'center' }}>{row.sakit || 0}</TableCell>
+                      <TableCell sx={{ textAlign: 'center' }}>{row.izin || 0}</TableCell>
+                      <TableCell sx={{ textAlign: 'center' }}>{row.alfa || 0}</TableCell>
+                      <TableCell sx={{ textAlign: 'center', fontWeight: 700, color: 'primary.main' }}>
+                        {row.hadir ?? row.total_hadir ?? row.total ?? 0}
                       </TableCell>
-                      <TableCell
-                        sx={{ textAlign: 'center', color: 'text.secondary', borderRight: '1px solid #e2e8f0' }}
-                      >
-                        {row.asistensi ?? 0}
+                      <TableCell sx={{ textAlign: 'center', fontWeight: 600 }}>
+                        {row.total_jam_label || (row.total_jam !== undefined ? `${row.total_jam} Jam` : '0 Jam')}
                       </TableCell>
-                      <TableCell
-                        sx={{ textAlign: 'center', color: 'text.secondary', borderRight: '1px solid #e2e8f0' }}
-                      >
-                        {row.tambahan ?? 0}
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          textAlign: 'center',
-                          fontWeight: 700,
-                          color: 'primary.main',
-                          borderRight: '1px solid #e2e8f0'
-                        }}
-                      >
-                        {Number(row.jam ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'center', fontWeight: 600, borderRight: '1px solid #e2e8f0' }}>
-                        {row.kelas ?? 0}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'center', fontWeight: 600, borderRight: '1px solid #e2e8f0' }}>
-                        {row.hari ?? 0}
-                      </TableCell>
-                      <TableCell sx={{ textAlign: 'center' }} className='no-print'>
-                        <Tooltip title='Lihat Rincian Sesi Jurnal'>
-                          <IconButton size='small' color='primary' onClick={() => handleOpenDetail(row)}>
-                            <i className='tabler-list-details' />
-                          </IconButton>
-                        </Tooltip>
+                      <TableCell sx={{ textAlign: 'center' }}>
+                        <Chip
+                          size='small'
+                          label={`${persen}%`}
+                          color={persen >= 90 ? 'success' : persen >= 75 ? 'warning' : 'error'}
+                          variant='tonal'
+                          sx={{ fontWeight: 700 }}
+                        />
                       </TableCell>
                     </TableRow>
                   )
@@ -802,87 +510,34 @@ const RekapJadwalGuruView: React.FC<{ isStandalone?: boolean }> = ({ isStandalon
           </Table>
         </TableContainer>
 
-        {/* Standard Table Pagination */}
-        <Box
-          className='no-print'
-          sx={{
-            p: 2.5,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: 2,
-            borderTop: '1px solid',
-            borderColor: 'divider'
-          }}
-        >
-          <Typography variant='body2' color='text.secondary'>
-            {`Menampilkan ${totalCount === 0 ? 0 : (page - 1) * perPage + 1} sampai ${Math.min(page * perPage, totalCount)} dari ${totalCount} entri`}
-          </Typography>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant='body2' color='text.secondary'>
-                Baris per halaman:
-              </Typography>
-              <TextField
-                select
-                size='small'
-                value={perPage}
-                onChange={e => {
-                  setPerPage(parseInt(e.target.value, 10))
-                  setPage(1)
-                }}
-                SelectProps={{ native: true }}
-                sx={{ width: 75 }}
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </TextField>
-            </Box>
-
+        {totalCount > perPage && (
+          <Box
+            sx={{
+              p: 3,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 2,
+              borderTop: 1,
+              borderColor: 'divider'
+            }}
+            className='no-print'
+          >
+            <Typography variant='caption' color='text.secondary'>
+              Menampilkan {(page - 1) * perPage + 1} - {Math.min(page * perPage, totalCount)} dari {totalCount} guru
+            </Typography>
             <Pagination
-              shape='rounded'
-              color='primary'
-              variant='tonal'
-              count={Math.ceil(totalCount / perPage) || 1}
+              count={Math.ceil(totalCount / perPage)}
               page={page}
-              onChange={(_, newPage) => setPage(newPage)}
-              showFirstButton
-              showLastButton
+              onChange={(_, val) => setPage(val)}
+              color='primary'
+              shape='rounded'
+              size='small'
             />
           </Box>
-        </Box>
+        )}
       </Card>
-
-      {/* Detail Jurnal Modal */}
-      <DetailJurnalGuruDialog
-        open={detailModalOpen}
-        onClose={() => {
-          setDetailModalOpen(false)
-          setSelectedTeacher(null)
-        }}
-        teacherData={selectedTeacher}
-      />
-
-      {/* Print CSS Styles */}
-      <style jsx global>{`
-        @media print {
-          .no-print {
-            display: none !important;
-          }
-          body {
-            background: white !important;
-            color: black !important;
-          }
-          .MuiCard-root {
-            box-shadow: none !important;
-            border: none !important;
-          }
-        }
-      `}</style>
     </Box>
   )
 }

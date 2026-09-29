@@ -56,8 +56,13 @@ export async function loginOneSignal(externalId: string, retryCount = 0): Promis
   }
 
   if (!initialized) {
-    console.warn('⚠️ OneSignal is not initialized yet. Retrying login in 500ms...')
-    setTimeout(() => loginOneSignal(externalId, retryCount), 500)
+    if (retryCount >= 5) {
+      console.warn('⚠️ OneSignal is not initialized after 5 retries. Aborting login.')
+      return
+    }
+
+    console.warn(`⚠️ OneSignal is not initialized yet. Retrying login (${retryCount + 1}/5) in 500ms...`)
+    setTimeout(() => loginOneSignal(externalId, retryCount + 1), 500)
     return
   }
 
