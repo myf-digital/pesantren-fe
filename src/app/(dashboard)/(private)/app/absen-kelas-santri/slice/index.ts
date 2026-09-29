@@ -130,7 +130,10 @@ export const fetchKelasList = createAsyncThunk('absenKelasSantri/fetchKelasList'
 
 export const fetchMatchingJamPelajaran = createAsyncThunk(
   'absenKelasSantri/fetchJamPelajaran',
-  async (params: { waktu_absen: string }, thunkAPI) => {
+  async (
+    params?: { waktu_absen?: string; id_kelas?: string; tanggal?: string; hari?: string },
+    thunkAPI?: any
+  ) => {
     try {
       const response = await api.get('/app/absen-kelas-santri/jam-pelajaran', { params })
       return response.data

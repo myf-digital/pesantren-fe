@@ -163,61 +163,147 @@ const AbsenKelasHarianSantriList = () => {
   const [anchorPresensi, setAnchorPresensi] = useState<null | HTMLElement>(null)
   const [openModalKonfirmasi, setOpenModalKonfirmasi] = useState(false)
 
-  // Ambil Master Data Shift via fetchMatchingShiftAsrama
+  // Ambil Master Data Kelas & Jam Pelajaran Awal
   useEffect(() => {
-    const getShiftMaster = async () => {
+    const initMaster = async () => {
       try {
+        setLoadingLokasi(true)
         setLoadingJampel(true)
-        const waktuSekarang = format(new Date(), 'HH:mm')
-        const res = await dispatch(fetchMatchingJamPelajaran({ waktu_absen: waktuSekarang })).unwrap()
 
-        const rawData = res?.data || (Array.isArray(res) ? res : [])
-        if (Array.isArray(rawData)) {
-          const uniqueData = rawData.filter((item: JamPelOption, index: number, self: JamPelOption[]) =>
+        const waktuSekarang = format(new Date(), 'HH:mm')
+        const tglStr = tanggal ? format(tanggal, 'yyyy-MM-dd') : undefined
+
+        const [resKelas, resJam] = await Promise.all([
+          dispatch(fetchKelasList({})).unwrap(),
+          dispatch(fetchMatchingJamPelajaran({ waktu_absen: waktuSekarang, tanggal: tglStr })).unwrap()
+        ])
+
+        const valuesKelas = resKelas?.data || resKelas || []
+        const formattedKelas = Array.isArray(valuesKelas)
+          ? valuesKelas.map((c: any) => ({
+              id_kelas: c.id_kelas,
+              nama_kelas: c.nama_kelas
+            }))
+          : []
+        const uniqueLokasi = formattedKelas.filter((item: KelasOption, index: number, self: KelasOption[]) =>
+          item && item.id_kelas ? index === self.findIndex(t => t.id_kelas === item.id_kelas) : true
+        )
+        setListLokasi([{ id_kelas: '', nama_kelas: 'Semua' }, ...uniqueLokasi])
+
+        const rawJam = resJam?.data || (Array.isArray(resJam) ? resJam : [])
+        if (Array.isArray(rawJam)) {
+          const uniqueJam = rawJam.filter((item: JamPelOption, index: number, self: JamPelOption[]) =>
             item && item.id_jampel ? index === self.findIndex(t => t.id_jampel === item.id_jampel) : true
           )
-          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...uniqueData])
-          if (res?.message?.includes('jam pelajaran yang cocok') && uniqueData.length > 0) {
-            setSelectedJampel(uniqueData[0] || null)
+          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...uniqueJam])
+          if (resJam?.message?.includes('jam pelajaran yang cocok') && uniqueJam.length > 0) {
+            setSelectedJampel(uniqueJam[0] || null)
           }
         } else {
           setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }])
         }
       } catch {
+        setListLokasi([{ id_kelas: '', nama_kelas: 'Semua' }])
         setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }])
       } finally {
+        setLoadingLokasi(false)
         setLoadingJampel(false)
       }
     }
-    getShiftMaster()
+    initMaster()
   }, [dispatch])
 
-  // Ambil Master Data Kelas via fetchKelasList
-  useEffect(() => {
-    const getLokasiMaster = async () => {
-      try {
-        setLoadingLokasi(true)
-        const res = await dispatch(fetchKelasList({})).unwrap()
-
-        const valuesData = res?.data || res || []
-        const formatted = Array.isArray(valuesData)
-          ? valuesData.map((c: any) => ({
-              id_kelas: c.id_kelas,
-              nama_kelas: c.nama_kelas
-            }))
-          : []
-        const uniqueLokasi = formatted.filter((item: KelasOption, index: number, self: KelasOption[]) =>
-          item && item.id_kelas ? index === self.findIndex(t => t.id_kelas === item.id_kelas) : true
-        )
-        setListLokasi([{ id_kelas: '', nama_kelas: 'Semua' }, ...uniqueLokasi])
-      } catch {
-        setListLokasi([{ id_kelas: '', nama_kelas: 'Semua' }])
-      } finally {
-        setLoadingLokasi(false)
+  // Handler Perubahan Kelas -> Update List Jam Pelajaran
+  const handleLokasiChange = async (newLokasi: KelasOption | null) => {
+    setSelectedLokasi(newLokasi)
+    try {
+      setLoadingJampel(true)
+      const params: any = {}
+      if (newLokasi?.id_kelas) {
+        params.id_kelas = newLokasi.id_kelas
       }
+      if (tanggal) {
+        params.tanggal = format(tanggal, 'yyyy-MM-dd')
+      } else {
+        params.waktu_absen = format(new Date(), 'HH:mm')
+      }
+
+      const res = await dispatch(fetchMatchingJamPelajaran(params)).unwrap()
+      const rawData = res?.data || (Array.isArray(res) ? res : [])
+      if (Array.isArray(rawData)) {
+        const uniqueData = rawData.filter((item: JamPelOption, index: number, self: JamPelOption[]) =>
+          item && item.id_jampel ? index === self.findIndex(t => t.id_jampel === item.id_jampel) : true
+        )
+        setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...uniqueData])
+
+        // Reset atau pertahankan selectedJampel jika cocok
+        setSelectedJampel(prev => {
+          if (!prev || !prev.id_jampel) return { id_jampel: '', nama_jampel: 'Semua' }
+          const exists = uniqueData.find((item: JamPelOption) => item.id_jampel === prev.id_jampel)
+          return exists || { id_jampel: '', nama_jampel: 'Semua' }
+        })
+      } else {
+        setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }])
+        setSelectedJampel({ id_jampel: '', nama_jampel: 'Semua' })
+      }
+    } catch {
+      setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }])
+      setSelectedJampel({ id_jampel: '', nama_jampel: 'Semua' })
+    } finally {
+      setLoadingJampel(false)
     }
-    getLokasiMaster()
-  }, [dispatch])
+  }
+
+  // Handler Perubahan Jam Pelajaran -> Auto Pilih Kelas & Filter List Kelas
+  const handleJampelChange = async (newJampel: JamPelOption | null) => {
+    setSelectedJampel(newJampel)
+    try {
+      setLoadingLokasi(true)
+      const params: any = {}
+      if (newJampel?.id_jampel) {
+        params.id_jam_pelajaran = newJampel.id_jampel
+      }
+      if (tanggal) {
+        params.tanggal = format(tanggal, 'yyyy-MM-dd')
+      }
+
+      const res = await dispatch(fetchKelasList(params)).unwrap()
+      const valuesData = res?.data || res || []
+      const formatted = Array.isArray(valuesData)
+        ? valuesData.map((c: any) => ({
+            id_kelas: c.id_kelas,
+            nama_kelas: c.nama_kelas
+          }))
+        : []
+      const uniqueLokasi = formatted.filter((item: KelasOption, index: number, self: KelasOption[]) =>
+        item && item.id_kelas ? index === self.findIndex(t => t.id_kelas === item.id_kelas) : true
+      )
+      setListLokasi([{ id_kelas: '', nama_kelas: 'Semua' }, ...uniqueLokasi])
+
+      // Auto terpilih kelas dari jam pelajaran jika kelas dipilih
+      if (newJampel?.id_jampel && uniqueLokasi.length > 0) {
+        setSelectedLokasi(prev => {
+          if (prev && prev.id_kelas && uniqueLokasi.some((k: KelasOption) => k.id_kelas === prev.id_kelas)) {
+            return prev
+          }
+          return uniqueLokasi[0]
+        })
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingLokasi(false)
+    }
+  }
+
+  const handleTanggalChange = (date: Date | null) => {
+    setTanggal(date)
+    if (selectedLokasi?.id_kelas) {
+      handleLokasiChange(selectedLokasi)
+    } else if (selectedJampel?.id_jampel) {
+      handleJampelChange(selectedJampel)
+    }
+  }
 
   // Fungsi Fetch Data Utama Log Tabel
   const executeFetchData = useCallback(
@@ -239,7 +325,7 @@ const AbsenKelasHarianSantriList = () => {
   )
 
   useEffect(() => {
-    if (!loadingJampel && !loadingLokasi && listJampel.length > 0 && listLokasi.length > 0 && !isInitialLoaded) {
+    if (!loadingJampel && !loadingLokasi && listLokasi.length > 0 && !isInitialLoaded) {
       setIsInitialLoaded(true)
       const filters = {
         tanggal: formatTanggal(tanggal),
@@ -299,15 +385,46 @@ const AbsenKelasHarianSantriList = () => {
   }
 
   // Handler Reset Filter
-  const handleResetFilter = () => {
+  const handleResetFilter = async () => {
     setTanggal(new Date())
-    setSelectedJampel(listJampel.find(s => s.id_jampel === '') || null)
-    setSelectedLokasi(listLokasi.find(k => k.id_kelas === '') || null)
+    setSelectedJampel({ id_jampel: '', nama_jampel: 'Semua' })
+    setSelectedLokasi({ id_kelas: '', nama_kelas: 'Semua' })
     setStatus('Semua')
     setSearchTyped('')
     setPage(1)
     setIsFilterApplied(false)
     setCurrentFilters(null)
+
+    try {
+      setLoadingLokasi(true)
+      setLoadingJampel(true)
+      const [resKelas, resJam] = await Promise.all([
+        dispatch(fetchKelasList({})).unwrap(),
+        dispatch(fetchMatchingJamPelajaran({ waktu_absen: format(new Date(), 'HH:mm') })).unwrap()
+      ])
+
+      const valuesKelas = resKelas?.data || resKelas || []
+      const formattedKelas = Array.isArray(valuesKelas)
+        ? valuesKelas.map((c: any) => ({ id_kelas: c.id_kelas, nama_kelas: c.nama_kelas }))
+        : []
+      const uniqueKelas = formattedKelas.filter((item: KelasOption, index: number, self: KelasOption[]) =>
+        item && item.id_kelas ? index === self.findIndex(t => t.id_kelas === item.id_kelas) : true
+      )
+      setListLokasi([{ id_kelas: '', nama_kelas: 'Semua' }, ...uniqueKelas])
+
+      const rawJam = resJam?.data || (Array.isArray(resJam) ? resJam : [])
+      if (Array.isArray(rawJam)) {
+        const uniqueJam = rawJam.filter((item: JamPelOption, index: number, self: JamPelOption[]) =>
+          item && item.id_jampel ? index === self.findIndex(t => t.id_jampel === item.id_jampel) : true
+        )
+        setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...uniqueJam])
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingLokasi(false)
+      setLoadingJampel(false)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -324,12 +441,12 @@ const AbsenKelasHarianSantriList = () => {
       toast.warning('Silakan lengkapi data terlebih dahulu: Tanggal belum diisi')
       return false
     }
-    if (!selectedJampel || !selectedJampel.id_jampel || selectedJampel.nama_jampel === 'Semua') {
-      toast.warning('Silakan lengkapi data terlebih dahulu: Jam Pelajaran harus dipilih secara spesifik')
+    if (!selectedLokasi || !selectedLokasi.id_kelas || selectedLokasi.nama_kelas === 'Semua') {
+      toast.warning('Silakan lengkapi data terlebih dahulu: Kelas harus dipilih secara spesifik')
       return false
     }
-    if (!selectedLokasi || !selectedLokasi.id_kelas || selectedLokasi.nama_kelas === 'Semua') {
-      toast.warning('Silakan lengkapi data terlebih dahulu: Lokasi harus dipilih secara spesifik')
+    if (!selectedJampel || !selectedJampel.id_jampel || selectedJampel.nama_jampel === 'Semua') {
+      toast.warning('Silakan lengkapi data terlebih dahulu: Jam Pelajaran harus dipilih secara spesifik')
       return false
     }
     return true
@@ -471,7 +588,7 @@ const AbsenKelasHarianSantriList = () => {
             <Grid size={{ xs: 12, sm: 2.4 }}>
               <AppReactDatepicker
                 selected={tanggal}
-                onChange={(date: Date | null) => setTanggal(date)}
+                onChange={handleTanggalChange}
                 placeholderText='MM/DD/YYYY'
                 showMonthDropdown
                 showYearDropdown
@@ -482,35 +599,6 @@ const AbsenKelasHarianSantriList = () => {
               />
             </Grid>
 
-            {/* SELECTABLE SEARCH: SHIFT PRESENSI */}
-            <Grid size={{ xs: 12, sm: 2.4 }}>
-              <Autocomplete
-                size='small'
-                options={listJampel}
-                loading={loadingJampel}
-                value={selectedJampel}
-                onChange={(_, newValue) => setSelectedJampel(newValue)}
-                getOptionLabel={option => option.nama_jampel || ''}
-                getOptionKey={option => option.id_jampel || option.nama_jampel || 'jampel-semua'}
-                isOptionEqualToValue={(option, value) => option.id_jampel === value?.id_jampel}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    label='Jam Pelajaran'
-                    InputProps={{
-                      ...params.InputProps,
-                      endAdornment: (
-                        <>
-                          {loadingJampel ? <CircularProgress color='inherit' size={20} /> : null}
-                          {params.InputProps.endAdornment}
-                        </>
-                      )
-                    }}
-                  />
-                )}
-              />
-            </Grid>
-
             {/* SELECTABLE SEARCH: KELAS */}
             <Grid size={{ xs: 12, sm: 2.4 }}>
               <Autocomplete
@@ -518,7 +606,7 @@ const AbsenKelasHarianSantriList = () => {
                 options={listLokasi}
                 loading={loadingLokasi}
                 value={selectedLokasi}
-                onChange={(_, newValue) => setSelectedLokasi(newValue)}
+                onChange={(_, newValue) => handleLokasiChange(newValue)}
                 getOptionLabel={option => option.nama_kelas || ''}
                 getOptionKey={option => option.id_kelas || option.nama_kelas || 'kelas-semua'}
                 isOptionEqualToValue={(option, value) => option.id_kelas === value?.id_kelas}
@@ -531,6 +619,35 @@ const AbsenKelasHarianSantriList = () => {
                       endAdornment: (
                         <>
                           {loadingLokasi ? <CircularProgress color='inherit' size={20} /> : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      )
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+
+            {/* SELECTABLE SEARCH: JAM PELAJARAN */}
+            <Grid size={{ xs: 12, sm: 2.4 }}>
+              <Autocomplete
+                size='small'
+                options={listJampel}
+                loading={loadingJampel}
+                value={selectedJampel}
+                onChange={(_, newValue) => handleJampelChange(newValue)}
+                getOptionLabel={option => option.nama_jampel || ''}
+                getOptionKey={option => option.id_jampel || option.nama_jampel || 'jampel-semua'}
+                isOptionEqualToValue={(option, value) => option.id_jampel === value?.id_jampel}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label='Jam Pelajaran'
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: (
+                        <>
+                          {loadingJampel ? <CircularProgress color='inherit' size={20} /> : null}
                           {params.InputProps.endAdornment}
                         </>
                       )
@@ -693,19 +810,19 @@ const AbsenKelasHarianSantriList = () => {
             </Typography>
 
             <Typography variant='body2' color='text.secondary'>
-              Jam Pelajaran
-            </Typography>
-            <Typography variant='body2'>:</Typography>
-            <Typography variant='body2' sx={{ fontWeight: 500 }}>
-              {store.jamPel?.nama_jampel || selectedJampel?.nama_jampel || ''} (otomatis)
-            </Typography>
-
-            <Typography variant='body2' color='text.secondary'>
               Kelas
             </Typography>
             <Typography variant='body2'>:</Typography>
             <Typography variant='body2' sx={{ fontWeight: 500 }}>
               {selectedLokasi?.nama_kelas || '-'} (otomatis)
+            </Typography>
+
+            <Typography variant='body2' color='text.secondary'>
+              Jam Pelajaran
+            </Typography>
+            <Typography variant='body2'>:</Typography>
+            <Typography variant='body2' sx={{ fontWeight: 500 }}>
+              {store.jamPel?.nama_jampel || selectedJampel?.nama_jampel || ''} (otomatis)
             </Typography>
           </Box>
 
