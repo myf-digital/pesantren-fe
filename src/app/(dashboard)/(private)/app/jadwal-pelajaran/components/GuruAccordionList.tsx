@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 
 import Accordion from '@mui/material/Accordion'
 import AccordionSummary from '@mui/material/AccordionSummary'
@@ -25,14 +25,20 @@ import CircularProgress from '@mui/material/CircularProgress'
 import { toast } from 'react-toastify'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
-import { deleteJadwalPelajaran, fetchJadwalPelajaranAll } from '../slice/index'
-import { fetchGuruMataPelajaranAll, fetchPegawaiAll } from '../../guru-mata-pelajaran/slice'
+import { deleteJadwalPelajaran, fetchJadwalGuruPage } from '../slice/index'
+import { fetchLembagaFormalAll } from '../../lembaga-formal/slice'
+import { fetchLembagaAll as fetchLembagaKepesantrenanAll } from '../../lembaga-kepesantrenan/slice'
 import { fetchLocationAll } from '../../location/slice'
 import CustomAvatar from '@core/components/mui/Avatar'
 import CustomChip from '@core/components/mui/Chip'
 import { getInitials } from '@/utils/getInitials'
 import DialogDelete from '@views/onevour/components/dialog-delete'
 import QuickJadwalDialog from './QuickJadwalDialog'
+
+interface OptionType {
+  label: string
+  value: string
+}
 
 const HARI_OPTIONS = [
   { label: 'Semua Hari', value: '' },
@@ -70,15 +76,20 @@ export default function GuruAccordionList({
   onFilterChange
 }: GuruAccordionListProps) {
   const dispatch = useAppDispatch()
-
+  const storeJadwal = useAppSelector(state => state.jadwal_pelajaran)
   const storeLokasi = useAppSelector(state => state.location)
 
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedHari, setSelectedHari] = useState<any>(HARI_OPTIONS[0])
-  const [selectedStatus, setSelectedStatus] = useState<any>(STATUS_OPTIONS[0])
-  const [selectedGedung, setSelectedGedung] = useState<any>({ label: 'Semua Gedung', value: '' })
+  const [selectedStatus, setSelectedStatus] = useState<any>(STATUS_OPTIONS[1]) // Default Aktif
 
-  const [rawJadwal, setRawJadwal] = useState<any[]>([])
+  const [listLembaga, setListLembaga] = useState<OptionType[]>([{ label: 'Semua Lembaga', value: '' }])
+  const [selectedLembaga, setSelectedLembaga] = useState<OptionType | null>({
+    label: 'Semua Lembaga',
+    value: ''
+  })
+
   const [loading, setLoading] = useState(false)
   const [expandedGuru, setExpandedGuru] = useState<string | false>(false)
 
@@ -94,90 +105,90 @@ export default function GuruAccordionList({
     title: ''
   })
 
+  // Debounce search input
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(value)
+      setPage(0)
+    }, 400)
+  }
+
+  // Load Lembaga options
   useEffect(() => {
-    dispatch(fetchPegawaiAll({}))
-    dispatch(fetchGuruMataPelajaranAll({}))
+    const loadLembaga = async () => {
+      try {
+        const [resFormal, resPesantren] = await Promise.all([
+          dispatch(fetchLembagaFormalAll({ status: 'Aktif' })).unwrap(),
+          dispatch(fetchLembagaKepesantrenanAll({ status: 'Aktif' })).unwrap()
+        ])
+
+        const formalOptions: OptionType[] = (resFormal?.data || (Array.isArray(resFormal) ? resFormal : [])).map(
+          (item: any) => ({
+            label: `${item.nama_lembaga || item.nama} (Formal)`,
+            value: item.id_lembaga
+          })
+        )
+
+        const pesantrenOptions: OptionType[] = (
+          resPesantren?.data || (Array.isArray(resPesantren) ? resPesantren : [])
+        ).map((item: any) => ({
+          label: `${item.nama_lembaga || item.nama} (Kepesantrenan)`,
+          value: item.id_lembaga
+        }))
+
+        setListLembaga([{ label: 'Semua Lembaga', value: '' }, ...formalOptions, ...pesantrenOptions])
+      } catch {
+        setListLembaga([{ label: 'Semua Lembaga', value: '' }])
+      }
+    }
+
+    loadLembaga()
     dispatch(fetchLocationAll({ orderWithParent: true, jenis_lokasi: 'RuangKelas' }))
   }, [dispatch])
 
+  // Notify parent of active filters (for export)
   useEffect(() => {
     onFilterChange?.({
       hari: selectedHari?.value || undefined,
       status: selectedStatus?.value || undefined,
-      id_lokasi_parent: selectedGedung?.value || undefined,
-      q: searchTerm.trim() || undefined
+      id_lembaga: selectedLembaga?.value || undefined,
+      q: debouncedSearch.trim() || undefined
     })
-  }, [selectedHari, selectedStatus, selectedGedung, searchTerm, onFilterChange])
+  }, [selectedHari, selectedStatus, selectedLembaga, debouncedSearch, onFilterChange])
 
-  const loadJadwalList = async () => {
-    setLoading(true)
-    try {
-      const params: any = {}
-      if (selectedHari?.value) params.hari = selectedHari.value
-      if (selectedStatus?.value) params.status = selectedStatus.value
-      if (selectedGedung?.value) params.id_lokasi_parent = selectedGedung.value
+  // Server-side paginated fetch
+  const executeFetch = useCallback(
+    async (currentPage: number, currentLimit: number) => {
+      setLoading(true)
+      try {
+        const params: any = {
+          page: currentPage + 1, // backend is 1-indexed
+          perPage: currentLimit,
+          keyword: debouncedSearch.trim() || undefined,
+          hari: selectedHari?.value || undefined,
+          status: selectedStatus?.value || undefined,
+          id_lembaga: selectedLembaga?.value || undefined
+        }
 
-      const res = await dispatch(fetchJadwalPelajaranAll(params)).unwrap()
-      if (res?.data) {
-        setRawJadwal(res.data)
-      } else {
-        setRawJadwal([])
+        await dispatch(fetchJadwalGuruPage(params)).unwrap()
+      } catch {
+        toast.error('Gagal memuat jadwal guru')
+      } finally {
+        setLoading(false)
       }
-    } catch {
-      toast.error('Gagal memuat jadwal guru')
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+    [dispatch, debouncedSearch, selectedHari?.value, selectedStatus?.value, selectedLembaga?.value]
+  )
 
   useEffect(() => {
-    loadJadwalList()
-  }, [selectedHari, selectedStatus, selectedGedung])
+    executeFetch(page, rowsPerPage)
+  }, [page, rowsPerPage, executeFetch])
 
-  const groupedGuruList = useMemo(() => {
-    const guruMap = new Map<
-      string,
-      {
-        guru: any
-        schedules: any[]
-      }
-    >()
-
-    rawJadwal.forEach((item: any) => {
-      const pegawai = item.jenis_guru?.pegawai
-      if (pegawai) {
-        const pId = pegawai.id_pegawai
-        if (!guruMap.has(pId)) {
-          guruMap.set(pId, {
-            guru: pegawai,
-            schedules: []
-          })
-        }
-        const g = guruMap.get(pId)!
-        g.schedules.push(item)
-      }
-    })
-
-    let list = Array.from(guruMap.values()).filter(item => item.schedules.length > 0)
-
-    if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase()
-      list = list.filter(item => {
-        const name = (item.guru.nama_lengkap || '').toLowerCase()
-        const nip = (item.guru.nip || '').toLowerCase()
-        return name.includes(q) || nip.includes(q)
-      })
-    }
-
-    list.sort((a, b) => (a.guru.nama_lengkap || '').localeCompare(b.guru.nama_lengkap || ''))
-
-    return list
-  }, [rawJadwal, searchTerm])
-
-  const paginatedList = useMemo(() => {
-    const start = page * rowsPerPage
-    return groupedGuruList.slice(start, start + rowsPerPage)
-  }, [groupedGuruList, page, rowsPerPage])
+  const guruList = storeJadwal.guruPage?.values || []
+  const totalCount = storeJadwal.guruPage?.total || 0
 
   const handleAccordionToggle = (panelId: string) => (_: any, isExpanded: boolean) => {
     setExpandedGuru(isExpanded ? panelId : false)
@@ -206,7 +217,7 @@ export default function GuruAccordionList({
       await dispatch(deleteJadwalPelajaran(deleteConfirm.id)).unwrap()
       toast.success('Jadwal berhasil dihapus')
       setDeleteConfirm({ open: false, id: '', title: '' })
-      loadJadwalList()
+      executeFetch(page, rowsPerPage)
     } catch {
       toast.error('Gagal menghapus jadwal')
     }
@@ -221,22 +232,6 @@ export default function GuruAccordionList({
     setDialogOpen(true)
   }
 
-  const getGedungOptions = () => {
-    const parentsMap = new Map<string, { label: string; value: string }>()
-    storeLokasi.datas.forEach(r => {
-      if (r.parent) {
-        parentsMap.set(r.parent.id_lokasi, {
-          label: r.parent.nama_lokasi,
-          value: r.parent.id_lokasi
-        })
-      }
-    })
-    return [
-      { label: 'Semua Gedung', value: '' },
-      ...Array.from(parentsMap.values()).sort((a, b) => a.label.localeCompare(b.label))
-    ]
-  }
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* Filter Card */}
@@ -248,10 +243,7 @@ export default function GuruAccordionList({
               fullWidth
               placeholder='Cari Guru / NIP...'
               value={searchTerm}
-              onChange={e => {
-                setSearchTerm(e.target.value)
-                setPage(0)
-              }}
+              onChange={e => handleSearchChange(e.target.value)}
               InputProps={{
                 startAdornment: <i className='tabler-search' style={{ marginRight: 8, color: '#94a3b8' }} />
               }}
@@ -276,10 +268,10 @@ export default function GuruAccordionList({
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Autocomplete
               size='small'
-              options={getGedungOptions()}
-              value={selectedGedung}
+              options={listLembaga}
+              value={selectedLembaga}
               onChange={(_, val) => {
-                setSelectedGedung(val || { label: 'Semua Lembaga', value: '' })
+                setSelectedLembaga(val || { label: 'Semua Lembaga', value: '' })
                 setPage(0)
               }}
               getOptionLabel={o => o.label || ''}
@@ -314,7 +306,7 @@ export default function GuruAccordionList({
               Memuat daftar jadwal mengajar guru...
             </Typography>
           </Box>
-        ) : paginatedList.length === 0 ? (
+        ) : guruList.length === 0 ? (
           <Box sx={{ p: 8, textAlign: 'center' }}>
             <i className='tabler-user-off' style={{ fontSize: '3rem', color: '#94a3b8' }} />
             <Typography variant='h6' sx={{ mt: 2, fontWeight: 600 }}>
@@ -326,9 +318,9 @@ export default function GuruAccordionList({
           </Box>
         ) : (
           <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {paginatedList.map(({ guru, schedules }) => {
+            {guruList.map(({ guru, schedules }: any) => {
               const isExpanded = expandedGuru === guru.id_pegawai
-              const totalSlots = schedules.length
+              const totalSlots = schedules?.length || 0
 
               return (
                 <Accordion
@@ -407,10 +399,10 @@ export default function GuruAccordionList({
 
                   {/* Body: Sub-Table Jadwal Guru */}
                   <AccordionDetails sx={{ p: 0, borderTop: '1px solid', borderColor: 'divider' }}>
-                    {schedules.length === 0 ? (
+                    {totalSlots === 0 ? (
                       <Box sx={{ py: 4, px: 4, textAlign: 'center', bgcolor: 'action.hover' }}>
                         <Typography variant='body2' color='text.secondary'>
-                          Guru ini belum memiliki jadwal mengajar aktif.
+                          Guru ini belum memiliki jadwal mengajar pada filter yang dipilih.
                         </Typography>
                         <Button
                           size='small'
@@ -440,7 +432,7 @@ export default function GuruAccordionList({
                           </TableHead>
 
                           <TableBody>
-                            {schedules.map(slot => {
+                            {schedules.map((slot: any) => {
                               const namaKelas = slot.kelas_formal
                                 ? slot.kelas_formal.nama_kelas
                                 : slot.kelas_mda?.nama_kelas_mda || '-'
@@ -562,10 +554,10 @@ export default function GuruAccordionList({
           </Box>
         )}
 
-        {/* Standard Template TablePagination */}
+        {/* Server-Side TablePagination */}
         <TablePagination
           component='div'
-          count={groupedGuruList.length}
+          count={totalCount}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}
           rowsPerPage={rowsPerPage}
@@ -589,7 +581,7 @@ export default function GuruAccordionList({
           setEditId(null)
           setPresetSlot(null)
         }}
-        onSuccess={loadJadwalList}
+        onSuccess={() => executeFetch(page, rowsPerPage)}
         idJadwal={editId}
         presetData={presetSlot}
       />
@@ -610,3 +602,4 @@ export default function GuruAccordionList({
     </Box>
   )
 }
+

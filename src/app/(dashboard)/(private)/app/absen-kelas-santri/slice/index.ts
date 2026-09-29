@@ -24,6 +24,20 @@ export interface InitialState {
       total_jam: number
     }
   }
+  rekapSantriPage: {
+    values: any[]
+    total: number
+    summary?: {
+      total_kelas: number
+      total_siswa: number
+      total_hadir: number
+      total_sakit: number
+      total_izin: number
+      total_alfa: number
+      total_absen: number
+      avg_kehadiran: number
+    }
+  }
   data: any
   jamPel: any
   santriList: any[]
@@ -52,6 +66,20 @@ const initialState: InitialState = {
       total_guru: 0,
       total_sesi: 0,
       total_jam: 0
+    }
+  },
+  rekapSantriPage: {
+    values: [],
+    total: 0,
+    summary: {
+      total_kelas: 0,
+      total_siswa: 0,
+      total_hadir: 0,
+      total_sakit: 0,
+      total_izin: 0,
+      total_alfa: 0,
+      total_absen: 0,
+      avg_kehadiran: 0
     }
   },
   data: {},
@@ -262,6 +290,30 @@ export const postRekapGuruExport = createAsyncThunk<any, any>(
   }
 )
 
+export const fetchRekapSantriPage = createAsyncThunk(
+  'absenKelasSantri/fetchRekapSantriPage',
+  async (params: any, thunkAPI) => {
+    try {
+      const response = await api.get('/app/absen-kelas-santri/rekap-santri', { params })
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.rejectWithValue(e.response?.data)
+    }
+  }
+)
+
+export const postRekapSantriExport = createAsyncThunk<any, any>(
+  'absenKelasSantri/exportRekapSantri',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.post('/app/absen-kelas-santri/rekap-santri/export', params)
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
+
 export const postJurnalKelasExport = createAsyncThunk<any, any>(
   'absenKelasSantri/exportJurnal',
   async (params, thunkAPI) => {
@@ -311,6 +363,23 @@ export const absenKelasSantriSlice = createSlice({
         values: action.payload?.data?.values || [],
         total: action.payload?.data?.total || 0,
         summary: action.payload?.data?.summary || { total_guru: 0, total_sesi: 0, total_jam: 0 }
+      }
+    })
+
+    builder.addCase(fetchRekapSantriPage.fulfilled, (state, action) => {
+      state.rekapSantriPage = {
+        values: action.payload?.data?.values || [],
+        total: action.payload?.data?.total || 0,
+        summary: action.payload?.data?.summary || {
+          total_kelas: 0,
+          total_siswa: 0,
+          total_hadir: 0,
+          total_sakit: 0,
+          total_izin: 0,
+          total_alfa: 0,
+          total_absen: 0,
+          avg_kehadiran: 0
+        }
       }
     })
 

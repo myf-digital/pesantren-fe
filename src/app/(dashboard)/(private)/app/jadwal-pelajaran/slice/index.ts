@@ -24,6 +24,10 @@ export interface InitialState {
     values: any[]
     total: number
   }
+  guruPage: {
+    values: any[]
+    total: number
+  }
   data: any
   datas: any[]
   crud: any
@@ -38,6 +42,10 @@ export interface InitialState {
 
 const initialState: InitialState = {
   dataPage: {
+    values: [],
+    total: 0
+  },
+  guruPage: {
     values: [],
     total: 0
   },
@@ -64,8 +72,22 @@ export interface FetchParamAlls {
   id_tingkat?: string
   id_lokasi?: string
   id_lokasi_parent?: string
+  id_lembaga?: string
   [key: string]: any
 }
+
+export const fetchJadwalGuruPage = createAsyncThunk<any, any>(
+  'jadwal-pelajaran/fetchGuruPage',
+  async (params, thunkAPI) => {
+    try {
+      const response = await api.get(`/app/jadwal-pelajaran/jadwal-guru`, { params })
+
+      return response.data
+    } catch (e: any) {
+      return thunkAPI.fulfillWithValue(e.response?.data)
+    }
+  }
+)
 
 export const fetchJadwalPelajaranAll = createAsyncThunk<any, FetchParamAlls | void>(
   'jadwal-pelajaran/fetchAll',
@@ -183,6 +205,13 @@ export const slice = createSlice({
     resetRedux: () => initialState
   },
   extraReducers: builder => {
+    builder.addCase(fetchJadwalGuruPage.fulfilled, (state, action) => {
+      state.guruPage = {
+        values: action.payload?.data?.values || [],
+        total: action.payload?.data?.total || 0
+      }
+    })
+
     builder.addCase(fetchJadwalPelajaranAll.fulfilled, (state, action) => {
       state.datas = action.payload.data || []
     })
