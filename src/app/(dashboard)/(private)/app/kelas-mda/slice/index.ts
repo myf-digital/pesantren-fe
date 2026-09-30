@@ -50,6 +50,7 @@ const initialState: InitialState = {
 export interface FetchParamAlls {
   status?: string
   id_tingkat?: string
+  id_tahunajaran?: string
 }
 
 export const fetchKelasMdaAll = createAsyncThunk<any, FetchParamAlls>(

@@ -30,8 +30,10 @@ import { fetchTingkatAll } from '../../tingkat/slice'
 import { fetchKelasFormalAll } from '../../kelas-formal/slice'
 import { fetchKelasMdaAll } from '../../kelas-mda/slice'
 import { fetchJamPelajaranAll } from '../../jam-pelajaran/slice'
+import Chip from '@mui/material/Chip'
 import DialogDelete from '@views/onevour/components/dialog-delete'
 import QuickJadwalDialog from './QuickJadwalDialog'
+import { fetchPegawaiAll } from '../../pegawai/slice'
 
 const DAYS = [
   { key: 'Senin', label: 'Senin' },
@@ -68,6 +70,7 @@ export default function MatriksJadwalKelas({
   const storeTingkat = useAppSelector(state => state.tingkat)
   const storeKelasFormal = useAppSelector(state => state.kelas_formal)
   const storeKelasMda = useAppSelector(state => state.kelas_mda)
+  const storePegawai = useAppSelector(state => state.pegawai)
   const storeJam = useAppSelector(state => state.jam_pelajaran)
   const storeJadwal = useAppSelector(state => state.jadwal_pelajaran)
 
@@ -78,6 +81,7 @@ export default function MatriksJadwalKelas({
   const [selectedSemester, setSelectedSemester] = useState<any>(null)
   const [selectedTingkat, setSelectedTingkat] = useState<any>(null)
   const [selectedKelas, setSelectedKelas] = useState<any>(null)
+  const [selectedGuru, setSelectedGuru] = useState<any>(null)
 
   const [matrixData, setMatrixData] = useState<any[]>([])
   const [loadingMatrix, setLoadingMatrix] = useState(false)
@@ -95,15 +99,24 @@ export default function MatriksJadwalKelas({
   useEffect(() => {
     onFilterChange?.({
       id_kelas: selectedKelas?.value || undefined,
+      id_pegawai: selectedGuru?.value || undefined,
       id_tahunajaran: selectedTahunAjaran?.value || undefined,
       id_semester: selectedSemester?.value || undefined,
       status: 'Aktif'
     })
-  }, [selectedKelas, selectedTahunAjaran, selectedSemester, onFilterChange])
+  }, [selectedKelas, selectedGuru, selectedTahunAjaran, selectedSemester, onFilterChange])
 
   useEffect(() => {
     dispatch(fetchTahunAjaranAll({ status: 'Aktif' }))
     dispatch(fetchTingkatAll({ type: selectedLembagaType?.value || 'FORMAL' }))
+    dispatch(
+      fetchPegawaiAll({
+        status_pegawai: 'Aktif',
+        is_guru: true,
+        lembaga_type: selectedLembagaType?.value || 'FORMAL',
+        perPage: 1000
+      })
+    )
   }, [dispatch, selectedLembagaType])
 
   useEffect(() => {
@@ -113,8 +126,11 @@ export default function MatriksJadwalKelas({
     if (selectedKelas?.value) {
       params.id_kelas = selectedKelas.value
     }
+    if (selectedGuru?.value) {
+      params.id_pegawai = selectedGuru.value
+    }
     dispatch(fetchJamPelajaranAll(params))
-  }, [dispatch, selectedLembagaType, selectedKelas?.value])
+  }, [dispatch, selectedLembagaType, selectedKelas?.value, selectedGuru?.value])
 
   useEffect(() => {
     if (storeTahunAjaran.datas.length > 0 && !selectedTahunAjaran) {
@@ -132,12 +148,22 @@ export default function MatriksJadwalKelas({
   }, [storeSemester.datas, selectedSemester])
 
   useEffect(() => {
-    if (selectedLembagaType?.value === 'PESANTREN') {
-      dispatch(fetchKelasMdaAll({ status: 'Aktif', id_tingkat: selectedTingkat?.value }))
-    } else {
-      dispatch(fetchKelasFormalAll({ status: 'Aktif', id_tingkat: selectedTingkat?.value }))
+    const params: any = {
+      status: 'Aktif'
     }
-  }, [dispatch, selectedLembagaType, selectedTingkat])
+    if (selectedTingkat?.value) {
+      params.id_tingkat = selectedTingkat.value
+    }
+    if (selectedTahunAjaran?.value) {
+      params.id_tahunajaran = selectedTahunAjaran.value
+    }
+
+    if (selectedLembagaType?.value === 'PESANTREN') {
+      dispatch(fetchKelasMdaAll(params))
+    } else {
+      dispatch(fetchKelasFormalAll(params))
+    }
+  }, [dispatch, selectedLembagaType, selectedTingkat, selectedTahunAjaran?.value])
 
   useEffect(() => {
     const list = selectedLembagaType?.value === 'PESANTREN' ? storeKelasMda.datas : storeKelasFormal.datas
@@ -152,7 +178,7 @@ export default function MatriksJadwalKelas({
           return
         }
       }
-      if (!selectedKelas) {
+      if (!selectedKelas && !selectedGuru?.value) {
         const first = list[0]
         setSelectedKelas({
           label: first.nama_kelas || first.nama_kelas_mda,
@@ -160,24 +186,32 @@ export default function MatriksJadwalKelas({
         })
       }
     }
-  }, [storeKelasFormal.datas, storeKelasMda.datas, selectedLembagaType, initialKelasId, selectedKelas])
+  }, [storeKelasFormal.datas, storeKelasMda.datas, selectedLembagaType, initialKelasId, selectedKelas, selectedGuru])
 
   const loadScheduleMatrix = async () => {
-    if (!selectedKelas?.value) return
+    if (!selectedKelas?.value && !selectedGuru?.value) {
+      setMatrixData([])
+      return
+    }
 
     setLoadingMatrix(true)
     try {
-      dispatch(
-        fetchJamPelajaranAll({
-          lembaga_type: selectedLembagaType?.value || 'FORMAL',
-          id_kelas: selectedKelas.value
-        })
-      )
+      const jamParams: any = {
+        lembaga_type: selectedLembagaType?.value || 'FORMAL'
+      }
+      if (selectedKelas?.value) {
+        jamParams.id_kelas = selectedKelas.value
+      }
+      if (selectedGuru?.value) {
+        jamParams.id_pegawai = selectedGuru.value
+      }
+      dispatch(fetchJamPelajaranAll(jamParams))
 
       const params: any = {
-        id_kelas: selectedKelas.value,
         status: 'Aktif'
       }
+      if (selectedKelas?.value) params.id_kelas = selectedKelas.value
+      if (selectedGuru?.value) params.id_pegawai = selectedGuru.value
       if (selectedTahunAjaran?.value) params.id_tahunajaran = selectedTahunAjaran.value
       if (selectedSemester?.value) params.id_semester = selectedSemester.value
 
@@ -188,17 +222,19 @@ export default function MatriksJadwalKelas({
         setMatrixData([])
       }
     } catch {
-      toast.error('Gagal memuat jadwal kelas')
+      toast.error('Gagal memuat jadwal')
     } finally {
       setLoadingMatrix(false)
     }
   }
 
   useEffect(() => {
-    if (selectedKelas?.value) {
+    if (selectedKelas?.value || selectedGuru?.value) {
       loadScheduleMatrix()
+    } else {
+      setMatrixData([])
     }
-  }, [selectedKelas, selectedTahunAjaran, selectedSemester])
+  }, [selectedKelas, selectedGuru, selectedTahunAjaran, selectedSemester, selectedLembagaType])
 
   const sortedJamPelajaran = useMemo(() => {
     return [...storeJam.datas].sort((a, b) => {
@@ -227,6 +263,7 @@ export default function MatriksJadwalKelas({
       hari: hari,
       id_jam_pelajaran: jamId,
       id_kelas: selectedKelas?.value,
+      id_pegawai: selectedGuru?.value,
       id_tahunajaran: selectedTahunAjaran?.value,
       id_semester: selectedSemester?.value,
       lembaga_type: selectedLembagaType?.value,
@@ -299,10 +336,10 @@ export default function MatriksJadwalKelas({
             </Box>
             <Box>
               <Typography variant='h6' sx={{ color: 'text.primary', fontWeight: 700, lineHeight: 1.2 }}>
-                Jadwal Berdasarkan Kelas
+                Jadwal Berdasarkan Kelas / Guru
               </Typography>
               <Typography variant='caption' color='text.secondary'>
-                Atur dan susun jadwal pelajaran mingguan per kelas secara visual
+                Atur dan susun jadwal pelajaran mingguan per kelas atau per guru secara visual
               </Typography>
             </Box>
           </Box>
@@ -320,6 +357,7 @@ export default function MatriksJadwalKelas({
                 setEditId(null)
                 setPresetSlot({
                   id_kelas: selectedKelas?.value,
+                  id_pegawai: selectedGuru?.value,
                   id_tahunajaran: selectedTahunAjaran?.value,
                   id_semester: selectedSemester?.value,
                   lembaga_type: selectedLembagaType?.value
@@ -357,7 +395,7 @@ export default function MatriksJadwalKelas({
           }}
         >
           <Grid container spacing={3} alignItems='center'>
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <Typography variant='caption' sx={{ color: 'text.primary', fontWeight: 600, mb: 0.5, display: 'block' }}>
                 Lembaga Tipe:
               </Typography>
@@ -369,6 +407,7 @@ export default function MatriksJadwalKelas({
                   setSelectedLembagaType(val)
                   setSelectedKelas(null)
                   setSelectedTingkat(null)
+                  setSelectedGuru(null)
                 }}
                 getOptionLabel={o => o.label || ''}
                 isOptionEqualToValue={(o, v) => o.value === v?.value}
@@ -377,7 +416,7 @@ export default function MatriksJadwalKelas({
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <Typography variant='caption' sx={{ color: 'text.primary', fontWeight: 600, mb: 0.5, display: 'block' }}>
                 Tahun Ajaran:
               </Typography>
@@ -398,7 +437,7 @@ export default function MatriksJadwalKelas({
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <Typography variant='caption' sx={{ color: 'text.primary', fontWeight: 600, mb: 0.5, display: 'block' }}>
                 Semester / Info Jadwal:
               </Typography>
@@ -414,7 +453,31 @@ export default function MatriksJadwalKelas({
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+              <Typography variant='caption' sx={{ color: 'text.primary', fontWeight: 600, mb: 0.5, display: 'block' }}>
+                Guru / Pengajar:
+              </Typography>
+              <Autocomplete
+                size='small'
+                options={storePegawai.datas.map(p => ({
+                  label: p.nama_lengkap ? `${p.nama_lengkap}${p.nip ? ` (${p.nip})` : ''}` : '',
+                  value: p.id_pegawai
+                }))}
+                value={selectedGuru}
+                onChange={(_, val) => {
+                  setSelectedGuru(val)
+                  if (val?.value) {
+                    setSelectedKelas(null)
+                  }
+                }}
+                getOptionLabel={o => o.label || ''}
+                isOptionEqualToValue={(o, v) => o.value === v?.value}
+                sx={{ bgcolor: 'background.paper', borderRadius: 1 }}
+                renderInput={params => <TextField {...params} placeholder='Semua Guru' />}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <Typography variant='caption' sx={{ color: 'text.primary', fontWeight: 600, mb: 0.5, display: 'block' }}>
                 Tingkat:
               </Typography>
@@ -436,7 +499,7 @@ export default function MatriksJadwalKelas({
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
               <Typography variant='caption' sx={{ color: 'text.primary', fontWeight: 600, mb: 0.5, display: 'block' }}>
                 Kelas:
               </Typography>
@@ -452,7 +515,7 @@ export default function MatriksJadwalKelas({
                 getOptionLabel={o => o.label || ''}
                 isOptionEqualToValue={(o, v) => o.value === v?.value}
                 sx={{ bgcolor: 'background.paper', borderRadius: 1 }}
-                renderInput={params => <TextField {...params} placeholder='Pilih Kelas' />}
+                renderInput={params => <TextField {...params} placeholder='Semua Kelas' />}
               />
             </Grid>
           </Grid>
@@ -464,17 +527,17 @@ export default function MatriksJadwalKelas({
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 12, gap: 2 }}>
             <CircularProgress size={40} />
             <Typography variant='body2' color='text.secondary'>
-              Memuat data matriks jadwal kelas...
+              Memuat data matriks jadwal...
             </Typography>
           </Box>
-        ) : !selectedKelas?.value ? (
+        ) : !selectedKelas?.value && !selectedGuru?.value ? (
           <Box sx={{ textAlign: 'center', py: 12, px: 4 }}>
             <i className='tabler-search' style={{ fontSize: '3rem', color: '#94a3b8' }} />
             <Typography variant='h6' sx={{ mt: 2, fontWeight: 600 }}>
-              Silakan Pilih Kelas
+              Silakan Pilih Kelas atau Guru
             </Typography>
             <Typography variant='body2' color='text.secondary' sx={{ maxWidth: 450, mx: 'auto', mt: 1 }}>
-              Pilih kelas pada filter di atas untuk melihat dan menyusun matriks jadwal pelajaran mingguan.
+              Pilih kelas atau pilih guru pada filter di atas untuk melihat dan menyusun matriks jadwal pelajaran mingguan.
             </Typography>
           </Box>
         ) : sortedJamPelajaran.length === 0 ? (
@@ -583,6 +646,7 @@ export default function MatriksJadwalKelas({
                                 {slotItems.map(item => {
                                   const mapel = item.jenis_guru?.mata_pelajaran?.nama_mapel || 'Mata Pelajaran'
                                   const guru = item.jenis_guru?.pegawai?.nama_lengkap || 'Guru Pengajar'
+                                  const namaKelas = item.kelas_formal?.nama_kelas || item.kelas_mda?.nama_kelas_mda
                                   const lokasi = item.lokasi?.nama_lokasi
 
                                   return (
@@ -617,6 +681,23 @@ export default function MatriksJadwalKelas({
                                       >
                                         {mapel}
                                       </Typography>
+
+                                      {namaKelas && (
+                                        <Chip
+                                          size='small'
+                                          label={namaKelas}
+                                          color='primary'
+                                          variant='outlined'
+                                          sx={{
+                                            height: 20,
+                                            fontSize: '0.68rem',
+                                            fontWeight: 700,
+                                            bgcolor: 'rgba(2, 132, 199, 0.08)',
+                                            border: '1px solid rgba(2, 132, 199, 0.25)',
+                                            my: 0.2
+                                          }}
+                                        />
+                                      )}
 
                                       <Typography
                                         variant='caption'

@@ -147,9 +147,21 @@ export default function QuickJadwalDialog({ open, onClose, onSuccess, idJadwal, 
 
             dispatch(fetchJamPelajaranAll({ lembaga_type: d.jenis_guru.lembaga_type }))
             if (d.jenis_guru.lembaga_type === 'FORMAL') {
-              dispatch(fetchKelasFormalAll({ status: 'Aktif', id_tingkat: d.jenis_guru.id_tingkat }))
+              dispatch(
+                fetchKelasFormalAll({
+                  status: 'Aktif',
+                  id_tingkat: d.jenis_guru.id_tingkat,
+                  id_tahunajaran: d.tahun_ajaran?.id_tahunajaran || selectedTahunAjaran?.value
+                })
+              )
             } else {
-              dispatch(fetchKelasMdaAll({ status: 'Aktif', id_tingkat: d.jenis_guru.id_tingkat }))
+              dispatch(
+                fetchKelasMdaAll({
+                  status: 'Aktif',
+                  id_tingkat: d.jenis_guru.id_tingkat,
+                  id_tahunajaran: d.tahun_ajaran?.id_tahunajaran || selectedTahunAjaran?.value
+                })
+              )
             }
           }
 
@@ -287,19 +299,50 @@ export default function QuickJadwalDialog({ open, onClose, onSuccess, idJadwal, 
   const handleTahunAjaranChange = (_: any, val: any) => {
     setSelectedTahunAjaran(val)
     setSelectedSemester(null)
+    setSelectedKelas(null)
     if (val?.value) {
       dispatch(fetchSemesterAll({ status: 'Aktif', id_tahunajaran: val.value }))
+      if (selectedGMapel?.lembaga_type === 'FORMAL') {
+        dispatch(
+          fetchKelasFormalAll({
+            status: 'Aktif',
+            id_tingkat: selectedGMapel.id_tingkat,
+            id_tahunajaran: val.value
+          })
+        )
+      } else if (selectedGMapel?.lembaga_type === 'PESANTREN') {
+        dispatch(
+          fetchKelasMdaAll({
+            status: 'Aktif',
+            id_tingkat: selectedGMapel.id_tingkat,
+            id_tahunajaran: val.value
+          })
+        )
+      }
     }
   }
 
   const handleGMapelChange = (_: any, val: any) => {
     setSelectedGMapel(val)
+    setSelectedKelas(null)
     if (val) {
       dispatch(fetchJamPelajaranAll({ lembaga_type: val.lembaga_type }))
       if (val.lembaga_type === 'FORMAL') {
-        dispatch(fetchKelasFormalAll({ status: 'Aktif', id_tingkat: val.id_tingkat }))
+        dispatch(
+          fetchKelasFormalAll({
+            status: 'Aktif',
+            id_tingkat: val.id_tingkat,
+            id_tahunajaran: selectedTahunAjaran?.value
+          })
+        )
       } else {
-        dispatch(fetchKelasMdaAll({ status: 'Aktif', id_tingkat: val.id_tingkat }))
+        dispatch(
+          fetchKelasMdaAll({
+            status: 'Aktif',
+            id_tingkat: val.id_tingkat,
+            id_tahunajaran: selectedTahunAjaran?.value
+          })
+        )
       }
     }
   }
