@@ -1,8 +1,10 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+
 import DashboardCard from './DashboardCard'
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
@@ -16,7 +18,7 @@ type Series = {
 export default function DashboardLineChart({
   title,
   series,
-  labels = ['4 Jul', '8 Jul', '12 Jul', '16 Jul', '20 Jul', '24 Jul', '28 Jul', '2 Agu']
+  labels = []
 }: {
   title: string
   series: Series[]
@@ -89,18 +91,11 @@ export default function DashboardLineChart({
   return (
     <DashboardCard sx={{ p: 1.1, height: '100%' }}>
       {title && (
-        <Typography sx={{ fontSize: 9.5, fontWeight: 800, textTransform: 'uppercase', mb: .2 }}>
-          {title}
-        </Typography>
+        <Typography sx={{ fontSize: 9.5, fontWeight: 800, textTransform: 'uppercase', mb: 0.2 }}>{title}</Typography>
       )}
 
       <Box sx={{ width: '100%', height: 205 }}>
-        <Chart
-          type='line'
-          height='100%'
-          options={options}
-          series={chartSeries}
-        />
+        <Chart type='line' height='100%' options={options} series={chartSeries} />
       </Box>
     </DashboardCard>
   )

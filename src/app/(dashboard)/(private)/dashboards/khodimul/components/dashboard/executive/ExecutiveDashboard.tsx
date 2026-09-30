@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 
+import { useRouter } from 'next/navigation'
+
 import Grid from '@mui/material/Grid2'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -15,16 +17,9 @@ import { scoreColor } from '../common/dashboardTheme'
 import { fetchSummaryExecutive } from '../../../slice'
 import { useAppDispatch } from '@/redux-store/hook'
 
-const scores = [
-  ['KEPESANTRENAN', 100, 'tabler-building-mosque', 'v_rekap_presensi_santri'],
-  ['PENDIDIKAN FORMAL', 91.2, 'tabler-school', 'v_kbm_formal_today'],
-  ['PEND. NON-FORMAL', 88.4, 'tabler-book', 'v_kbm_mda_today'],
-  ['KERUMAHTANGGAAN', 78, 'tabler-home', 'v_kebersihan_sarpras_log'],
-  ['KEUANGAN', 68.5, 'tabler-wallet', 'v_keuangan_inflow_outflow']
-]
-
 export default function ExecutiveDashboard() {
   const dispatch = useAppDispatch()
+  const router = useRouter()
 
   const [summaryData, setSummaryData] = useState<any>([])
 
@@ -55,7 +50,7 @@ export default function ExecutiveDashboard() {
             icon = 'tabler-wallet'
           }
 
-          return [r.nama_pilar, r.score, icon, 'vw_executive_scorecard']
+          return [r.nama_pilar, r.score, icon, 'vw_executive_scorecard', r.kode_pilar]
         })
       )
     }
@@ -65,14 +60,31 @@ export default function ExecutiveDashboard() {
     getSummaryExecutive()
   }, [])
 
-  console.log(summaryData)
+  const navigate = (kode: string) => {
+    if (kode === 'KEPESANTRENAN') {
+      router.push('/dashboards/khodimul/dashboard/pesantren')
+    } else if (kode === 'PENDIDIKAN_FORMAL') {
+      router.push('/dashboards/khodimul/dashboard/formal')
+    } else if (kode === 'PENDIDIKAN_NON_FORMAL') {
+      router.push('/dashboards/khodimul/dashboard/non-formal')
+    } else if (kode === 'KERUMAHTANGGAAN') {
+      router.push('/dashboards/khodimul/dashboard/kerumahtanggaan')
+    } else if (kode === 'KEUANGAN') {
+      router.push('/dashboards/khodimul/dashboard/keuangan')
+    }
+  }
 
   return (
     <DashboardLayout>
       <DashboardSection title=''>
         <Grid container spacing={4} sx={{ p: 2 }}>
-          {summaryData.map(([name, score, icon, source]: any) => (
-            <Grid key={String(name)} size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }} sx={{ cursor: 'pointer' }}>
+          {summaryData.map(([name, score, icon, source, kode]: any) => (
+            <Grid
+              key={String(name)}
+              size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}
+              sx={{ cursor: 'pointer' }}
+              onClick={() => navigate(kode)}
+            >
               <DashboardCard
                 sx={{ p: 3, height: 140, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
               >
