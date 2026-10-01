@@ -76,7 +76,7 @@ export default function DashboardDonut({
 
   return (
     <DashboardCard sx={{ p: 1.1 }}>
-      <Typography sx={{ fontSize: 9.5, fontWeight: 800, textTransform: 'uppercase' }}>{title}</Typography>
+      <Typography sx={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase' }}>{title}</Typography>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.4 }}>
         <Box sx={{ width: 132, minWidth: 132, height: 155 }}>

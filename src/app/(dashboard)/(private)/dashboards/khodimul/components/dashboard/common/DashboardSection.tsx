@@ -20,7 +20,7 @@ export default function DashboardSection({
             fontSize: 10.5,
             fontWeight: 800,
             mb: 0.65,
-            px: 0.35,
+            px: 2,
             textTransform: 'uppercase',
             color: '#172033'
           }}
