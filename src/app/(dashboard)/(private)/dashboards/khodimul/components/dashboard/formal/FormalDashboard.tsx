@@ -1,8 +1,12 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+
 import Grid from '@mui/material/Grid2'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+
+import Button from '@mui/material/Button'
 
 import DashboardLayout from '../common/DashboardLayout'
 import DashboardSection from '../common/DashboardSection'
@@ -79,8 +83,21 @@ function Unit({ u }: any) {
 }
 
 export default function FormalDashboard() {
+  const router = useRouter()
+
   return (
     <DashboardLayout>
+      <Grid container spacing={4} sx={{ p: 2 }}>
+        <Button
+          variant='contained'
+          size='small'
+          color='primary'
+          startIcon={<i className='tabler-chevron-left' />}
+          onClick={() => router.push('/dashboards/khodimul')}
+        >
+          Back
+        </Button>
+      </Grid>
       <DashboardSection>
         <Grid container spacing={4} sx={{ p: 2 }}>
           <Grid size={{ xs: 12, sm: 6, md: 3, lg: 1.7 }}>

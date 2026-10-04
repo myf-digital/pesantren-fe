@@ -8,6 +8,8 @@ import Grid from '@mui/material/Grid2'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 
+import { format } from 'date-fns'
+
 import DashboardLayout from '../common/DashboardLayout'
 import DashboardSection from '../common/DashboardSection'
 import DashboardCard from '../common/DashboardCard'
@@ -26,8 +28,7 @@ export default function ExecutiveDashboard() {
   const getSummaryExecutive = async () => {
     const result = await dispatch(
       fetchSummaryExecutive({
-        //tanggal: format(new Date(), 'yyyy-MM-dd')
-        tanggal: '2026-09-12'
+        tanggal: format(new Date(), 'yyyy-MM-dd')
       })
     ).unwrap()
 

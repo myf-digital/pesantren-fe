@@ -2,11 +2,7 @@
 
 import Box from '@mui/material/Box'
 
-export default function DashboardLayout({
-  children
-}: {
-  children: React.ReactNode
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <Box
       sx={{

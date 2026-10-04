@@ -4,7 +4,7 @@ import Box from '@mui/material/Box'
 
 import { scoreColor, scoreStatus } from './dashboardTheme'
 
-export default function DashboardStatus({ score }: { score: number }) {
+export default function DashboardStatus({ score, sx }: { score: number; sx?: any }) {
   const color = scoreColor(score)
 
   const label = scoreStatus(score)
@@ -18,7 +18,8 @@ export default function DashboardStatus({ score }: { score: number }) {
         fontSize: 10,
         fontWeight: 800,
         color,
-        bgcolor: `${color}15`
+        bgcolor: `${color}15`,
+        ...sx
       }}
     >
       {label}
