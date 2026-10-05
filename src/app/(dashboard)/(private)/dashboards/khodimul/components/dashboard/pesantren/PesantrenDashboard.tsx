@@ -9,6 +9,8 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 
+import { format } from 'date-fns'
+
 import DashboardLayout from '../common/DashboardLayout'
 import DashboardSection from '../common/DashboardSection'
 import DashboardKpi from '../common/DashboardKpi'
@@ -22,77 +24,6 @@ import { dashboardColors, scoreColor } from '../common/dashboardTheme'
 
 import { fetchKepesantrenanLevelTwo } from '../../../slice'
 import { useAppDispatch } from '@/redux-store/hook'
-
-const units = [
-  {
-    name: 'Asshiddiqiyah 3 Putra',
-    subtitle: 'Mantiqoh A, B & C',
-    performance: 95.6,
-    attendance: 98.2,
-    absence: [
-      { label: 'Izin', value: 12, color: '#246bc2' },
-      { label: 'Sakit UKS', value: 4, color: '#f28c28' },
-      { label: 'Sakit Rumah/Rujukan', value: 8, color: '#dc3030' },
-      { label: 'Alpha', value: 2, color: '#7041a5' }
-    ],
-    metrics: [
-      { label: 'Kebersihan Kamar', value: '96,5%', progress: 96.5 },
-      { label: 'Kebersihan Lorong Asrama', value: '94,0%', progress: 94 },
-      { label: 'Kasus Aktif', value: '1', progress: 20 }
-    ]
-  },
-  {
-    name: 'Asshiddiqiyah 3 Putri',
-    subtitle: 'Basis Per Kamar',
-    performance: 96.8,
-    attendance: 99.1,
-    absence: [
-      { label: 'Izin', value: 8, color: '#246bc2' },
-      { label: 'Sakit UKS', value: 2, color: '#f28c28' },
-      { label: 'Sakit Rumah/Rujukan', value: 6, color: '#dc3030' },
-      { label: 'Alpha', value: 1, color: '#7041a5' }
-    ],
-    metrics: [
-      { label: 'Kebersihan Kamar', value: '98,0%', progress: 98 },
-      { label: 'Kebersihan Lorong Asrama', value: '97,5%', progress: 97.5 },
-      { label: 'Kasus Aktif', value: '0', progress: 0 }
-    ]
-  },
-  {
-    name: 'Asshiddiqiyah 4',
-    subtitle: 'Basis Per Kamar',
-    performance: 92.3,
-    attendance: 96.5,
-    absence: [
-      { label: 'Izin', value: 10, color: '#246bc2' },
-      { label: 'Sakit UKS', value: 3, color: '#f28c28' },
-      { label: 'Sakit Rumah/Rujukan', value: 5, color: '#dc3030' },
-      { label: 'Alpha', value: 4, color: '#7041a5' }
-    ],
-    metrics: [
-      { label: 'Kebersihan Kamar', value: '92,0%', progress: 92 },
-      { label: 'Kebersihan Lorong Asrama', value: '91,5%', progress: 91.5 },
-      { label: 'Kasus Aktif', value: '0', progress: 0 }
-    ]
-  },
-  {
-    name: 'Dar Ashofa’ wal Wafa’',
-    subtitle: '(Asshiddiqiyah 5)',
-    performance: 93.1,
-    attendance: 97.8,
-    absence: [
-      { label: 'Izin', value: 6, color: '#246bc2' },
-      { label: 'Sakit UKS', value: 0, color: '#f28c28' },
-      { label: 'Sakit Rumah/Rujukan', value: 3, color: '#dc3030' },
-      { label: 'Alpha', value: 2, color: '#7041a5' }
-    ],
-    metrics: [
-      { label: 'Kebersihan Kamar', value: '95,0%', progress: 95 },
-      { label: 'Kebersihan Lorong Asrama', value: '93,0%', progress: 93 },
-      { label: 'Kebersihan Lingkungan', value: '96,0%', progress: 96 }
-    ]
-  }
-]
 
 const formatNumber = (val: number | string | null | undefined): string => {
   if (val === null || val === undefined || val === '') return '0'
@@ -108,6 +39,8 @@ export default function PesantrenDashboard() {
   const router = useRouter()
 
   const [summaryData, setSummaryData] = useState<any>({})
+  const [units, setUnits] = useState<any>([])
+  const [trends, setTrends] = useState<any>([])
 
   const getKepesantrenanLevelTwo = async () => {
     const result = await dispatch(fetchKepesantrenanLevelTwo({})).unwrap()
@@ -116,6 +49,71 @@ export default function PesantrenDashboard() {
 
     if (data) {
       setSummaryData(data)
+      setUnits(
+        data.per_cabang
+          .filter((x: any) => x.id_cabang)
+          .map((r: any) => {
+            let subtitle = 'Basis Per Kamar'
+
+            if (r.nama_cabang.includes('3 Putra')) {
+              subtitle = 'Mantiqoh A, B & C'
+            } else if (r.nama_cabang.includes('Dar Asshofa')) {
+              subtitle = '(Asshiddiqiyah 5)'
+            }
+
+            return {
+              name: r.nama_cabang,
+              subtitle: subtitle,
+              performance: r.performa_total || 0,
+              attendance: r.hadir || 0,
+              absence: [
+                { label: 'Hadir', value: r.hadir || 0, color: '#087443' },
+                { label: 'Izin', value: r.izin || 0, color: '#246bc2' },
+                { label: 'Sakit UKS', value: r.sakit_uks || 0, color: '#f28c28' },
+                { label: 'Sakit Rumah/Rujukan', value: r.sakit_rumah_rujukan || 0, color: '#dc3030' },
+                { label: 'Alpha', value: r.alfa || 0, color: '#7041a5' }
+              ],
+              metrics: [
+                {
+                  label: 'Kebersihan Kamar',
+                  value: `${r.persentase_kebersihan || 0}%`,
+                  progress: `${r.persentase_kebersihan || 0}`
+                },
+                {
+                  label: 'Kebersihan Lorong Asrama',
+                  value: `${r.persentase_kebersihan || 0}%`,
+                  progress: `${r.persentase_kebersihan || 0}`
+                },
+                { label: 'Kasus Aktif', value: r.kasus_aktif || 0, progress: 20 }
+              ]
+            }
+          })
+      )
+
+      const trend = data.trend_kehadiran_30_hari
+      const hadir = []
+      const izin = []
+      const sakit = []
+      const alpha = []
+
+      for (let i = 0; i < trend.length; i++) {
+        hadir.push(trend[i].hadir)
+        izin.push(trend[i].izin)
+        sakit.push(trend[i].sakit)
+        alpha.push(trend[i].alfa)
+      }
+
+      const series = [
+        { name: 'Hadir', color: '#087443', values: hadir },
+        { name: 'Izin', color: '#246bc2', values: izin },
+        { name: 'Sakit', color: '#f28c28', values: sakit },
+        { name: 'Alpha', color: '#7041a5', values: alpha }
+      ]
+
+      setTrends({
+        series: series,
+        labels: trend.map((x: any) => format(new Date(x.tanggal), 'dd MMM'))
+      })
     }
   }
 
@@ -147,7 +145,6 @@ export default function PesantrenDashboard() {
               progress={summaryData?.performa_kepesantrenan?.performa_total || 0}
               valueColor={scoreColor(summaryData?.performa_kepesantrenan?.performa_total || 0)}
               iconColor={scoreColor(summaryData?.performa_kepesantrenan?.performa_total || 0)}
-              height={200}
               performanceDetail={
                 <Box>
                   <Box
@@ -493,7 +490,7 @@ export default function PesantrenDashboard() {
 
       <DashboardSection>
         <Grid container spacing={4} sx={{ p: 2 }}>
-          {units.map(u => (
+          {units.map((u: any) => (
             <Grid key={u.name} size={{ xs: 12, sm: 6, lg: 3 }}>
               <PesantrenUnitCard unit={u} />
             </Grid>
@@ -506,38 +503,36 @@ export default function PesantrenDashboard() {
           <Grid size={{ xs: 12, md: 3 }}>
             <DashboardLineChart
               title='Trend Kehadiran Santri (30 Hari Terakhir)'
-              series={[
-                { name: 'Hadir', color: '#087443', values: [97, 98, 96, 97, 98, 97, 98, 98, 97, 98] },
-                { name: 'Izin', color: '#246bc2', values: [20, 21, 20, 22, 20, 21, 19, 20, 21, 20] },
-                { name: 'Sakit UKS', color: '#f28c28', values: [7, 8, 7, 6, 8, 7, 6, 7, 7, 6] },
-                { name: 'Sakit Rumah/Rujukan', color: '#dc3030', values: [4, 4, 5, 4, 4, 5, 4, 4, 3, 4] },
-                { name: 'Alpha', color: '#7041a5', values: [2, 2, 2, 1, 2, 2, 1, 2, 2, 2] }
-              ]}
-              labels={['4 Jul', '8 Jul', '12 Jul', '16 Jul', '20 Jul', '24 Jul', '28 Jul', '2 Agu']}
+              series={trends?.series || []}
+              labels={trends?.labels || []}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
             <DashboardDonut
               title='Komposisi Perizinan Harian'
-              total='3.462'
+              total={'0'}
               totalLabel='Santri'
               items={[
-                { label: 'Hadir', value: 3210, color: '#087443' },
-                { label: 'Izin', value: 67, color: '#246bc2' },
-                { label: 'Sakit UKS', value: 18, color: '#f28c28' },
-                { label: 'Sakit Rumah/Rujukan', value: 21, color: '#dc3030' },
-                { label: 'Alpha', value: 39, color: '#7041a5' }
+                { label: 'Hadir', value: summaryData?.komposisi_harian?.hadir || 0, color: '#087443' },
+                { label: 'Izin', value: summaryData?.komposisi_harian?.izin || 0, color: '#246bc2' },
+                { label: 'Sakit UKS', value: summaryData?.komposisi_harian?.sakit_uks || 0, color: '#f28c28' },
+                {
+                  label: 'Sakit Rumah/Rujukan',
+                  value: summaryData?.komposisi_harian?.sakit_rumah_rujukan || 0,
+                  color: '#dc3030'
+                },
+                { label: 'Alpha', value: summaryData?.komposisi_harian?.alfa || 0, color: '#7041a5' }
               ]}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
             <DashboardBarChart
               title='Kebersihan Area Asrama'
-              items={[
-                { label: 'Kebersihan Kamar', value: 95.9 },
-                { label: 'Kebersihan Lorong Asrama', value: 94 },
-                { label: 'Kebersihan Lingkungan', value: 96 }
-              ]}
+              items={
+                summaryData?.kebersihan_area?.map((r: any) => {
+                  return { label: r.area, value: r.persentase || 0 }
+                }) || []
+              }
             />
           </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
@@ -547,9 +542,9 @@ export default function PesantrenDashboard() {
               </Typography>
               <Grid container spacing={0.7} sx={{ mt: 0.5 }}>
                 {[
-                  ['Pelanggaran Ringan', '12'],
-                  ['Pelanggaran Sedang', '5'],
-                  ['Pelanggaran Berat', '2']
+                  ['Pelanggaran Ringan', summaryData?.kasus_aktif_json?.pelanggaran_ringan],
+                  ['Pelanggaran Sedang', summaryData?.kasus_aktif_json?.pelanggaran_sedang],
+                  ['Pelanggaran Berat', summaryData?.kasus_aktif_json?.pelanggaran_berat]
                 ].map(x => (
                   <Grid key={x[0]} size={4}>
                     <Box sx={{ p: 0.8, bgcolor: '#fff8ea', border: '1px solid #f5e5bc', borderRadius: 1 }}>
@@ -563,14 +558,18 @@ export default function PesantrenDashboard() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
                 <Box>
                   <Typography sx={{ fontSize: 12 }}>Total Kasus Aktif</Typography>
-                  <Typography sx={{ fontSize: 20, fontWeight: 800 }}>19</Typography>
+                  <Typography sx={{ fontSize: 20, fontWeight: 800 }}>
+                    {summaryData?.kasus_aktif_json?.total_kasus_aktif}
+                  </Typography>
                 </Box>
                 <Box>
                   <Typography sx={{ fontSize: 12 }}>Belum Selesai</Typography>
-                  <Typography sx={{ fontSize: 20, fontWeight: 800 }}>4</Typography>
+                  <Typography sx={{ fontSize: 20, fontWeight: 800 }}>
+                    {summaryData?.kasus_aktif_json?.belum_selesai}
+                  </Typography>
                 </Box>
               </Box>
-              <DashboardLink>Lihat Detail Kasus</DashboardLink>
+              {/* <DashboardLink>Lihat Detail Kasus</DashboardLink> */}
             </DashboardCard>
           </Grid>
         </Grid>

@@ -4,13 +4,12 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 
 import DashboardCard from '../common/DashboardCard'
-import DashboardLink from '../common/DashboardLink'
 import DashboardStatus from '../common/DashboardStatus'
 import DashboardDonut from '../common/DashboardDonut'
 
 export default function PesantrenUnitCard({ unit }: { unit: any }) {
   return (
-    <DashboardCard sx={{ p: 1.15, height: 340 }}>
+    <DashboardCard sx={{ p: 1.15, height: 280 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
         <i className='tabler-building-mosque' style={{ fontSize: 30, color: '#087443' }} />
         <Box>
@@ -40,7 +39,7 @@ export default function PesantrenUnitCard({ unit }: { unit: any }) {
 
       <DashboardDonut title='Kehadiran' total={unit.attendance} totalLabel='' items={unit.absence} />
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0.7, mt: 1, mb: 3 }}>
+      {/* <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0.7, mt: 1, mb: 3 }}>
         {unit.metrics.map((m: any) => (
           <Box key={m.label}>
             <Typography sx={{ fontSize: 8, color: '#667085' }}>{m.label}</Typography>
@@ -51,7 +50,7 @@ export default function PesantrenUnitCard({ unit }: { unit: any }) {
           </Box>
         ))}
       </Box>
-      <DashboardLink>Lihat Detail Unit</DashboardLink>
+      <DashboardLink>Lihat Detail Unit</DashboardLink> */}
     </DashboardCard>
   )
 }

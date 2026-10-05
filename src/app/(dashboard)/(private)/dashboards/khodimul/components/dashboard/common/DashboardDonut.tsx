@@ -30,7 +30,7 @@ export default function DashboardDonut({
     chart: {
       type: 'donut',
       toolbar: { show: false },
-      animations: { enabled: false }
+      animations: { enabled: true }
     },
     labels: items.map(x => x.label),
     colors: items.map(x => x.color),
@@ -61,7 +61,7 @@ export default function DashboardDonut({
               formatter: () => total
             },
             total: {
-              show: false
+              show: true
             }
           }
         }

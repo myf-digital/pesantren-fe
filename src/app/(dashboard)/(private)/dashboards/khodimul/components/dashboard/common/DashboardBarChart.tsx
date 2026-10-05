@@ -1,8 +1,10 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+
 import DashboardCard from './DashboardCard'
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
@@ -21,6 +23,7 @@ export default function DashboardBarChart({
       animations: { enabled: false }
     },
     colors: [items.find(x => x.color)?.color || '#087443'],
+    labels: items.map(x => x.label),
     plotOptions: {
       bar: {
         horizontal: true,
@@ -64,19 +67,19 @@ export default function DashboardBarChart({
 
   return (
     <DashboardCard sx={{ p: 1.25 }}>
-      <Typography sx={{ fontSize: 9.5, fontWeight: 800, textTransform: 'uppercase' }}>
-        {title}
-      </Typography>
+      <Typography sx={{ fontSize: 9.5, fontWeight: 800, textTransform: 'uppercase' }}>{title}</Typography>
 
-      <Box sx={{ mt: .4 }}>
+      <Box sx={{ mt: 0.4 }}>
         <Chart
           type='bar'
           height={190}
           options={options}
-          series={[{
-            name: 'Performa',
-            data: items.map(x => x.value)
-          }]}
+          series={[
+            {
+              name: 'Performa',
+              data: items.map(x => x.value)
+            }
+          ]}
         />
       </Box>
     </DashboardCard>

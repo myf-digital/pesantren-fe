@@ -18,7 +18,7 @@ type Props = {
   status?: string
   progress?: number
   footer?: string | React.ReactNode
-  height?: number
+  minHeight?: number
   performanceDetail?: React.ReactNode
 }
 
@@ -33,11 +33,11 @@ export default function DashboardKpi({
   status,
   progress,
   footer,
-  height = 140,
+  minHeight = 120,
   performanceDetail
 }: Props) {
   return (
-    <DashboardCard sx={{ height, p: 1.25 }}>
+    <DashboardCard sx={{ minHeight, p: 1.25 }}>
       {performance ? (
         <>
           {performance && performanceDetail ? (
