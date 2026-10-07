@@ -15,6 +15,7 @@ export interface InitialState {
   dataRumahTangga: any
   dataExecutive: any
   dataKepesantrenanLevelTwo: any
+  dataFormalLevelTwo: any
   loading: boolean
 }
 
@@ -29,6 +30,7 @@ const initialState: InitialState = {
   dataRumahTangga: {},
   dataExecutive: {},
   dataKepesantrenanLevelTwo: {},
+  dataFormalLevelTwo: {},
   loading: false
 }
 
@@ -127,6 +129,16 @@ export const fetchKepesantrenanLevelTwo = createAsyncThunk<any, any>(
   }
 )
 
+export const fetchFormalLevelTwo = createAsyncThunk<any, any>('formal-level-two/fetchAll', async (params, thunkAPI) => {
+  try {
+    const response = await api.get(`/formal-level-two`, { params })
+
+    return response.data
+  } catch (e: any) {
+    return thunkAPI.fulfillWithValue(e.response?.data)
+  }
+})
+
 export const summaryKhodimulSlice = createSlice({
   name: 'khodimul',
   initialState,
@@ -160,6 +172,10 @@ export const summaryKhodimulSlice = createSlice({
 
     builder.addCase(fetchKepesantrenanLevelTwo.fulfilled, (state, action) => {
       state.dataKepesantrenanLevelTwo = action.payload.data
+    })
+
+    builder.addCase(fetchFormalLevelTwo.fulfilled, (state, action) => {
+      state.dataFormalLevelTwo = action.payload.data
     })
 
     builder.addMatcher(

@@ -107,7 +107,7 @@ export default function PesantrenDashboard() {
         { name: 'Hadir', color: '#087443', values: hadir },
         { name: 'Izin', color: '#246bc2', values: izin },
         { name: 'Sakit', color: '#f28c28', values: sakit },
-        { name: 'Alpha', color: '#7041a5', values: alpha }
+        { name: 'Alpha', color: '#dc3030', values: alpha }
       ]
 
       setTrends({
@@ -274,7 +274,7 @@ export default function PesantrenDashboard() {
                               sx={{
                                 fontSize: 14,
                                 fontWeight: 800,
-                                color: dashboardColors.green
+                                color: scoreColor(Number(item.progress))
                               }}
                             >
                               {item.value}
@@ -305,7 +305,7 @@ export default function PesantrenDashboard() {
                             sx={{
                               width: `${item.progress}%`,
                               height: '100%',
-                              bgcolor: dashboardColors.green,
+                              bgcolor: scoreColor(Number(item.progress)),
                               borderRadius: 99
                             }}
                           />
@@ -356,7 +356,7 @@ export default function PesantrenDashboard() {
                       sx={{
                         fontSize: 20,
                         fontWeight: 800,
-                        color: dashboardColors.green
+                        color: scoreColor(Number(summaryData?.performa_kepesantrenan?.performa_total || 0))
                       }}
                     >
                       {`${summaryData?.performa_kepesantrenan?.performa_total || 0}%`}
