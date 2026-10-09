@@ -64,7 +64,10 @@ const LocationForm = () => {
       { label: 'Studio', value: 'Studio' },
       { label: 'Ruang IT', value: 'RuangIT' },
       { label: 'Gedung Lain', value: 'GedungLain' },
-      { label: 'Area Lain', value: 'AreaLain' }
+      { label: 'Area Lain', value: 'AreaLain' },
+      { label: 'Lorong', value: 'Lorong' },
+      { label: 'Lingkungan', value: 'Lingkungan' },
+      { label: 'Pos Jaga', value: 'PosJaga' }
     ]
   })
 
