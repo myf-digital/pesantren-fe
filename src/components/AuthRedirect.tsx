@@ -18,7 +18,9 @@ const AuthRedirect = () => {
   const login = `/login`
   const homePage = themeConfig.homePageUrl
 
-  return redirect(pathname === login ? login : pathname === homePage ? login : redirectUrl)
+  const dashboardPages = [homePage, '/dashboards/crm', '/']
+
+  return redirect(dashboardPages.includes(pathname) || pathname === login ? login : redirectUrl)
 }
 
 export default AuthRedirect

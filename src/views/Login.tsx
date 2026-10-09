@@ -135,7 +135,7 @@ const Login = ({ mode }: { mode: SystemMode }) => {
     if (res && res.ok && res.error === null) {
       await getSession()
       
-      const redirectURL = searchParams.get('redirectTo') ?? '/'
+      const redirectURL = searchParams.get('redirectTo') ?? themeConfig.homePageUrl
 
       window.location.href = redirectURL;
     } else {

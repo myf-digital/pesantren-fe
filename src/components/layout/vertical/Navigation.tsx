@@ -16,6 +16,7 @@ import type { Mode } from '@core/types'
 import VerticalNav, { NavHeader, NavCollapseIcons } from '@menu/vertical-menu'
 import VerticalMenu from './VerticalMenu'
 import Logo from '@components/layout/shared/Logo'
+import themeConfig from '@configs/themeConfig'
 
 // Hook Imports
 import useVerticalNav from '@menu/hooks/useVerticalNav'
@@ -110,7 +111,7 @@ const Navigation = (props: Props) => {
     >
       {/* Nav Header including Logo & nav toggle icons  */}
       <NavHeader>
-        <Link href={'/'}>
+        <Link href={themeConfig.homePageUrl}>
           <Logo />
         </Link>
         {!(isCollapsed && !isHovered) && (

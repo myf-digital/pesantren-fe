@@ -15,6 +15,10 @@ const canAccessKhodimul = (allowedRoles: string[], roleName?: string) =>
 const KhodimulLayout = async ({ children }: { children: ReactNode }) => {
   const session = await getServerSession(authOptions)
 
+  if (!session) {
+    redirect('/login')
+  }
+
   const allowedRoles = session?.dashboard_khodimul_roles ?? ['administrator']
 
   if (!canAccessKhodimul(allowedRoles, session?.userdata?.role_name)) {

@@ -20,12 +20,12 @@ const nextConfig: NextConfig = {
       {
         source: '/',
         destination: '/dashboards/khodimul',
-        permanent: true
+        permanent: false
       },
       {
         source: '/dashboards/analytics',
         destination: '/dashboards/khodimul',
-        permanent: true
+        permanent: false
       }
     ]
   },
