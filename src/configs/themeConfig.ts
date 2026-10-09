@@ -59,7 +59,7 @@ export type Config = {
 const themeConfig: Config = {
   templateName: 'SADA',
   templateFullName: 'Sistem Administrasi<br/>Digital Asshiddiqiyah',
-  homePageUrl: '/dashboards/analytics',
+  homePageUrl: '/dashboards/khodimul',
   settingsCookieName: 'pesantren-cookie',
   mode: 'light', // 'system', 'light', 'dark'
   skin: 'default', // 'default', 'bordered'

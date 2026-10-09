@@ -55,7 +55,8 @@ export const authOptions: NextAuthOptions = {
                 : null
             },
 
-            permissions: normalizeAbility(data.userdata.ability || [])
+            permissions: normalizeAbility(data.userdata.ability || []),
+            dashboard_khodimul_roles: data.userdata.allowed_dashboard_khodimul
           }
         } catch (err) {
           console.error('LOGIN ERROR:', err)
@@ -74,6 +75,7 @@ export const authOptions: NextAuthOptions = {
         token.access_token = user.access_token
         token.userdata = user.userdata
         token.permissions = user.permissions
+        token.dashboard_khodimul_roles = user.dashboard_khodimul_roles
       }
 
       if (trigger === 'update' && session) {
@@ -88,6 +90,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       session.access_token = token.access_token
       session.userdata = token.userdata
+      session.dashboard_khodimul_roles = token.dashboard_khodimul_roles
 
       return session
     }

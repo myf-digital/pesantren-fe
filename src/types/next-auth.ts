@@ -5,6 +5,7 @@ import type { PermissionMap } from "./permission"
 declare module "next-auth" {
   interface Session {
     access_token?: string
+    dashboard_khodimul_roles?: string[]
     userdata?: {
       resource_id?: string
       username?: string
@@ -22,6 +23,7 @@ declare module "next-auth" {
   interface User extends DefaultUser {
     access_token?: string
     permissions?: PermissionMap
+    dashboard_khodimul_roles?: string[]
     userdata?: {
       resource_id?: string
       username?: string
@@ -41,6 +43,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     access_token?: string
     permissions?: PermissionMap
+    dashboard_khodimul_roles?: string[]
     userdata?: {
       resource_id?: string
       username?: string

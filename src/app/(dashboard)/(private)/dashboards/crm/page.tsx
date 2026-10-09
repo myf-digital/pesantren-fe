@@ -357,7 +357,7 @@ const DashboardCRM = async (props: {
             >
               <Box>
                 <Typography variant='h5' sx={{ fontWeight: 600 }}>
-                  Dashboard
+                  Ringkasan Data
                 </Typography>
                 <Typography variant='body2' color='text.secondary'>
                   Data pesantren per rentang tanggal terpilih

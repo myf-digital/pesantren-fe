@@ -19,12 +19,12 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/',
-        destination: '/dashboards/crm',
+        destination: '/dashboards/khodimul',
         permanent: true
       },
       {
         source: '/dashboards/analytics',
-        destination: '/dashboards/crm',
+        destination: '/dashboards/khodimul',
         permanent: true
       }
     ]

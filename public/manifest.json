@@ -2,7 +2,7 @@
     "name": "SADA",
     "short_name": "SADA",
     "description": "Sistem Administrasi Digital Asshiddiqiyah",
-    "start_url": "/dashboards/crm",
+    "start_url": "/dashboards/khodimul",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#01793c",

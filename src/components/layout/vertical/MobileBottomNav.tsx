@@ -254,10 +254,10 @@ export default function MobileBottomNav() {
         >
           <BottomNavigationAction
             label='Home'
-            value='/dashboards/crm'
+            value='/dashboards/khodimul'
             icon={<i className='tabler-home' />}
             component={Link}
-            href='/dashboards/crm'
+            href='/dashboards/khodimul'
             onClick={handleCloseSidebar}
           />
 
