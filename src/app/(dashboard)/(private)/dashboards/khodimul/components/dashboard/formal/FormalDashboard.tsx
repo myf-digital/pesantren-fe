@@ -26,30 +26,6 @@ import { fetchFormalLevelTwo } from '../../../slice'
 import { useAppDispatch } from '@/redux-store/hook'
 import { dashboardColors, scoreColor } from '../common/dashboardTheme'
 
-const units = [
-  {
-    name: 'Asshiddiqiyah 3 Putra',
-    items: [
-      ['MTs', '93,6%', '612', '24', '41', '94,1%', '95,0%', '188/200'],
-      ['MA', '92,1%', '594', '24', '39', '93,2%', '94,1%', '176/192']
-    ]
-  },
-  {
-    name: 'Asshiddiqiyah 3 Putri',
-    items: [
-      ['MTs', '94,2%', '548', '24', '34', '95,3%', '95,7%', '164/176'],
-      ['MA', '93,0%', '534', '22', '32', '93,1%', '94,2%', '156/168']
-    ]
-  },
-  {
-    name: 'Asshiddiqiyah 4',
-    items: [
-      ['SMP', '91,4%', '434', '16', '28', '92,0%', '93,5%', '126/136'],
-      ['SMK', '90,2%', '476', '18', '32', '90,5%', '92,2%', '136/152']
-    ]
-  }
-]
-
 function Unit({ u }: any) {
   return (
     <DashboardCard sx={{ p: 1.1, height: 300 }}>
@@ -63,7 +39,7 @@ function Unit({ u }: any) {
             <DashboardCard sx={{ p: 0.75, height: 240, bgcolor: '#fbfcfd' }}>
               <Typography sx={{ fontSize: 12, fontWeight: 800 }}>{x[0]}</Typography>
               <Typography sx={{ fontSize: 10, color: '#667085', mt: 0.6 }}>Performa</Typography>
-              <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#087443' }}>{x[1]}</Typography>
+              <Typography sx={{ fontSize: 16, fontWeight: 800, color: scoreColor(Number(x[1])) }}>{x[1]}</Typography>
               <DashboardStatus score={parseFloat(x[1])} />
               {[
                 ['Santri', x[2]],
@@ -79,7 +55,7 @@ function Unit({ u }: any) {
                 </Box>
               ))}
               <Box sx={{ mt: 1, height: 10, bgcolor: '#edf0f2', borderRadius: 99 }}>
-                <Box sx={{ width: x[1], height: '100%', bgcolor: '#087443', borderRadius: 99 }} />
+                <Box sx={{ width: x[1], height: '100%', bgcolor: scoreColor(Number(x[1])), borderRadius: 99 }} />
               </Box>
             </DashboardCard>
           </Grid>
@@ -105,7 +81,7 @@ export default function FormalDashboard() {
 
   const [summaryData, setSummaryData] = useState<any>({})
 
-  //const [units, setUnits] = useState<any>([])
+  const [units, setUnits] = useState<any>([])
   const [trends, setTrends] = useState<any>([])
 
   const getFormalLevelTwo = async () => {
@@ -116,48 +92,25 @@ export default function FormalDashboard() {
     if (data) {
       setSummaryData(data)
 
-      console.log(data?.unit_pendidikan_formal, '-->')
-
-      // setUnits(
-      //   data.per_cabang
-      //     .filter((x: any) => x.id_cabang)
-      //     .map((r: any) => {
-      //       let subtitle = 'Basis Per Kamar'
-
-      //       if (r.nama_cabang.includes('3 Putra')) {
-      //         subtitle = 'Mantiqoh A, B & C'
-      //       } else if (r.nama_cabang.includes('Dar Asshofa')) {
-      //         subtitle = '(Asshiddiqiyah 5)'
-      //       }
-
-      //       return {
-      //         name: r.nama_cabang,
-      //         subtitle: subtitle,
-      //         performance: r.performa_total || 0,
-      //         attendance: r.hadir || 0,
-      //         absence: [
-      //           { label: 'Hadir', value: r.hadir || 0, color: '#087443' },
-      //           { label: 'Izin', value: r.izin || 0, color: '#246bc2' },
-      //           { label: 'Sakit UKS', value: r.sakit_uks || 0, color: '#f28c28' },
-      //           { label: 'Sakit Rumah/Rujukan', value: r.sakit_rumah_rujukan || 0, color: '#dc3030' },
-      //           { label: 'Alpha', value: r.alfa || 0, color: '#7041a5' }
-      //         ],
-      //         metrics: [
-      //           {
-      //             label: 'Kebersihan Kamar',
-      //             value: `${r.persentase_kebersihan || 0}%`,
-      //             progress: `${r.persentase_kebersihan || 0}`
-      //           },
-      //           {
-      //             label: 'Kebersihan Lorong Asrama',
-      //             value: `${r.persentase_kebersihan || 0}%`,
-      //             progress: `${r.persentase_kebersihan || 0}`
-      //           },
-      //           { label: 'Kasus Aktif', value: r.kasus_aktif || 0, progress: 20 }
-      //         ]
-      //       }
-      //     })
-      // )
+      setUnits(
+        data.unit_pendidikan_formal.map((x: any) => {
+          return {
+            name: x.nama_cabang,
+            items: x.jenjang.map((r: any) => {
+              return [
+                r.jenjang,
+                `${r.performa || 0}%`,
+                `${r.santri || 0}`,
+                `${r.kelas || 0}`,
+                `${r.guru || 0}`,
+                `${r.absensi_santri || 0}%`,
+                `${r.absensi_guru || 0}%`,
+                `${r.jp_terlaksana || 0}/${r.jp_terjadwal || 0}`
+              ]
+            })
+          }
+        })
+      )
 
       const trend = data.trend_absensi_santri_30_hari
       const hadir = []
@@ -521,7 +474,7 @@ export default function FormalDashboard() {
               subtitle={`${formatNumber(summaryData?.kpi_utama?.absensi_santri)} dari ${formatNumber(summaryData?.kpi_utama?.total_santri)} hadir`}
               icon='tabler-circle-check'
               iconColor='#087443'
-              valueColor='#087443'
+              valueColor={scoreColor(summaryData?.kpi_utama?.absensi_santri)}
             />
           </Grid>
           <Grid size={{ xs: 6, md: 1.4 }}>
@@ -531,14 +484,14 @@ export default function FormalDashboard() {
               subtitle={`${formatNumber(summaryData?.kpi_utama?.absensi_guru)} dari ${formatNumber(summaryData?.kpi_utama?.total_guru)} hadir`}
               icon='tabler-user-check'
               iconColor='#f28c28'
-              valueColor='#087443'
+              valueColor={scoreColor(summaryData?.kpi_utama?.absensi_guru)}
             />
           </Grid>
           <Grid size={{ xs: 6, md: 1.4 }}>
             <DashboardKpi
               title='Jam Pelajaran Hari Ini'
-              value={formatNumber(summaryData?.kpi_utama?.total_menit_terjadwal)}
-              subtitle={`Terlaksana ${formatNumber(summaryData?.kpi_utama?.total_menit_terlaksana)} (${Math.round((summaryData?.kpi_utama?.total_menit_terlaksana / summaryData?.kpi_utama?.total_menit_terjadwal) * 100)}%)`}
+              value={formatNumber(summaryData?.kpi_utama?.jp_terjadwal)}
+              subtitle={`Terlaksana ${formatNumber(summaryData?.kpi_utama?.jp_terlaksana)} (${summaryData?.kpi_utama?.persentase_jp_terlaksana}%)`}
               icon='tabler-clock'
               iconColor='#dc3030'
             />
@@ -548,7 +501,7 @@ export default function FormalDashboard() {
 
       <DashboardSection>
         <Grid container spacing={4} sx={{ p: 2 }}>
-          {units.map(u => (
+          {units.map((u: any) => (
             <Grid key={u.name} size={{ xs: 12, lg: 4 }}>
               <Unit u={u} />
             </Grid>

@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography'
 import DashboardCard from '../common/DashboardCard'
 import DashboardStatus from '../common/DashboardStatus'
 import DashboardDonut from '../common/DashboardDonut'
+import { scoreColor } from '../common/dashboardTheme'
 
 export default function PesantrenUnitCard({ unit }: { unit: any }) {
   return (
@@ -32,7 +33,7 @@ export default function PesantrenUnitCard({ unit }: { unit: any }) {
         }}
       >
         <Typography sx={{ fontSize: 12, fontWeight: 700 }}>
-          Performa: <b>{unit.performance}%</b>
+          Performa: <b style={{ color: scoreColor(unit.performance) }}>{unit.performance}%</b>
         </Typography>
         <DashboardStatus score={unit.performance} />
       </Box>

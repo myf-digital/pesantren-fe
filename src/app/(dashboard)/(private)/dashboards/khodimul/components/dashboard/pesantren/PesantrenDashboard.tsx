@@ -455,7 +455,7 @@ export default function PesantrenDashboard() {
               valueColor={dashboardColors.orange}
             />
           </Grid>
-          <Grid size={{ xs: 6, sm: 6, md: 3, lg: 1.2 }}>
+          <Grid size={{ xs: 6, sm: 6, md: 3, lg: 1.4 }}>
             <DashboardKpi
               title='Sakit Rumah/Rujukan'
               value={formatNumber(summaryData?.sakit_rumah_rujukan)}
@@ -475,7 +475,7 @@ export default function PesantrenDashboard() {
               valueColor={dashboardColors.purple}
             />
           </Grid>
-          <Grid size={{ xs: 6, sm: 6, md: 3, lg: 1.2 }}>
+          <Grid size={{ xs: 6, sm: 6, md: 3, lg: 1 }}>
             <DashboardKpi
               title='Kasus Aktif'
               value={formatNumber(summaryData?.kasus_aktif)}
