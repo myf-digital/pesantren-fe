@@ -18,13 +18,28 @@ import DashboardKpi from '../common/DashboardKpi'
 import DashboardCard from '../common/DashboardCard'
 import DashboardLineChart from '../common/DashboardLineChart'
 import DashboardDonut from '../common/DashboardDonut'
-import DashboardTable from '../common/DashboardTable'
 import DashboardLink from '../common/DashboardLink'
 import DashboardStatus from '../common/DashboardStatus'
 
 import { fetchFormalLevelTwo } from '../../../slice'
 import { useAppDispatch } from '@/redux-store/hook'
 import { dashboardColors, scoreColor } from '../common/dashboardTheme'
+
+type UploadDetail = {
+  persen: number
+  belum_upload: number
+  sudah_upload: number
+}
+
+type ReportItem = {
+  jenjang: string
+  id_cabang: string
+  id_lembaga: string
+  nama_cabang: string
+  nama_lembaga: string
+  formal: UploadDetail
+  non_formal: UploadDetail
+}
 
 function Unit({ u }: any) {
   return (
@@ -66,6 +81,113 @@ function Unit({ u }: any) {
   )
 }
 
+function Raport({ u }: any) {
+  return (
+    <DashboardCard sx={{ p: 0, height: '100%' }}>
+      <Box sx={{ overflowX: 'auto' }}>
+        <Box
+          component='table'
+          sx={{
+            width: '100%',
+            minWidth: 420,
+            borderCollapse: 'collapse',
+            tableLayout: 'fixed',
+            '& th, & td': {
+              border: '1px solid #eaecf0',
+              px: 1,
+              py: 1.1,
+              textAlign: 'center',
+              fontSize: 11,
+              whiteSpace: 'nowrap'
+            },
+            '& th': {
+              fontWeight: 700,
+              color: '#344054',
+              bgcolor: '#fcfcfd'
+            },
+            '& td': {
+              color: '#101828'
+            }
+          }}
+        >
+          <Box component='thead'>
+            <Box component='tr'>
+              <Box component='th' rowSpan={2} sx={{ width: '22%' }}>
+                JENJANG
+              </Box>
+
+              <Box component='th' colSpan={4}>
+                <Typography sx={{ fontSize: 11, fontWeight: 800 }}>{u.name}</Typography>
+              </Box>
+            </Box>
+
+            <Box component='tr'>
+              <Box component='th' colSpan={2}>
+                <Typography sx={{ fontSize: 10, fontWeight: 800, color: '#087443' }}>FORMAL</Typography>
+              </Box>
+
+              <Box component='th' colSpan={2}>
+                <Typography sx={{ fontSize: 10, fontWeight: 800, color: '#087443' }}>NON FORMAL</Typography>
+              </Box>
+            </Box>
+
+            <Box component='tr'>
+              <Box component='th' sx={{ width: '22%' }} />
+              <Box component='th'>Upload</Box>
+              <Box component='th'>Persentase</Box>
+              <Box component='th'>Upload</Box>
+              <Box component='th'>Persentase</Box>
+            </Box>
+          </Box>
+
+          <Box component='tbody'>
+            {u.items.map((item: any, index: number) => (
+              <Box component='tr' key={item.jenjang ?? index}>
+                <Box
+                  component='th'
+                  sx={{
+                    bgcolor: '#fff',
+                    fontSize: 12,
+                    fontWeight: 800
+                  }}
+                >
+                  {`${item.nama_lembaga.split(' ')[0]} (${item.jenjang})`}
+                </Box>
+
+                <Box component='td'>
+                  {item.formal.sudah_upload}/{item.formal.sudah_upload + item.formal.belum_upload}
+                </Box>
+
+                <Box
+                  component='td'
+                  sx={{
+                    fontWeight: 700
+                  }}
+                >
+                  {item.formal.persen}%
+                </Box>
+
+                <Box component='td'>
+                  {item.non_formal.sudah_upload}/{item.non_formal.sudah_upload + item.non_formal.belum_upload}
+                </Box>
+
+                <Box
+                  component='td'
+                  sx={{
+                    fontWeight: 700
+                  }}
+                >
+                  {item.non_formal.persen}%
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+    </DashboardCard>
+  )
+}
+
 const formatNumber = (val: number | string | null | undefined): string => {
   if (val === null || val === undefined || val === '') return '0'
   const num = typeof val === 'number' ? val : Number(val)
@@ -75,6 +197,23 @@ const formatNumber = (val: number | string | null | undefined): string => {
   return num.toLocaleString('id-ID')
 }
 
+const groupReportByCabang = (data: ReportItem[]) => {
+  const grouped = new Map<string, ReportItem[]>()
+
+  data.forEach(item => {
+    const current = grouped.get(item.id_cabang) ?? []
+
+    current.push(item)
+    grouped.set(item.id_cabang, current)
+  })
+
+  return Array.from(grouped.entries()).map(([idCabang, items]) => ({
+    id: idCabang,
+    name: items[0].nama_cabang.replace('Pondok Pesantren ', ''),
+    items
+  }))
+}
+
 export default function FormalDashboard() {
   const dispatch = useAppDispatch()
   const router = useRouter()
@@ -82,6 +221,7 @@ export default function FormalDashboard() {
   const [summaryData, setSummaryData] = useState<any>({})
 
   const [units, setUnits] = useState<any>([])
+  const [raports, setRaports] = useState<any>([])
   const [trends, setTrends] = useState<any>([])
 
   const getFormalLevelTwo = async () => {
@@ -93,9 +233,9 @@ export default function FormalDashboard() {
       setSummaryData(data)
 
       setUnits(
-        data.unit_pendidikan_formal.map((x: any) => {
+        data.unit_pendidikan_formal?.map((x: any) => {
           return {
-            name: x.nama_cabang,
+            name: x.nama_cabang.replace('Pondok Pesantren ', ''),
             items: x.jenjang.map((r: any) => {
               return [
                 r.jenjang,
@@ -111,6 +251,8 @@ export default function FormalDashboard() {
           }
         })
       )
+
+      setRaports(groupReportByCabang(data.kelengkapan_rapor?.data))
 
       const trend = data.trend_absensi_santri_30_hari
       const hadir = []
@@ -199,7 +341,7 @@ export default function FormalDashboard() {
                           lineHeight: 1.2
                         }}
                       >
-                        PERFORMA KEPESANTRENAN
+                        PERFORMA PENDIDIKAN FORMAL
                       </Typography>
 
                       <Typography
@@ -577,16 +719,21 @@ export default function FormalDashboard() {
           </Grid>
         </Grid>
       </DashboardSection>
-
       <DashboardSection title='Kelengkapan Raport'>
-        <DashboardTable
-          title='Status upload raport tahun ajaran 2025/2026 - semester genap'
-          columns={['JENJANG', 'ASSHIDDIQIYAH 3 PUTRA', 'ASSHIDDIQIYAH 3 PUTRI', 'ASSHIDDIQIYAH 4']}
-          rows={[
-            ['MTs', '20/24 • 83,3%', '21/22 • 95,5%', 'SMP • 15/16 • 93,8%'],
-            ['MA', '18/24 • 75,0%', '20/22 • 90,9%', 'SMK • 18/18 • 100%']
-          ]}
-        />
+        <Typography
+          variant='subtitle1'
+          sx={{ fontSize: 10, ml: 2 }}
+        >{`Status upload raport tahun ajaran ${summaryData.kelengkapan_rapor?.periode_rapot?.tahun_ajaran} - semester ${summaryData.kelengkapan_rapor?.periode_rapot?.semester}`}</Typography>
+        <Grid container spacing={4} sx={{ p: 2 }}>
+          {raports.map((u: any) => (
+            <Grid key={u.name} size={{ xs: 12, lg: 4 }}>
+              <Raport u={u} />
+            </Grid>
+          ))}
+        </Grid>
+        <Typography variant='subtitle1' sx={{ fontSize: 10, mt: 1, ml: 2 }}>
+          {summaryData.kelengkapan_rapor?.catatan}
+        </Typography>
       </DashboardSection>
     </DashboardLayout>
   )

@@ -41,6 +41,7 @@ export default function PesantrenDashboard() {
   const [summaryData, setSummaryData] = useState<any>({})
   const [units, setUnits] = useState<any>([])
   const [trends, setTrends] = useState<any>([])
+  const [topLokasi, setTopLokasi] = useState<any>([])
 
   const getKepesantrenanLevelTwo = async () => {
     const result = await dispatch(fetchKepesantrenanLevelTwo({})).unwrap()
@@ -62,7 +63,7 @@ export default function PesantrenDashboard() {
             }
 
             return {
-              name: r.nama_cabang,
+              name: r.nama_cabang.replace('Pondok Pesantren ', ''),
               subtitle: subtitle,
               performance: r.performa_total || 0,
               attendance: r.hadir || 0,
@@ -76,15 +77,15 @@ export default function PesantrenDashboard() {
               metrics: [
                 {
                   label: 'Kebersihan Kamar',
-                  value: `${r.persentase_kebersihan || 0}%`,
-                  progress: `${r.persentase_kebersihan || 0}`
+                  value: `${r.area_kebersihan['Kamar Santri']?.persentase || 0}%`,
+                  progress: `${r.area_kebersihan['Kamar Santri']?.persentase || 0}`
                 },
                 {
                   label: 'Kebersihan Lorong Asrama',
-                  value: `${r.persentase_kebersihan || 0}%`,
-                  progress: `${r.persentase_kebersihan || 0}`
+                  value: `${r.area_kebersihan['Lorong Asrama']?.persentase || 0}%`,
+                  progress: `${r.area_kebersihan['Lorong Asrama']?.persentase || 0}`
                 },
-                { label: 'Kasus Aktif', value: r.kasus_aktif || 0, progress: 20 }
+                { label: 'Kasus Aktif', value: r.kasus_aktif || 0, progress: (r.kasus_aktif / r.total_santri) * 100 }
               ]
             }
           })
@@ -114,6 +115,14 @@ export default function PesantrenDashboard() {
         series: series,
         labels: trend.map((x: any) => format(new Date(x.tanggal), 'dd MMM'))
       })
+
+      setTopLokasi(
+        data.top5_lokasi_perlu_perhatian?.map((x: any) => [
+          `${x.nama_lokasi} - ${x.area_kebersihan}`,
+          `Kebersihan ${x.jenis_lokasi}`,
+          `${x.persentase_kebersihan}%`
+        ])
+      )
     }
   }
 
@@ -429,7 +438,7 @@ export default function PesantrenDashboard() {
             <DashboardKpi
               title='Hadir Hari Ini'
               value={formatNumber(summaryData?.hadir)}
-              subtitle={`${summaryData?.persentase_hadir}% dari total santri`}
+              subtitle={`${Math.round(summaryData?.hadir / summaryData?.total_santri) * 100}% dari total santri`}
               icon='tabler-circle-check'
               iconColor={dashboardColors.green}
               valueColor={dashboardColors.green}
@@ -479,7 +488,7 @@ export default function PesantrenDashboard() {
             <DashboardKpi
               title='Kasus Aktif'
               value={formatNumber(summaryData?.kasus_aktif)}
-              subtitle=''
+              subtitle={`${Math.round(summaryData?.kasus_aktif / summaryData?.total_santri) * 100}% dari total santri`}
               icon='tabler-alert-triangle'
               iconColor={dashboardColors.red}
               valueColor={dashboardColors.red}
@@ -580,13 +589,7 @@ export default function PesantrenDashboard() {
           <Grid size={{ xs: 12, md: 4 }}>
             <DashboardCard sx={{ p: 1.2 }}>
               <Typography sx={{ fontSize: 9.5, fontWeight: 800 }}>TOP 5 LOKASI PERLU PERHATIAN</Typography>
-              {[
-                ['Asrama Putra Mantiqoh B - Lorong 2', 'Kebersihan Lorong', '78,0%'],
-                ['Asrama Putri - Kamar 17', 'Kebersihan Kamar', '72,3%'],
-                ['Asrama Putri - Kamar 05', 'Kebersihan Kamar', '70,2%'],
-                ['Asrama 4 Putra - Lorong 1', 'Kebersihan Lorong', '69,0%'],
-                ['Asrama 4 Putri - Kamar 09', 'Kebersihan Kamar', '65,5%']
-              ].map((x, i) => (
+              {topLokasi.map((x: any, i: number) => (
                 <Box
                   key={i}
                   sx={{ display: 'flex', gap: 0.6, alignItems: 'center', py: 0.65, borderBottom: '1px solid #f0f1f3' }}
@@ -596,7 +599,7 @@ export default function PesantrenDashboard() {
                       width: 16,
                       height: 16,
                       borderRadius: '50%',
-                      bgcolor: '#dc3030',
+                      bgcolor: scoreColor(Number(x[2])),
                       color: '#fff',
                       fontSize: 7,
                       display: 'grid',
@@ -607,7 +610,7 @@ export default function PesantrenDashboard() {
                   </Box>
                   <Typography sx={{ fontSize: 9, flex: 1 }}>{x[0]}</Typography>
                   <Typography sx={{ fontSize: 9 }}>{x[1]}</Typography>
-                  <Typography sx={{ fontSize: 9, fontWeight: 800, color: '#dc3030' }}>{x[2]}</Typography>
+                  <Typography sx={{ fontSize: 9, fontWeight: 800, color: scoreColor(Number(x[2])) }}>{x[2]}</Typography>
                 </Box>
               ))}
               <DashboardLink>Lihat Semua Lokasi</DashboardLink>
