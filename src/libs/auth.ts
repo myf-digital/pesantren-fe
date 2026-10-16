@@ -19,7 +19,8 @@ export const authOptions: NextAuthOptions = {
           const res = await fetch(`${process.env.API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(credentials)
+            body: JSON.stringify(credentials),
+            signal: AbortSignal.timeout(15_000)
           })
 
           const json = await res.json()

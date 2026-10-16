@@ -9,6 +9,13 @@ services:
     environment:
       - PORT=${PORT}
       - API_URL=${API_URL}
+    networks:
+      - default
+      - pesantren-network
     ports:
       - '127.0.0.1:${PORT}:${PORT}'
     restart: always
+
+networks:
+  pesantren-network:
+    external: true
