@@ -1,6 +1,7 @@
 export const dashboardColors = {
   green: '#087443',
-  green2: '#0b8a50',
+  green2: '#3aaa58',
+  green3: '#b2cf32',
   greenLight: '#eaf6ef',
   blue: '#246bc2',
   blueLight: '#edf4ff',
@@ -20,9 +21,9 @@ export const dashboardColors = {
 
 export function scoreColor(score: number) {
   if (score >= 100) return dashboardColors.green
-  if (score >= 90) return '#3aaa58'
-  if (score >= 80) return dashboardColors.yellow
-  if (score >= 70) return dashboardColors.orange
+  if (score >= 90) return dashboardColors.green2
+  if (score >= 80) return dashboardColors.green3
+  if (score >= 70) return dashboardColors.yellow
 
   return dashboardColors.red
 }

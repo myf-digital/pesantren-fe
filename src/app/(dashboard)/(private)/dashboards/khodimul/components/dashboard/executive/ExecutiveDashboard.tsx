@@ -15,7 +15,7 @@ import DashboardSection from '../common/DashboardSection'
 import DashboardCard from '../common/DashboardCard'
 import DashboardStatus from '../common/DashboardStatus'
 import DashboardInfo from '../common/DashboardInfo'
-import { scoreColor } from '../common/dashboardTheme'
+import { dashboardColors, scoreColor } from '../common/dashboardTheme'
 import { fetchSummaryExecutive } from '../../../slice'
 import { useAppDispatch } from '@/redux-store/hook'
 
@@ -137,11 +137,11 @@ export default function ExecutiveDashboard() {
         <DashboardCard sx={{ p: 2, width: { xs: '100%', sm: 210 } }}>
           <Typography sx={{ fontSize: 12, fontWeight: 800, color: '#183c75', mb: 0.8 }}>KETERANGAN WARNA</Typography>
           {[
-            ['Istimewa (100%)', '#087443'],
-            ['Baik Sekali (90% - 99,9%)', '#3aaa58'],
-            ['Baik (80% - 89,9%)', '#f5c542'],
-            ['Cukup (70% - 79,9%)', '#f28c28'],
-            ['Kurang Baik (< 70%)', '#dc3030']
+            ['Istimewa (100%)', dashboardColors.green],
+            ['Baik Sekali (90% - 99,9%)', dashboardColors.green2],
+            ['Baik (80% - 89,9%)', dashboardColors.green3],
+            ['Cukup (70% - 79,9%)', dashboardColors.yellow],
+            ['Kurang Baik (< 70%)', dashboardColors.red]
           ].map(x => (
             <Box key={x[0]} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: x[1] }} />

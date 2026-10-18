@@ -119,7 +119,9 @@ function Unit({ u }: any) {
             <DashboardCard sx={{ p: 0.75, height: 240, bgcolor: '#fbfcfd' }}>
               <Typography sx={{ fontSize: 12, fontWeight: 800 }}>{x[0]}</Typography>
               <Typography sx={{ fontSize: 10, color: '#667085', mt: 0.6 }}>Performa</Typography>
-              <Typography sx={{ fontSize: 16, fontWeight: 800, color: scoreColor(Number(x[1])) }}>{x[1]}</Typography>
+              <Typography sx={{ fontSize: 16, fontWeight: 800, color: scoreColor(Number(x[1].replace('%', ''))) }}>
+                {x[1]}
+              </Typography>
               <DashboardStatus score={parseFloat(x[1])} />
               {[
                 ['Santri', x[2]],
@@ -135,7 +137,14 @@ function Unit({ u }: any) {
                 </Box>
               ))}
               <Box sx={{ mt: 1, height: 10, bgcolor: '#edf0f2', borderRadius: 99 }}>
-                <Box sx={{ width: x[1], height: '100%', bgcolor: scoreColor(Number(x[1])), borderRadius: 99 }} />
+                <Box
+                  sx={{
+                    width: x[1],
+                    height: '100%',
+                    bgcolor: scoreColor(Number(x[1].replace('%', ''))),
+                    borderRadius: 99
+                  }}
+                />
               </Box>
             </DashboardCard>
           </Grid>
@@ -478,11 +487,11 @@ export default function NonFormalDashboard() {
               footer={
                 <Box sx={{ bgcolor: '#f1f8f4', p: 1, borderRadius: 1, m: 1 }}>
                   {[
-                    ['100%', 'Istimewa', '#087443'],
-                    ['90% - 99,9%', 'Baik Sekali', '#3aaa58'],
-                    ['80% - 89,9%', 'Baik', '#b2cf32'],
-                    ['75% - 79,9%', 'Cukup', '#f5c542'],
-                    ['< 70%', 'Kurang Baik', '#dc3030']
+                    ['100%', 'Istimewa', dashboardColors.green],
+                    ['90% - 99,9%', 'Baik Sekali', dashboardColors.green2],
+                    ['80% - 89,9%', 'Baik', dashboardColors.green3],
+                    ['75% - 79,9%', 'Cukup', dashboardColors.yellow],
+                    ['< 70%', 'Kurang Baik', dashboardColors.red]
                   ].map(([range, label, color]) => (
                     <Box
                       key={label}

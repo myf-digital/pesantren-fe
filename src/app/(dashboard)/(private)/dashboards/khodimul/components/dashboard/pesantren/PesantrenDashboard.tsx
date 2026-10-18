@@ -438,7 +438,7 @@ export default function PesantrenDashboard() {
             <DashboardKpi
               title='Hadir Hari Ini'
               value={formatNumber(summaryData?.hadir)}
-              subtitle={`${Math.round(summaryData?.hadir / summaryData?.total_santri) * 100}% dari total santri`}
+              subtitle={`${((summaryData?.hadir / summaryData?.total_santri) * 100).toFixed(1)}% dari total santri`}
               icon='tabler-circle-check'
               iconColor={dashboardColors.green}
               valueColor={dashboardColors.green}
@@ -488,7 +488,7 @@ export default function PesantrenDashboard() {
             <DashboardKpi
               title='Kasus Aktif'
               value={formatNumber(summaryData?.kasus_aktif)}
-              subtitle={`${Math.round(summaryData?.kasus_aktif / summaryData?.total_santri) * 100}% dari total santri`}
+              subtitle={`${((summaryData?.kasus_aktif / summaryData?.total_santri) * 100).toFixed(1)}% dari total santri`}
               icon='tabler-alert-triangle'
               iconColor={dashboardColors.red}
               valueColor={dashboardColors.red}
@@ -652,11 +652,11 @@ export default function PesantrenDashboard() {
             <DashboardCard sx={{ p: 1.2 }}>
               <Typography sx={{ fontSize: 9.5, fontWeight: 800 }}>KRITERIA PERFORMA INDIKATOR</Typography>
               {[
-                ['100%', 'ISTIMEWA', '#087443'],
-                ['90% - 99,9%', 'BAIK SEKALI', '#3aaa58'],
-                ['80% - 89,9%', 'BAIK', '#f5c542'],
-                ['75% - 79,9%', 'CUKUP', '#f28c28'],
-                ['< 70%', 'KURANG BAIK', '#dc3030']
+                ['100%', 'ISTIMEWA', dashboardColors.green],
+                ['90% - 99,9%', 'BAIK SEKALI', dashboardColors.green2],
+                ['80% - 89,9%', 'BAIK', dashboardColors.green3],
+                ['75% - 79,9%', 'CUKUP', dashboardColors.yellow],
+                ['< 70%', 'KURANG BAIK', dashboardColors.red]
               ].map(x => (
                 <Box key={x[1]} sx={{ display: 'flex', gap: 1, alignItems: 'center', py: 0.6 }}>
                   <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: x[2] }} />
