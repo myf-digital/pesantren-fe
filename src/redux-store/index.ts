@@ -58,8 +58,23 @@ import monitoring from '@/app/(dashboard)/(private)/app/monitoring/slice/index'
 import master_pelanggaran_remisi from '@/app/(dashboard)/(private)/app/pelanggaran-remisi-master/slice/index'
 import pelanggaran_remisi_santri from '@/app/(dashboard)/(private)/app/pelanggaran-remisi-santri/slice/index'
 
+import keu_kelompok_kas from '@/app/(dashboard)/(private)/app/keu-kelompok-kas/slice'
+import keu_akun from '@/app/(dashboard)/(private)/app/keu-akun/slice'
+import keu_import_batch from '@/app/(dashboard)/(private)/app/keu-import-batch/slice'
+import keu_rekap_harian from '@/app/(dashboard)/(private)/app/keu-rekap-harian/slice'
+import keu_target from '@/app/(dashboard)/(private)/app/keu-target/slice'
+import keu_anggaran from '@/app/(dashboard)/(private)/app/keu-anggaran/slice'
+import keu_beasiswa from '@/app/(dashboard)/(private)/app/keu-beasiswa/slice'
+
 export const store = configureStore({
   reducer: {
+    keu_kelompok_kas,
+    keu_akun,
+    keu_import_batch,
+    keu_rekap_harian,
+    keu_target,
+    keu_anggaran,
+    keu_beasiswa,
     emailReducer,
     kanbanReducer,
     role,
