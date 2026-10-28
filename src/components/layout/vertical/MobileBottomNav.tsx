@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Fragment, useEffect, useRef, useState } from 'react'
+import React, { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -34,7 +34,11 @@ import { locationQrCodeKebersihanInspeksi } from '@/app/(dashboard)/(private)/ap
 import { useAppDispatch } from '@/redux-store/hook'
 import { format } from 'date-fns'
 import { fetchMatchingShiftAsrama } from '@/app/(dashboard)/(private)/app/absen-harian-santri/slice'
+import { fetchKelasList, fetchMatchingJamPelajaran } from '@/app/(dashboard)/(private)/app/absen-kelas-santri/slice'
 import { fetchLocationPage } from '@/app/(dashboard)/(private)/app/location/slice'
+import { usePermissionContext } from '@/contexts/PermissionContext'
+import { can, normalizeResource } from '@/libs/permission'
+import type { VerticalMenuDataType } from '@/types/menuTypes'
 
 interface ShiftOption {
   id_shift: string
@@ -44,6 +48,55 @@ interface ShiftOption {
 interface KamarOption {
   id_lokasi: string
   nama_lokasi: string
+}
+
+interface KelasOption {
+  id_kelas: string
+  nama_kelas: string
+}
+
+interface JamPelOption {
+  id_jampel: string
+  nama_jampel: string
+}
+
+const getSidebarMenuIcon = (
+  items: VerticalMenuDataType[] | undefined,
+  targetHref: string,
+  fallbackIcon: string
+): string => {
+  if (!Array.isArray(items) || items.length === 0) return fallbackIcon
+
+  const normalizedTarget = normalizeResource(targetHref)
+
+  const search = (nodes: VerticalMenuDataType[], parentIcon?: string): string | null => {
+    for (const node of nodes) {
+      const nodeIcon = (node as any).icon
+      const validNodeIcon = nodeIcon && nodeIcon !== 'tabler-circle' ? nodeIcon : undefined
+      const effectiveIcon = parentIcon || validNodeIcon
+
+      const nodeHref = (node as any).href
+
+      if (
+        nodeHref &&
+        (nodeHref === targetHref || normalizeResource(nodeHref) === normalizedTarget)
+      ) {
+        return effectiveIcon || null
+      }
+
+      const children = (node as any).children
+
+      if (Array.isArray(children) && children.length > 0) {
+        const found = search(children, effectiveIcon)
+
+        if (found) return found
+      }
+    }
+
+    return null
+  }
+
+  return search(items) || fallbackIcon
 }
 
 const NavigationSpacer = ({ showLabel, selected, value, onChange, ...rest }: any) => {
@@ -56,6 +109,117 @@ export default function MobileBottomNav() {
   const theme = useTheme()
   const dispatch = useAppDispatch()
   const isBelowMdScreen = useMediaQuery(theme.breakpoints.down('md'))
+  const { permissions, menuData } = usePermissionContext()
+
+  const canAbsenHarian = can(permissions, '/app/absen-harian-santri/list', 'view')
+  const canAbsenKelas = can(permissions, '/app/absen-kelas-santri/list', 'view')
+  const canAbsenPegawai = can(permissions, '/app/pegawai-absen-harian/list', 'view')
+
+  const canKebersihan = can(permissions, '/app/kebersihan-inspeksi/list', 'view')
+  const canPerizinanPegawai =
+    can(permissions, '/app/perizinan-pegawai/kewaliasuhan', 'view') ||
+    can(permissions, '/app/perizinan-pegawai', 'view')
+  const canKesehatanPegawai = can(permissions, '/app/kesehatan-pegawai/list', 'view')
+
+  const absensiNav = useMemo(() => {
+    if (canAbsenHarian) {
+      const href = '/app/absen-harian-santri/list'
+
+      return {
+        label: 'Absensi',
+        href,
+        icon: getSidebarMenuIcon(menuData, href, 'tabler-clipboard-check')
+      }
+    }
+
+    if (canAbsenKelas) {
+      const href = '/app/absen-kelas-santri/list'
+
+      return {
+        label: 'Absensi',
+        href,
+        icon: getSidebarMenuIcon(menuData, href, 'tabler-clipboard-check')
+      }
+    }
+
+    if (canAbsenPegawai) {
+      const href = '/app/pegawai-absen-harian/list'
+
+      return {
+        label: 'Absensi',
+        href,
+        icon: getSidebarMenuIcon(menuData, href, 'tabler-clipboard-check')
+      }
+    }
+
+    if (canPerizinanPegawai) {
+      const href = '/app/perizinan-pegawai/kewaliasuhan'
+
+      return {
+        label: 'Perizinan',
+        href,
+        icon: getSidebarMenuIcon(menuData, href, 'tabler-door-exit')
+      }
+    }
+
+    if (canKesehatanPegawai) {
+      const href = '/app/kesehatan-pegawai/list'
+
+      return {
+        label: 'Kesehatan',
+        href,
+        icon: getSidebarMenuIcon(menuData, href, 'tabler-stethoscope')
+      }
+    }
+
+    const fallbackHref = '/app/absen-harian-santri/list'
+
+    return {
+      label: 'Absensi',
+      href: fallbackHref,
+      icon: getSidebarMenuIcon(menuData, fallbackHref, 'tabler-clipboard-check')
+    }
+  }, [canAbsenHarian, canAbsenKelas, canAbsenPegawai, canPerizinanPegawai, canKesehatanPegawai, menuData])
+
+  const secondaryNav = useMemo(() => {
+    if (canKebersihan && absensiNav.href !== '/app/kebersihan-inspeksi/list') {
+      const href = '/app/kebersihan-inspeksi/list'
+
+      return {
+        label: 'Kebersihan',
+        href,
+        icon: getSidebarMenuIcon(menuData, href, 'tabler-vacuum-cleaner')
+      }
+    }
+
+    if (canPerizinanPegawai && absensiNav.href !== '/app/perizinan-pegawai/kewaliasuhan') {
+      const href = '/app/perizinan-pegawai/kewaliasuhan'
+
+      return {
+        label: 'Perizinan',
+        href,
+        icon: getSidebarMenuIcon(menuData, href, 'tabler-door-exit')
+      }
+    }
+
+    if (canKesehatanPegawai && absensiNav.href !== '/app/kesehatan-pegawai/list') {
+      const href = '/app/kesehatan-pegawai/list'
+
+      return {
+        label: 'Kesehatan',
+        href,
+        icon: getSidebarMenuIcon(menuData, href, 'tabler-stethoscope')
+      }
+    }
+
+    const fallbackHref = '/app/kebersihan-inspeksi/list'
+
+    return {
+      label: 'Kebersihan',
+      href: fallbackHref,
+      icon: getSidebarMenuIcon(menuData, fallbackHref, 'tabler-vacuum-cleaner')
+    }
+  }, [canKebersihan, canPerizinanPegawai, canKesehatanPegawai, absensiNav.href, menuData])
 
   // State untuk QR Scanner
   const [scannerType, setScannerType] = useState<string | null>(null)
@@ -73,6 +237,18 @@ export default function MobileBottomNav() {
   const [selectedKamar, setSelectedKamar] = useState<KamarOption | null>({ id_lokasi: '', nama_lokasi: 'Semua' })
   const selectedKamarRef = useRef(selectedKamar)
   const selectedShiftRef = useRef(selectedShift)
+
+  // State untuk Presensi Kelas di Scanner
+  const [listKelas, setListKelas] = useState<KelasOption[]>([])
+  const [listJamPel, setListJamPel] = useState<JamPelOption[]>([])
+  const [loadingKelas, setLoadingKelas] = useState(false)
+  const [loadingJamPel, setLoadingJamPel] = useState(false)
+  const [selectedKelas, setSelectedKelas] = useState<KelasOption | null>({ id_kelas: '', nama_kelas: 'Semua' })
+  const [selectedJamPel, setSelectedJamPel] = useState<JamPelOption | null>({ id_jampel: '', nama_jampel: 'Semua' })
+  const selectedKelasRef = useRef(selectedKelas)
+  const selectedJamPelRef = useRef(selectedJamPel)
+
+  const hasAnyScannerAccess = canKebersihan || canAbsenHarian || canAbsenKelas
 
   const { isToggled, toggleVerticalNav } = useVerticalNav()
 
@@ -132,7 +308,6 @@ export default function MobileBottomNav() {
     }
 
     if (scannerType && scannerType === 'presensi') {
-      //toast.warning('Maaf, fitur Presensi akan segera datang!!!')
       if (selectedKamarRef.current?.id_lokasi && selectedShiftRef.current?.id_shift) {
         handleCloseScanner()
         router.replace(
@@ -140,6 +315,20 @@ export default function MobileBottomNav() {
         )
       } else {
         toast.error('Silakan pilih Shift dan Lokasi terlebih dahulu')
+      }
+      handleBackCategory()
+    }
+
+    if (scannerType && scannerType === 'presensi_kelas') {
+      if (selectedKelasRef.current?.id_kelas && selectedJamPelRef.current?.id_jampel) {
+        const tgl = format(new Date(), 'yyyy-MM-dd')
+
+        handleCloseScanner()
+        router.replace(
+          `/app/absen-kelas-santri/form?mode=scan_qr&tanggal=${tgl}&id_kelas=${selectedKelasRef.current?.id_kelas}&id_jam_pelajaran=${selectedJamPelRef.current?.id_jampel}&nama_jampel=${selectedJamPelRef.current?.nama_jampel}&nama_kelas=${selectedKelasRef.current?.nama_kelas}&qrcode=${data}`
+        )
+      } else {
+        toast.error('Silakan pilih Kelas dan Jam Pelajaran terlebih dahulu')
       }
       handleBackCategory()
     }
@@ -190,6 +379,46 @@ export default function MobileBottomNav() {
     }
   }, [dispatch, scannerType])
 
+  // Ambil Master Data Kelas & Jam Pelajaran untuk Presensi Kelas
+  useEffect(() => {
+    const getKelasDanJamPelMaster = async () => {
+      try {
+        setLoadingKelas(true)
+        setLoadingJamPel(true)
+        const waktuSekarang = format(new Date(), 'HH:mm')
+        const [resKelas, resJam] = await Promise.all([
+          dispatch(fetchKelasList({})).unwrap(),
+          dispatch(fetchMatchingJamPelajaran({ waktu_absen: waktuSekarang })).unwrap()
+        ])
+
+        const valuesKelas = resKelas?.data || resKelas || []
+        const formattedKelas = Array.isArray(valuesKelas)
+          ? valuesKelas.map((c: any) => ({ id_kelas: c.id_kelas, nama_kelas: c.nama_kelas }))
+          : []
+
+        setListKelas([{ id_kelas: '', nama_kelas: 'Semua' }, ...formattedKelas])
+
+        const rawJam = resJam?.data || (Array.isArray(resJam) ? resJam : [])
+
+        if (Array.isArray(rawJam)) {
+          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }, ...rawJam])
+        } else {
+          setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }])
+        }
+      } catch {
+        setListKelas([{ id_kelas: '', nama_kelas: 'Semua' }])
+        setListJamPel([{ id_jampel: '', nama_jampel: 'Semua' }])
+      } finally {
+        setLoadingKelas(false)
+        setLoadingJamPel(false)
+      }
+    }
+
+    if (scannerType === 'presensi_kelas') {
+      getKelasDanJamPelMaster()
+    }
+  }, [dispatch, scannerType])
+
   useEffect(() => {
     selectedKamarRef.current = selectedKamar
   }, [selectedKamar])
@@ -197,6 +426,14 @@ export default function MobileBottomNav() {
   useEffect(() => {
     selectedShiftRef.current = selectedShift
   }, [selectedShift])
+
+  useEffect(() => {
+    selectedKelasRef.current = selectedKelas
+  }, [selectedKelas])
+
+  useEffect(() => {
+    selectedJamPelRef.current = selectedJamPel
+  }, [selectedJamPel])
 
   return isBelowMdScreen ? (
     <Paper
@@ -262,11 +499,11 @@ export default function MobileBottomNav() {
           />
 
           <BottomNavigationAction
-            label='Absensi'
-            value='/app/absen-harian-santri/list'
-            icon={<i className='tabler-calendar-user' />}
+            label={absensiNav.label}
+            value={absensiNav.href}
+            icon={<i className={absensiNav.icon} />}
             component={Link}
-            href='/app/absen-harian-santri/list'
+            href={absensiNav.href}
             onClick={handleCloseSidebar}
           />
 
@@ -274,11 +511,11 @@ export default function MobileBottomNav() {
           <NavigationSpacer sx={{ flex: 1, minWidth: 50, display: 'flex', justifyContent: 'center' }} />
 
           <BottomNavigationAction
-            label='Kebersihan'
-            value='/app/kebersihan-inspeksi/list'
-            icon={<i className='tabler-vacuum-cleaner' />}
+            label={secondaryNav.label}
+            value={secondaryNav.href}
+            icon={<i className={secondaryNav.icon} />}
             component={Link}
-            href='/app/kebersihan-inspeksi/list'
+            href={secondaryNav.href}
             onClick={handleCloseSidebar}
           />
 
@@ -311,7 +548,9 @@ export default function MobileBottomNav() {
                 </IconButton>
               )}
               <Typography variant='h6'>
-                {scannerType ? `Scan ${scannerType.charAt(0).toUpperCase() + scannerType.slice(1)}` : 'Pilih Scanner'}
+                {scannerType
+                  ? `Scan ${scannerType === 'presensi_kelas' ? 'Presensi Kelas' : scannerType.charAt(0).toUpperCase() + scannerType.slice(1)}`
+                  : 'Pilih Scanner'}
               </Typography>
             </Box>
 
@@ -330,55 +569,106 @@ export default function MobileBottomNav() {
             }}
           >
             {!scannerType ? (
-              <Grid container spacing={2} sx={{ width: '100%' }}>
-                <Grid size={{ xs: 6 }}>
-                  <Paper
-                    elevation={2}
-                    onClick={() => setScannerType('inspeksi')}
-                    sx={{
-                      p: 3,
-                      borderRadius: 3,
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      height: '100%',
-                      transition: '0.2s',
-                      '&:hover': {
-                        transform: 'translateY(-2px)'
-                      }
-                    }}
-                  >
-                    <i className='tabler-vacuum-cleaner text-4xl mb-2' />
-                    <Typography variant='h6'>Inspeksi</Typography>
-                    <Typography variant='body2' color='text.secondary'>
-                      Scan QR inspeksi
-                    </Typography>
-                  </Paper>
-                </Grid>
+              !hasAnyScannerAccess ? (
+                <Paper
+                  elevation={2}
+                  sx={{
+                    p: 4,
+                    borderRadius: 3,
+                    textAlign: 'center',
+                    maxWidth: 360,
+                    width: '100%'
+                  }}
+                >
+                  <i className='tabler-lock text-5xl mb-3 text-secondary' />
+                  <Typography variant='h6' sx={{ mb: 1 }}>
+                    Tidak Memiliki Akses
+                  </Typography>
+                  <Typography variant='body2' color='text.secondary'>
+                    Anda tidak memiliki akses ke fitur Scan QR Inspeksi maupun Presensi.
+                  </Typography>
+                </Paper>
+              ) : (
+                <Grid container spacing={2} sx={{ width: '100%', justifyContent: 'center' }}>
+                  {canKebersihan && (
+                    <Grid size={{ xs: 6 }}>
+                      <Paper
+                        elevation={2}
+                        onClick={() => setScannerType('inspeksi')}
+                        sx={{
+                          p: 3,
+                          borderRadius: 3,
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          height: '100%',
+                          transition: '0.2s',
+                          '&:hover': {
+                            transform: 'translateY(-2px)'
+                          }
+                        }}
+                      >
+                        <i className='tabler-vacuum-cleaner text-4xl mb-2' />
+                        <Typography variant='h6'>Inspeksi</Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Scan QR inspeksi
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
 
-                <Grid size={{ xs: 6 }}>
-                  <Paper
-                    elevation={2}
-                    onClick={() => setScannerType('presensi')}
-                    sx={{
-                      p: 3,
-                      borderRadius: 3,
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      height: '100%',
-                      transition: '0.2s',
-                      '&:hover': {
-                        transform: 'translateY(-2px)'
-                      }
-                    }}
-                  >
-                    <i className='tabler-qrcode text-4xl mb-2' />
-                    <Typography variant='h6'>Presensi</Typography>
-                    <Typography variant='body2' color='text.secondary'>
-                      Scan QR presensi
-                    </Typography>
-                  </Paper>
+                  {canAbsenHarian && (
+                    <Grid size={{ xs: 6 }}>
+                      <Paper
+                        elevation={2}
+                        onClick={() => setScannerType('presensi')}
+                        sx={{
+                          p: 3,
+                          borderRadius: 3,
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          height: '100%',
+                          transition: '0.2s',
+                          '&:hover': {
+                            transform: 'translateY(-2px)'
+                          }
+                        }}
+                      >
+                        <i className='tabler-qrcode text-4xl mb-2' />
+                        <Typography variant='h6'>{canAbsenKelas ? 'Presensi Kamar' : 'Presensi'}</Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Scan QR presensi kamar
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
+
+                  {canAbsenKelas && (
+                    <Grid size={{ xs: 6 }}>
+                      <Paper
+                        elevation={2}
+                        onClick={() => setScannerType('presensi_kelas')}
+                        sx={{
+                          p: 3,
+                          borderRadius: 3,
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          height: '100%',
+                          transition: '0.2s',
+                          '&:hover': {
+                            transform: 'translateY(-2px)'
+                          }
+                        }}
+                      >
+                        <i className='tabler-qrcode text-4xl mb-2' />
+                        <Typography variant='h6'>{canAbsenHarian ? 'Presensi Kelas' : 'Presensi'}</Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Scan QR presensi kelas
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
                 </Grid>
-              </Grid>
+              )
             ) : (
               <Fragment>
                 <Grid container spacing={2} sx={{ width: '100%' }}>
@@ -442,6 +732,76 @@ export default function MobileBottomNav() {
                                 endAdornment: (
                                   <>
                                     {loadingKamar ? <CircularProgress color='inherit' size={20} /> : null}
+                                    {params.InputProps.endAdornment}
+                                  </>
+                                )
+                              }}
+                            />
+                          )}
+                        />
+                      </Grid>
+                    </Grid>
+                  )}
+
+                  {scannerType === 'presensi_kelas' && (
+                    <Grid
+                      container
+                      spacing={4}
+                      sx={{
+                        p: 3,
+                        backgroundColor: 'white',
+                        width: '100%',
+                        borderRadius: 2,
+                        m: 2
+                      }}
+                    >
+                      {/* SELECTABLE SEARCH: KELAS */}
+                      <Grid size={{ xs: 12, sm: 2.4 }}>
+                        <Autocomplete
+                          size='small'
+                          options={listKelas}
+                          loading={loadingKelas}
+                          value={selectedKelas}
+                          onChange={(_, newValue) => setSelectedKelas(newValue)}
+                          getOptionLabel={option => option.nama_kelas || ''}
+                          isOptionEqualToValue={(option, value) => option.id_kelas === value?.id_kelas}
+                          renderInput={params => (
+                            <TextField
+                              {...params}
+                              label='Kelas'
+                              InputProps={{
+                                ...params.InputProps,
+                                endAdornment: (
+                                  <>
+                                    {loadingKelas ? <CircularProgress color='inherit' size={20} /> : null}
+                                    {params.InputProps.endAdornment}
+                                  </>
+                                )
+                              }}
+                            />
+                          )}
+                        />
+                      </Grid>
+
+                      {/* SELECTABLE SEARCH: JAM PELAJARAN */}
+                      <Grid size={{ xs: 12, sm: 2.4 }}>
+                        <Autocomplete
+                          size='small'
+                          options={listJamPel}
+                          loading={loadingJamPel}
+                          value={selectedJamPel}
+                          onChange={(_, newValue) => setSelectedJamPel(newValue)}
+                          getOptionLabel={option => option.nama_jampel || ''}
+                          isOptionEqualToValue={(option, value) => option.id_jampel === value?.id_jampel}
+                          renderInput={params => (
+                            <TextField
+                              {...params}
+                              label='Jam Pelajaran'
+                              InputProps={{
+                                ...params.InputProps,
+                                endAdornment: (
+                                  <>
+                                    {loadingJamPel ? <CircularProgress color='inherit' size={20} /> : null}
                                     {params.InputProps.endAdornment}
                                   </>
                                 )
