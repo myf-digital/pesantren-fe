@@ -56,7 +56,7 @@ const VerticalMenu = ({  scrollMenu }: Props) => {
   const verticalNavOptions = useVerticalNav()
   const [menuData, setMenuData] = useState<VerticalMenuDataType[]>([])
   const { update } = useSession()
-  const { permissions, setPermissions } = usePermissionContext()
+  const { permissions, setPermissions, setMenuData: setContextMenuData } = usePermissionContext()
 
   // Vars
   const { isBreakpointReached, transitionDuration } = verticalNavOptions
@@ -82,10 +82,11 @@ const VerticalMenu = ({  scrollMenu }: Props) => {
       })
       
       setMenuData(data)
+      setContextMenuData(data)
     }
 
     loadMenu()
-  }, [update, setPermissions, permissions])
+  }, [update, setPermissions, setContextMenuData, permissions])
 
   return (
     <div className='flex flex-col h-full pb-20'>
