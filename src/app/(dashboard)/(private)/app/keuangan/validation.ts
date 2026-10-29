@@ -30,10 +30,10 @@ const cents = (value: string) => {
   return (value.startsWith('-') ? -1n : 1n) * (BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0')))
 }
 
-const decimal = (value: bigint) => {
+const formatAmount = (value: bigint) => {
   const amount = value < 0n ? -value : value
 
-  return `${value < 0n ? '-' : ''}${amount / 100n}.${String(amount % 100n).padStart(2, '0')}`
+  return `${value < 0n ? '-' : ''}${(amount / 100n).toLocaleString('id-ID')},${String(amount % 100n).padStart(2, '0')}`
 }
 
 export function dailyBalanceWarnings(values: Record<string, any>): string[] {
@@ -48,7 +48,7 @@ export function dailyBalanceWarnings(values: Record<string, any>): string[] {
   return akhir === expected
     ? []
     : [
-        `Saldo akhir sumber ${amounts[3]} berbeda dari perhitungan ${decimal(expected)}; selisih ${decimal(akhir - expected)}. Saldo sumber tetap disimpan.`
+        `Saldo akhir sumber ${formatAmount(akhir)} berbeda dari perhitungan ${formatAmount(expected)}; selisih ${formatAmount(akhir - expected)}. Saldo sumber tetap disimpan.`
       ]
 }
 
@@ -66,13 +66,13 @@ export function buildFinancePayload(
 
     if (typeof value === 'string') value = value.trim()
 
-    if (field.required && field.type !== 'boolean' && (value == null || value === '')) {
+    if (field.required && field.dataType !== 'boolean' && (value == null || value === '')) {
       errors[field.key] = `${field.label} wajib diisi`
       continue
     }
 
     if (value == null || value === '') {
-      if (field.type === 'boolean') errors[field.key] = `${field.label} harus berupa boolean`
+      if (field.dataType === 'boolean') errors[field.key] = `${field.label} harus berupa boolean`
       else payload[field.key] = null
       continue
     }
@@ -80,7 +80,7 @@ export function buildFinancePayload(
     if (field.maxLength && typeof value === 'string' && value.length > field.maxLength)
       errors[field.key] = `${field.label} maksimal ${field.maxLength} karakter`
 
-    if (field.type === 'integer') {
+    if (field.dataType === 'integer') {
       const number = Number(value)
 
       if (
@@ -92,25 +92,26 @@ export function buildFinancePayload(
       )
         errors[field.key] = `${field.label} harus bilangan bulat yang valid`
       payload[field.key] = number
-    } else if (field.type === 'money') {
+    } else if (field.dataType === 'money') {
       const text = String(value)
 
       if (!moneyPattern.test(text))
         errors[field.key] = `${field.label}: maksimal 16 digit bulat dan 2 desimal; gunakan titik untuk desimal`
       else if (!field.signed && cents(text) < 0n) errors[field.key] = `${field.label} tidak boleh negatif`
       payload[field.key] = text
-    } else if (field.type === 'date') {
+    } else if (field.dataType === 'date') {
       try {
         payload[field.key] = dateOnly(value)
       } catch (error) {
         errors[field.key] = `${field.label}: ${(error as Error).message}`
       }
-    } else if (field.type === 'boolean') {
+    } else if (field.dataType === 'boolean') {
       if (typeof value !== 'boolean') errors[field.key] = `${field.label} harus berupa boolean`
       payload[field.key] = value
     } else {
-      if (field.type === 'select' && !field.options?.includes(value)) errors[field.key] = `${field.label} tidak valid`
-      if (field.type === 'reference' && typeof value !== 'string')
+      if (field.dataType === 'select' && !field.options?.includes(value))
+        errors[field.key] = `${field.label} tidak valid`
+      if (field.dataType === 'reference' && typeof value !== 'string')
         errors[field.key] = `${field.label} harus dipilih dari master`
       payload[field.key] = value
     }
@@ -137,6 +138,19 @@ export function buildFinancePayload(
     if (payload.cakupan_data === 'PerPenerima' && !payload.id_santri)
       errors.id_santri = 'Santri wajib untuk data per penerima'
     if (payload.cakupan_data === 'Agregat') payload.id_santri = null
+  }
+
+  for (const field of config.fields) {
+    const selected = values[field.key]
+
+    if (
+      field.dataType === 'reference' &&
+      ['keu-akun', 'keu-kelompok-kas'].includes(field.source!) &&
+      selected &&
+      typeof selected === 'object' &&
+      selected.is_active === false
+    )
+      errors[field.key] = `Pilih ${field.label.toLowerCase()} yang aktif`
   }
 
   const group = values.id_kelompok_kas

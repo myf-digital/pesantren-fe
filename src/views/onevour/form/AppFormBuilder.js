@@ -608,7 +608,7 @@ export function formColumnDetailField(form) {
     )
   }
 
-  if ('numeral' === props.type) {
+  if ('numeral' === props.type || 'integer' === props.type) {
     return (
       <Grid size={{ xs: 12, sm: 6 }} key={index}>
         <FormControl fullWidth size='small'>
@@ -864,7 +864,7 @@ const formColumnDetailSingleField = form => {
     return <>{textField(form)}</>
   }
 
-  if ('numeral' === props.type) {
+  if ('numeral' === props.type || 'integer' === props.type) {
     return <>{numeralField(form)}</>
   }
 
@@ -1159,7 +1159,8 @@ const numeralField = form => {
                   inputRef: props.ref,
                   options: {
                     numeral: true,
-                    numeralThousandsGroupStyle: 'thousand'
+                    numeralThousandsGroupStyle: props.type === 'integer' ? 'none' : 'thousand',
+                    numeralDecimalScale: props.type === 'integer' ? 0 : 2
                   },
                   readOnly: props.readOnly
                 },

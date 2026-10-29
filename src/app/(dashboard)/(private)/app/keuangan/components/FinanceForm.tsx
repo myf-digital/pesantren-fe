@@ -12,15 +12,16 @@ import { toast } from 'react-toastify'
 import { useAppDispatch } from '@/redux-store/hook'
 import { useCan } from '@/hooks/useCan'
 import { modules } from '../config'
+import { referenceOption } from '../references'
 import { buildFinancePayload, dailyBalanceWarnings, scalarValue } from '../validation'
 import { errorMessage } from '../api'
-import type { createFinanceModule } from '../api'
+import type { FinanceActions } from '../types'
 import api from '@/libs/axios'
 import { field, fieldBuildSubmit, formColumn } from '@/views/onevour/form/AppFormBuilder'
 
-type Props = { resource: string; request: ReturnType<typeof createFinanceModule>['request'] }
+type Props = { resource: string; actions: Pick<FinanceActions, 'fetchById' | 'create' | 'update' | 'resetRedux'> }
 
-export default function FinanceForm({ resource, request }: Props) {
+export default function FinanceForm({ resource, actions }: Props) {
   const config = modules[resource]
   const router = useRouter()
   const params = useSearchParams()
@@ -35,13 +36,13 @@ export default function FinanceForm({ resource, request }: Props) {
         field.key,
         field.key === 'is_active'
           ? { value: field.defaultValue ?? true, label: field.defaultValue === false ? 'Tidak Aktif' : 'Aktif' }
-          : field.type === 'integer'
+          : field.dataType === 'integer'
             ? String(field.defaultValue ?? '')
-            : field.type === 'select'
+            : field.dataType === 'select'
               ? field.defaultValue
                 ? { value: field.defaultValue, label: field.defaultValue }
                 : null
-              : (field.defaultValue ?? (field.type === 'boolean' ? false : ''))
+              : (field.defaultValue ?? (field.dataType === 'boolean' ? false : ''))
       ])
     )
 
@@ -52,6 +53,7 @@ export default function FinanceForm({ resource, request }: Props) {
     handleSubmit,
     reset,
     setValue,
+    getValues,
     setError: setFieldError,
     clearErrors,
     formState: { errors }
@@ -66,35 +68,40 @@ export default function FinanceForm({ resource, request }: Props) {
   const [error, setError] = useState('')
   const [historical, setHistorical] = useState(false)
   const readOnly = view || !canSave || historical
-  const cancel = () => router.replace(`/app/${resource}/list`)
+
+  const cancel = () => {
+    dispatch(actions.resetRedux())
+    router.replace(`/app/${resource}/list`)
+  }
 
   useEffect(() => {
     const controller = new AbortController()
 
     const timer = setTimeout(async () => {
-      const fields = config.fields.filter(item => item.type === 'reference')
+      const fields = config.fields.filter(item => item.dataType === 'reference')
 
       const results = await Promise.allSettled(
         fields.map(async item => {
           const response = await api.get(`/app/${item.source}${item.source === 'santri' ? '' : '/all-data'}`, {
-            params: { ...item.params, q: searches[item.key] || '', page: 1, perPage: 50 },
+            params: {
+              ...item.params,
+              ...(['keu-akun', 'keu-kelompok-kas'].includes(item.source!) ? { is_active: true } : {}),
+              q: searches[item.key] || '',
+              page: 1,
+              perPage: 50
+            },
             signal: controller.signal
           })
 
           const data = response.data?.data
 
           const rows = (Array.isArray(data) ? data : data?.values || []).filter(
-            (row: any) => item.source !== 'keu-import-batch' || row.status_batch !== 'Dibatalkan'
+            (row: any) =>
+              (item.source !== 'keu-import-batch' || row.status_batch !== 'Dibatalkan') &&
+              (!['keu-akun', 'keu-kelompok-kas'].includes(item.source!) || row.is_active !== false)
           )
 
-          return [
-            item.key,
-            rows.map((row: any) => ({
-              ...row,
-              value: row[item.idKey!],
-              label: row[item.labelKey!] || row[item.idKey!]
-            }))
-          ] as const
+          return [item.key, rows.map((row: any) => referenceOption(item, row))] as const
         })
       )
 
@@ -117,9 +124,36 @@ export default function FinanceForm({ resource, request }: Props) {
   }, [config, searches])
 
   useEffect(() => {
+    if (id || !config.batchType || !config.fields.some(field => field.key === 'id_tahunajaran')) return
+    const controller = new AbortController()
+
+    api
+      .get(`/app/${resource}/form-options`, { signal: controller.signal })
+      .then(response => {
+        if (controller.signal.aborted) return
+        const data = response.data?.data
+        const yearField = config.fields.find(field => field.key === 'id_tahunajaran')!
+        const years = (data?.tahun_ajaran || []).map((row: any) => referenceOption(yearField, row))
+
+        setReferences(previous => ({ ...previous, id_tahunajaran: years }))
+        const selected = years.find((year: any) => year.value === data?.id_tahunajaran_default)
+
+        if (selected && !getValues('id_tahunajaran')) {
+          setValue('id_tahunajaran', selected)
+          setValues(previous => ({ ...previous, id_tahunajaran: selected }))
+        }
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) setReferenceError(errorMessage(error))
+      })
+
+    return () => controller.abort()
+  }, [id, config, resource, setValue, getValues])
+
+  useEffect(() => {
     if (!id) return
     let active = true
-    const task = dispatch(request({ suffix: `/${id}` }))
+    const task = dispatch(actions.fetchById(id))
 
     task
       .unwrap()
@@ -135,10 +169,10 @@ export default function FinanceForm({ resource, request }: Props) {
                 : (result.data[field.key] ?? field.defaultValue ?? '')
 
             if (field.key === 'is_active') value = { value: Boolean(value), label: value ? 'Aktif' : 'Tidak Aktif' }
-            if (field.type === 'integer') value = String(value)
-            if (field.type === 'date' && value) value = String(value).slice(0, 10)
+            if (field.dataType === 'integer') value = String(value)
+            if (field.dataType === 'date' && value) value = String(value).slice(0, 10)
 
-            if (field.type === 'reference' && value) {
+            if (field.dataType === 'reference' && value) {
               const association = (
                 {
                   'keu-akun': 'akun',
@@ -152,10 +186,10 @@ export default function FinanceForm({ resource, request }: Props) {
 
               const related = result.data[association]
 
-              value = { value, label: related?.[field.labelKey!] || value, ...related }
+              value = referenceOption(field, { ...related, [field.idKey!]: value })
             }
 
-            if (field.type === 'select') value = value ? { value, label: value } : null
+            if (field.dataType === 'select') value = value ? { value, label: value } : null
 
             return [field.key, value]
           })
@@ -164,7 +198,7 @@ export default function FinanceForm({ resource, request }: Props) {
         setValues(loaded)
         reset(loaded)
         setAccount(result.data.akun || null)
-        setHistorical(resource === 'keu-rekap-harian' && result.data.is_current === false)
+        setHistorical(Boolean(config.batchType) && result.data.is_current === false)
       })
       .catch(err => {
         if (active) setError(errorMessage(err))
@@ -177,7 +211,7 @@ export default function FinanceForm({ resource, request }: Props) {
       active = false
       task.abort()
     }
-  }, [id, config, dispatch, request, resource, reset])
+  }, [id, config, dispatch, actions, resource, reset])
 
   const submit = async () => {
     if (readOnly || saving || loading || (error && id && !values[config.fields[0].key])) return
@@ -195,9 +229,7 @@ export default function FinanceForm({ resource, request }: Props) {
     setSaving(true)
 
     try {
-      const result = await dispatch(
-        request({ method: id ? 'put' : 'post', suffix: id ? `/${id}` : '', data: payload })
-      ).unwrap()
+      const result = await dispatch(id ? actions.update({ id, params: payload }) : actions.create(payload)).unwrap()
 
       for (const warning of result.data?.warnings || []) toast.warning(warning, { autoClose: false })
       toast.success('Data berhasil disimpan')
@@ -225,28 +257,21 @@ export default function FinanceForm({ resource, request }: Props) {
             { value: true, label: 'Aktif' },
             { value: false, label: 'Tidak Aktif' }
           ]
-        : item.type === 'reference'
+        : item.dataType === 'reference'
           ? references[item.key] || []
           : (item.options || []).map(value => ({ value, label: value }))
 
     return field({
-      type:
-        item.key === 'is_active' || item.type === 'reference' || item.type === 'select'
-          ? 'select'
-          : item.type === 'boolean'
-            ? 'checkbox'
-            : item.type === 'integer' || item.type === 'money'
-              ? resource === 'keu-rekap-harian'
-                ? 'numeral'
-                : 'text'
-              : item.type || 'text',
+      type: item.type || 'text',
       key: item.key,
       label: item.label,
-      placeholder: `${item.type === 'reference' || item.type === 'select' ? 'Pilih' : 'Input'} ${item.label}`,
+      placeholder: `${item.dataType === 'reference' && item.codeKey ? 'Ketik Kode / Pilih' : item.dataType === 'select' ? 'Pilih' : 'Input'} ${item.label}`,
       required: Boolean(required) && !aggregate,
-      readOnly: readOnly || saving || aggregate,
+      readOnly: readOnly || saving || aggregate || Boolean(id && config.master && item.key.startsWith('kode_')),
       tooltip:
-        item.type === 'money' ? 'Nominal maksimal 16 digit bulat dan 2 desimal. Desimal menggunakan titik.' : undefined,
+        item.dataType === 'money'
+          ? 'Nominal maksimal 16 digit bulat dan 2 desimal. Desimal menggunakan titik.'
+          : undefined,
       options: {
         values: options,
         onChange: (option: any) => {
@@ -259,7 +284,7 @@ export default function FinanceForm({ resource, request }: Props) {
           }
         }
       },
-      ...(item.source === 'santri'
+      ...(item.dataType === 'reference'
         ? {
             onInputChange: (_: any, text: string, reason: string) => {
               if (reason === 'input') setSearches(previous => ({ ...previous, [item.key]: text }))
@@ -285,6 +310,12 @@ export default function FinanceForm({ resource, request }: Props) {
         {referenceError && (
           <Alert severity='error' sx={{ mb: 4 }}>
             {referenceError}
+          </Alert>
+        )}
+        {resource === 'keu-anggaran' && (
+          <Alert severity='info' sx={{ mb: 4 }}>
+            Catat anggaran final yang telah disetujui di luar SADA. Tidak ada pengajuan, persetujuan, atau release di
+            sini.
           </Alert>
         )}
         {historical && (

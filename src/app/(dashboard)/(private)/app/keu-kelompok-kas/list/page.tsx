@@ -1,8 +1,10 @@
 'use client'
 
 import FinanceList from '../../keuangan/components/FinanceList'
-import { request } from '../slice'
+import { fetchKeuKelompokKasPage, deleteKeuKelompokKas, postExport, resetRedux } from '../slice'
+
+const actions = { fetchPage: fetchKeuKelompokKasPage, remove: deleteKeuKelompokKas, postExport, resetRedux }
 
 export default function Page() {
-  return <FinanceList resource='keu-kelompok-kas' request={request} />
+  return <FinanceList resource='keu-kelompok-kas' actions={actions} />
 }

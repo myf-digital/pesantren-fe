@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "dotenv -e .env.local -e .env -- next start",
     "lint": "next lint",
-    "test:keuangan": "node --test tests/finance-validation.test.cjs",
+    "test:keuangan": "node --test tests/finance-validation.test.cjs tests/finance-slices.test.cjs",
     "lint:fix": "next lint --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
     "build:icons": "tsx src/assets/iconify-icons/bundle-icons-css.ts",

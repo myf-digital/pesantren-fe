@@ -31,19 +31,19 @@ function fixture(resource) {
   return Object.fromEntries(
     modules[resource].fields.map(field => [
       field.key,
-      field.type === 'boolean'
+      field.dataType === 'boolean'
         ? (field.defaultValue ?? true)
-        : field.type === 'integer'
+        : field.dataType === 'integer'
           ? field.key === 'nomor_baris_sumber'
             ? '1'
             : '0'
-          : field.type === 'money'
+          : field.dataType === 'money'
             ? '100.00'
-            : field.type === 'date'
+            : field.dataType === 'date'
               ? '2026-10-27'
-              : field.type === 'select'
+              : field.dataType === 'select'
                 ? { value: field.options[0] }
-                : field.type === 'reference'
+                : field.dataType === 'reference'
                   ? { value: field.key, is_active: true }
                   : 'Contoh'
     ])
@@ -69,7 +69,7 @@ test('master: whitespace, integer, strict boolean, and inactive group', () => {
   assert.equal(validate('keu-kelompok-kas', { urutan: '0', is_active: false }).payload.is_active, false)
 })
 test('daily: required zero, decimal precision, negatives, date validity and periodic year', () => {
-  assert.equal(validate('keu-rekap-harian', { masuk: '' }).errors.masuk, 'masuk wajib diisi')
+  assert.equal(validate('keu-rekap-harian', { masuk: '' }).errors.masuk, 'Masuk wajib diisi')
   assert.deepEqual(validate('keu-rekap-harian', { masuk: '0', saldo_awal: '-1.00' }).errors, {})
   assert.ok(validate('keu-rekap-harian', { masuk: '-0.01' }).errors.masuk)
   assert.ok(validate('keu-rekap-harian', { keluar: '-1.00' }).errors.keluar)
@@ -100,8 +100,17 @@ test('balance warning uses cents without floating point loss or changing source'
   )
   const values = { saldo_awal: '100', masuk: '20', keluar: '10', saldo_akhir: '111' }
 
-  assert.match(dailyBalanceWarnings(values)[0], /110\.00; selisih 1\.00/)
+  assert.match(dailyBalanceWarnings(values)[0], /110,00; selisih 1,00/)
   assert.equal(values.saldo_akhir, '111')
+  assert.equal(
+    dailyBalanceWarnings({
+      saldo_awal: '9999999999999999.89',
+      masuk: '0.10',
+      keluar: '0',
+      saldo_akhir: '9999999999999998.99'
+    })[0],
+    'Saldo akhir sumber 9.999.999.999.999.998,99 berbeda dari perhitungan 9.999.999.999.999.999,99; selisih -1,00. Saldo sumber tetap disimpan.'
+  )
   assert.deepEqual(dailyBalanceWarnings({}), [])
 })
 test('target and budget periods, enums, negative amounts and per-account requirement', () => {
@@ -123,4 +132,22 @@ test('scholarship scope, references, allowed aid types and optional realization'
   assert.ok(validate('keu-beasiswa', { id_jenis_beasiswa: null }).errors.id_jenis_beasiswa)
   assert.ok(validate('keu-beasiswa', { jenis_bantuan: { value: 'TidakValid' } }).errors.jenis_bantuan)
   assert.ok(validate('keu-beasiswa', { nilai_realisasi: '-1' }).errors.nilai_realisasi)
+})
+
+test('reference choices show business codes and names while payloads retain internal IDs', () => {
+  const { referenceOption } = loadTypeScript(base + 'references.ts')
+  const accountField = modules['keu-rekap-harian'].fields.find(field => field.key === 'id_akun')
+
+  const option = referenceOption(accountField, {
+    id_akun: 'internal-id',
+    kode_akun: 'KAS01',
+    nama_akun: 'Kas Umum',
+    is_active: true
+  })
+
+  assert.equal(option.label, 'KAS01 — Kas Umum')
+  assert.equal(option.value, 'internal-id')
+  assert.equal(validate('keu-rekap-harian', { id_akun: option }).payload.id_akun, 'internal-id')
+  assert.ok(validate('keu-rekap-harian', { id_akun: { ...option, is_active: false } }).errors.id_akun)
+  assert.equal(referenceOption(accountField, { id_akun: 'hidden-uuid' }).label.includes('hidden-uuid'), false)
 })

@@ -14,7 +14,7 @@ import { useIsMobile } from '@/@core/hooks/useIsMobile'
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog'
 import { modules } from '../config'
 import { downloadFinanceFile, errorMessage } from '../api'
-import type { createFinanceModule } from '../api'
+import type { FinanceActions } from '../types'
 
 interface PreviewRow {
   row: number
@@ -29,9 +29,9 @@ interface Preview {
   invalid: number
   data: PreviewRow[]
 }
-type Props = { resource: string; request: ReturnType<typeof createFinanceModule>['request'] }
+type Props = { resource: string; actions: Pick<FinanceActions, 'postImport' | 'postExport' | 'resetRedux'> }
 
-export default function FinanceImport({ resource, request }: Props) {
+export default function FinanceImport({ resource, actions }: Props) {
   const config = modules[resource]
   const dispatch = useAppDispatch()
   const router = useRouter()
@@ -39,6 +39,7 @@ export default function FinanceImport({ resource, request }: Props) {
   const isMobile = useIsMobile(1000)
   const fileRef = useRef<HTMLInputElement>(null)
   const [mode, setMode] = useState<'preview' | 'commit'>('preview')
+  const [action, setAction] = useState<'tambah' | 'koreksi'>('tambah')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [busy, setBusy] = useState(false)
@@ -46,7 +47,11 @@ export default function FinanceImport({ resource, request }: Props) {
   const [openConfirm, setOpenConfirm] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [directResult, setDirectResult] = useState<{ valid: number; invalid: number } | null>(null)
-  const cancel = () => router.replace(`/app/${resource}/list`)
+
+  const cancel = () => {
+    dispatch(actions.resetRedux())
+    router.replace(`/app/${resource}/list`)
+  }
 
   const reset = () => {
     setFile(null)
@@ -66,7 +71,8 @@ export default function FinanceImport({ resource, request }: Props) {
 
       data.append('file_import', file)
       data.append('mode', mode)
-      const result = await dispatch(request({ method: 'post', suffix: '/import', data })).unwrap()
+      if (config.batchType) data.append('aksi', action)
+      const result = await dispatch(actions.postImport(data)).unwrap()
 
       if (mode === 'preview') setPreview(result.data)
       else if (result.data?.invalid) {
@@ -86,18 +92,29 @@ export default function FinanceImport({ resource, request }: Props) {
   }
 
   const savePreview = async () => {
-    if (!preview?.valid || busy || !canImport) return
+    if (!preview?.valid || !file || busy || !canImport) return
     setBusy(true)
     setError('')
 
     try {
-      await dispatch(
-        request({
-          method: 'post',
-          suffix: '/insert',
-          data: { data: preview.data.filter(row => row.valid).map(row => row.payload) }
-        })
-      ).unwrap()
+      const data = new FormData()
+
+      data.append('file_import', file)
+      data.append('mode', 'commit')
+      if (config.batchType) data.append('aksi', action)
+
+      const result = await dispatch(actions.postImport(data)).unwrap()
+
+      if (result.data?.invalid) {
+        setPreview(null)
+        setDirectResult(result.data)
+        setError(
+          `${result.data.valid} baris disimpan; ${result.data.invalid} baris tidak valid. Perbaiki baris yang ditolak sebelum mengimpor ulang.`
+        )
+
+        return
+      }
+
       toast.success('Import data berhasil')
       cancel()
     } catch (err) {
@@ -111,7 +128,7 @@ export default function FinanceImport({ resource, request }: Props) {
     setDownloading(true)
 
     try {
-      await downloadFinanceFile(resource, { template: 1 })
+      downloadFinanceFile(await dispatch(actions.postExport({ template: 1 })).unwrap())
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -122,7 +139,10 @@ export default function FinanceImport({ resource, request }: Props) {
   const display = (value: any) =>
     typeof value === 'boolean' ? (value ? 'Ya' : 'Tidak') : value == null || value === '' ? '-' : String(value)
 
-  const previewFields = config.fields.filter(field => preview?.data.some(row => row.payload[field.key] != null))
+  const previewFields = config.fields.filter(
+    field =>
+      !(config.batchType && field.key === 'id_batch') && preview?.data.some(row => row.payload[field.key] != null)
+  )
 
   return (
     <div className='min-h-screen bg-gray-50 py-10 px-4'>
@@ -147,10 +167,20 @@ export default function FinanceImport({ resource, request }: Props) {
                   <li>Format file: Excel atau CSV (encoding UTF-8), sesuai template.</li>
                   <li>Mode Preview: validasi tanpa menyimpan.</li>
                   <li>Mode Commit: validasi dan simpan baris valid.</li>
-                  {config.batchType && <li>Isi ID Batch dengan batch {config.batchType} yang belum dibatalkan.</li>}
+                  {config.batchType && (
+                    <li>Batch impor dibuat otomatis saat data disimpan. ID Batch tidak perlu diisi.</li>
+                  )}
+                  <li>
+                    Gunakan kode akun, kode kelompok, dan kode jenis beasiswa sesuai master, bukan UUID atau nama. Tahun
+                    ajaran dan identitas santri mengikuti kolom template resmi.
+                  </li>
+                  <li>Publikasi berarti data valid tersedia untuk pelaporan, bukan persetujuan keuangan.</li>
                   <li>Nominal tanpa pemisah ribuan; gunakan titik untuk desimal.</li>
-                  {resource === 'keu-rekap-harian' && (
-                    <li>Isi ID Rekap untuk koreksi versi aktif; kosongkan untuk data baru.</li>
+                  {config.batchType && (
+                    <li>
+                      Pilih Koreksi untuk mengganti versi aktif berdasarkan identitas bisnis tanpa UUID. Koreksi
+                      anggaran memerlukan kode referensi sumber. Baris di luar file tetap dipertahankan.
+                    </li>
                   )}
                 </ul>
                 <div className='mt-3'>
@@ -183,6 +213,26 @@ export default function FinanceImport({ resource, request }: Props) {
                   ))}
                 </div>
               </div>
+              {config.batchType && (
+                <div>
+                  <label className='block font-medium mb-2'>Jenis Operasi</label>
+                  <div className='flex gap-6 text-sm'>
+                    {(['tambah', 'koreksi'] as const).map(value => (
+                      <label key={value} className='flex items-center gap-2'>
+                        <input
+                          type='radio'
+                          name='aksi'
+                          value={value}
+                          checked={action === value}
+                          disabled={busy || Boolean(preview)}
+                          onChange={() => setAction(value)}
+                        />
+                        {value === 'tambah' ? 'Tambah Data Baru' : 'Koreksi Versi Aktif'}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
               {preview ? (
                 <div className='space-y-6'>
                   <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>

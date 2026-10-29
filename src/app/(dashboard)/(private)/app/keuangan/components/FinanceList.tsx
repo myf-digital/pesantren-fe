@@ -31,11 +31,11 @@ import { useAppDispatch } from '@/redux-store/hook'
 import { useCan } from '@/hooks/useCan'
 import { modules } from '../config'
 import { downloadFinanceFile, errorMessage } from '../api'
-import type { createFinanceModule } from '../api'
+import type { FinanceActions } from '../types'
 import DialogDelete from '@/views/onevour/components/dialog-delete'
 import CustomChip from '@/@core/components/mui/Chip'
 
-type Props = { resource: string; request: ReturnType<typeof createFinanceModule>['request'] }
+type Props = { resource: string; actions: Pick<FinanceActions, 'fetchPage' | 'remove' | 'postExport' | 'resetRedux'> }
 
 function RowAction({
   row,
@@ -54,7 +54,7 @@ function RowAction({
   const theme = useTheme()
   const mobile = useMediaQuery(theme.breakpoints.down('md'))
   const id = row[modules[resource].id]
-  const historical = resource === 'keu-rekap-harian' && !row.is_current
+  const historical = Boolean(modules[resource].batchType) && row.is_current === false
 
   const content = (
     <>
@@ -105,7 +105,7 @@ function RowAction({
   )
 }
 
-export default function FinanceList({ resource, request }: Props) {
+export default function FinanceList({ resource, actions }: Props) {
   const config = modules[resource]
   const dispatch = useAppDispatch()
   const canCreate = useCan('create')
@@ -125,16 +125,13 @@ export default function FinanceList({ resource, request }: Props) {
 
   useEffect(() => {
     let active = true
-    let task: ReturnType<ReturnType<typeof request>> | undefined
+    let task: ReturnType<ReturnType<typeof actions.fetchPage>> | undefined
 
     const timer = setTimeout(() => {
       setLoading(true)
       setError('')
       task = dispatch(
-        request({
-          params: { page: query.page, perPage: query.perPage, q: query.q, [statusKey]: query.status },
-          allowEmpty: true
-        })
+        actions.fetchPage({ page: query.page, perPage: query.perPage, q: query.q, [statusKey]: query.status })
       )
       task
         .unwrap()
@@ -154,13 +151,13 @@ export default function FinanceList({ resource, request }: Props) {
       clearTimeout(timer)
       task?.abort()
     }
-  }, [dispatch, request, query, revision, statusKey])
+  }, [dispatch, actions, query, revision, statusKey])
 
   const remove = async () => {
     setDeleting(true)
 
     try {
-      await dispatch(request({ method: 'delete', suffix: `/${selected[config.id]}` })).unwrap()
+      await dispatch(actions.remove(selected[config.id])).unwrap()
       toast.success('Data berhasil dihapus')
       setSelected(null)
       setQuery(prev => ({ ...prev, page: 1 }))
@@ -176,7 +173,7 @@ export default function FinanceList({ resource, request }: Props) {
     setExporting(true)
 
     try {
-      await downloadFinanceFile(resource, { q: query.q, [statusKey]: query.status })
+      downloadFinanceFile(await dispatch(actions.postExport({ q: query.q, [statusKey]: query.status })).unwrap())
     } catch (err) {
       toast.error(err instanceof Error ? err.message : errorMessage(err))
     } finally {
@@ -184,7 +181,7 @@ export default function FinanceList({ resource, request }: Props) {
     }
   }
 
-  const actions = (row: any) => (
+  const renderActions = (row: any) => (
     <RowAction row={row} resource={resource} canEdit={canEdit} canDelete={canDelete} onDelete={setSelected} />
   )
 
@@ -288,14 +285,13 @@ export default function FinanceList({ resource, request }: Props) {
                 perPage: query.perPage,
                 count: data.total,
                 fields: [
-                  tableColumn('AKSI', 'act-x', 'left', actions as any),
+                  tableColumn('AKSI', 'act-x', 'left', renderActions as any),
                   ...config.columns.map(([key, label]) =>
                     tableColumn(label.toUpperCase(), key, 'left', ((row: any) => {
                       const value = key.split('.').reduce((item, part) => item?.[part], row)
 
                       if (
-                        resource === 'keu-rekap-harian' &&
-                        ['saldo_awal', 'masuk', 'keluar', 'saldo_akhir'].includes(key) &&
+                        config.fields.some(field => field.key === key && field.dataType === 'money') &&
                         value != null
                       ) {
                         const text = String(value)
