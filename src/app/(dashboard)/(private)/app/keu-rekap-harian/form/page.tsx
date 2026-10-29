@@ -1,8 +1,15 @@
 'use client'
 
 import FinanceForm from '../../keuangan/components/FinanceForm'
-import { request } from '../slice'
+import { fetchKeuRekapHarianById, postKeuRekapHarian, postKeuRekapHarianUpdate, resetRedux } from '../slice'
+
+const actions = {
+  fetchById: fetchKeuRekapHarianById,
+  create: postKeuRekapHarian,
+  update: postKeuRekapHarianUpdate,
+  resetRedux
+}
 
 export default function Page() {
-  return <FinanceForm resource='keu-rekap-harian' request={request} />
+  return <FinanceForm resource='keu-rekap-harian' actions={actions} />
 }

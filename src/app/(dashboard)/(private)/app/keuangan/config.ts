@@ -1,11 +1,13 @@
 export type Field = {
   key: string
   label: string
-  type?: 'text' | 'textarea' | 'date' | 'integer' | 'money' | 'boolean' | 'select' | 'reference'
+  type?: 'text' | 'textarea' | 'date' | 'integer' | 'numeral' | 'checkbox' | 'select'
+  dataType?: 'text' | 'textarea' | 'date' | 'integer' | 'money' | 'boolean' | 'select' | 'reference'
   required?: boolean
   options?: string[]
   source?: string
   idKey?: string
+  codeKey?: string
   labelKey?: string
   params?: Record<string, string | boolean>
   defaultValue?: string | number | boolean
@@ -24,10 +26,34 @@ export type ModuleConfig = {
 const f = (
   key: string,
   label: string,
-  type: Field['type'] = 'text',
+  dataType: Field['dataType'] = 'text',
   required = false,
   extra: Partial<Field> = {}
-): Field => ({ key, label, type, required, ...extra })
+): Field => ({
+  key,
+  label,
+  type:
+    key === 'is_active' || dataType === 'reference' || dataType === 'select'
+      ? 'select'
+      : dataType === 'boolean'
+        ? 'checkbox'
+        : dataType === 'integer'
+          ? 'integer'
+          : dataType === 'money'
+            ? 'numeral'
+            : dataType,
+  dataType,
+  required,
+  ...extra
+})
+
+const referenceCodeKeys: Record<string, string> = {
+  'keu-akun': 'kode_akun',
+  'keu-kelompok-kas': 'kode_kelompok',
+  'jenis-beasiswa': 'kode_beasiswa',
+  'tahun-ajaran': 'tahun_ajaran',
+  santri: 'nis'
+}
 
 const ref = (
   key: string,
@@ -37,13 +63,17 @@ const ref = (
   labelKey: string,
   required = true,
   params = {}
-): Field => f(key, label, 'reference', required, { source, idKey, labelKey, params })
+): Field =>
+  f(key, label, 'reference', required, {
+    source,
+    idKey,
+    labelKey,
+    codeKey: referenceCodeKeys[source],
+    params
+  })
 
 const akun = ref('id_akun', 'Akun', 'keu-akun', 'id_akun', 'nama_akun')
 const tahun = ref('id_tahunajaran', 'Tahun Ajaran', 'tahun-ajaran', 'id_tahunajaran', 'tahun_ajaran', false)
-
-const batch = (jenis: string, required = true) =>
-  ref('id_batch', 'Batch Impor', 'keu-import-batch', 'id_batch', 'nama_file', required, { jenis_data: jenis })
 
 const ket = f('keterangan', 'Keterangan', 'textarea')
 
@@ -103,7 +133,7 @@ export const modules: Record<string, ModuleConfig> = {
     id: 'id_batch',
     fields: [
       f('jenis_data', 'Jenis Data', 'select', true, {
-        options: ['RekapHarian', 'Target', 'Anggaran', 'Beasiswa', 'SaldoAwal']
+        options: ['RekapHarian', 'Target', 'Anggaran', 'Beasiswa']
       }),
       f('nama_file', 'Nama File', 'text', false, { maxLength: 255 }),
       f('hash_file', 'Hash File', 'text', false, { maxLength: 128 }),
@@ -115,7 +145,13 @@ export const modules: Record<string, ModuleConfig> = {
         defaultValue: 'Draft'
       }),
       ...['jumlah_baris', 'jumlah_valid', 'jumlah_error'].map(key =>
-        f(key, key.replaceAll('_', ' '), 'integer', true, { defaultValue: 0 })
+        f(
+          key,
+          key.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
+          'integer',
+          true,
+          { defaultValue: 0 }
+        )
       ),
       ref('menggantikan_batch_id', 'Menggantikan Batch', 'keu-import-batch', 'id_batch', 'nama_file', false),
       f('catatan', 'Catatan', 'textarea')
@@ -140,9 +176,14 @@ export const modules: Record<string, ModuleConfig> = {
       akun,
       tahun,
       ...['saldo_awal', 'masuk', 'keluar', 'saldo_akhir'].map(key =>
-        f(key, key.replaceAll('_', ' '), 'money', true, { signed: key.startsWith('saldo') })
+        f(
+          key,
+          key.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
+          'money',
+          true,
+          { signed: key.startsWith('saldo') }
+        )
       ),
-      batch('RekapHarian'),
       f('nomor_baris_sumber', 'Nomor Baris Sumber', 'integer'),
       ket
     ],
@@ -170,7 +211,6 @@ export const modules: Record<string, ModuleConfig> = {
       akun,
       tahun,
       f('nilai_target', 'Nilai Target', 'money', true),
-      batch('Target', false),
       current,
       ket
     ],
@@ -185,7 +225,7 @@ export const modules: Record<string, ModuleConfig> = {
     ]
   },
   'keu-anggaran': {
-    title: 'Anggaran Keuangan',
+    title: 'Anggaran Final',
     id: 'id_anggaran',
     batchType: 'Anggaran',
     fields: [
@@ -197,7 +237,6 @@ export const modules: Record<string, ModuleConfig> = {
       f('status_sumber', 'Status Sumber', 'text', false, { maxLength: 100 }),
       f('nilai_disetujui', 'Nilai Disetujui', 'money', true),
       f('nilai_realisasi', 'Nilai Realisasi', 'money'),
-      batch('Anggaran'),
       current,
       ket
     ],
@@ -228,10 +267,9 @@ export const modules: Record<string, ModuleConfig> = {
       f('nama_program', 'Nama Program', 'text', false, { maxLength: 200 }),
       f('status_final', 'Status Final', 'text', true, { maxLength: 30 }),
       f('tanggal_data', 'Tanggal Data', 'date', true),
-      f('nilai_diajukan', 'Nilai Diajukan', 'money', false, { signed: true }),
+      f('nilai_diajukan', 'Nilai Referensi Sumber', 'money', false, { signed: true }),
       f('nilai_ditetapkan', 'Nilai Ditetapkan', 'money', true),
       f('nilai_realisasi', 'Nilai Realisasi', 'money'),
-      batch('Beasiswa'),
       current,
       ket
     ],

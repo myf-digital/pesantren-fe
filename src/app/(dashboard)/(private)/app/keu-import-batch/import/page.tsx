@@ -1,8 +1,10 @@
 'use client'
 
 import FinanceImport from '../../keuangan/components/FinanceImport'
-import { request } from '../slice'
+import { postImport, postExport, resetRedux } from '../slice'
+
+const actions = { postImport, postExport, resetRedux }
 
 export default function Page() {
-  return <FinanceImport resource='keu-import-batch' request={request} />
+  return <FinanceImport resource='keu-import-batch' actions={actions} />
 }
