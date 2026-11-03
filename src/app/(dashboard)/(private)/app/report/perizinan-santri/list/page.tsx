@@ -102,7 +102,12 @@ const PerizinanSantriReportList = () => {
     initialTanggalSelesai ? new Date(initialTanggalSelesai) : new Date()
   )
   const [statusApproval, setStatusApproval] = useState(initialStatus)
-  const [jenisIzin, setJenisIzin] = useState('Semua')
+  const initialJenisIzin = searchParams.get('jenis_izin')
+
+  const [jenisIzin, setJenisIzin] = useState(
+    initialJenisIzin && ['Izin', 'Sakit'].includes(initialJenisIzin) ? initialJenisIzin : 'Semua'
+  )
+
   const [kondisi, setKondisi] = useState(initialKondisi)
   const [searchTyped, setSearchTyped] = useState('')
 

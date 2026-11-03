@@ -36,6 +36,17 @@ const formatAmount = (value: bigint) => {
   return `${value < 0n ? '-' : ''}${(amount / 100n).toLocaleString('id-ID')},${String(amount % 100n).padStart(2, '0')}`
 }
 
+export function calculateDailyBalance(values: Record<string, any>): string {
+  const amounts = ['saldo_awal', 'masuk', 'keluar'].map(key => String(scalarValue(values[key]) ?? '').trim() || '0')
+
+  if (amounts.some(value => !moneyPattern.test(value))) return ''
+  const [awal, masuk, keluar] = amounts.map(cents)
+  const balance = awal + masuk - keluar
+  const amount = balance < 0n ? -balance : balance
+
+  return `${balance < 0n ? '-' : ''}${amount / 100n}.${String(amount % 100n).padStart(2, '0')}`
+}
+
 export function dailyBalanceWarnings(values: Record<string, any>): string[] {
   const amounts = ['saldo_awal', 'masuk', 'keluar', 'saldo_akhir'].map(key =>
     String(scalarValue(values[key]) ?? '').trim()

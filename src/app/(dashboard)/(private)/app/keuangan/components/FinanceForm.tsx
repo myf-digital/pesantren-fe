@@ -13,7 +13,7 @@ import { useAppDispatch } from '@/redux-store/hook'
 import { useCan } from '@/hooks/useCan'
 import { modules } from '../config'
 import { referenceOption } from '../references'
-import { buildFinancePayload, dailyBalanceWarnings, scalarValue } from '../validation'
+import { buildFinancePayload, calculateDailyBalance, dailyBalanceWarnings, scalarValue } from '../validation'
 import { errorMessage } from '../api'
 import type { FinanceActions } from '../types'
 import api from '@/libs/axios'
@@ -68,6 +68,25 @@ export default function FinanceForm({ resource, actions }: Props) {
   const [error, setError] = useState('')
   const [historical, setHistorical] = useState(false)
   const readOnly = view || !canSave || historical
+  const calculatedBalance = resource === 'keu-rekap-harian' ? calculateDailyBalance(values) : ''
+
+  useEffect(() => {
+    if (resource !== 'keu-rekap-harian' || readOnly || loading) return
+
+    setValue('saldo_akhir', calculatedBalance)
+    setValues(previous =>
+      previous.saldo_akhir === calculatedBalance ? previous : { ...previous, saldo_akhir: calculatedBalance }
+    )
+    clearErrors('saldo_akhir')
+  }, [resource, readOnly, loading, calculatedBalance, setValue, clearErrors])
+
+  useEffect(() => {
+    if (resource !== 'keu-rekap-harian' || account?.is_periodik_tahun_ajaran !== false) return
+
+    setValue('id_tahunajaran', null)
+    setValues(previous => (previous.id_tahunajaran ? { ...previous, id_tahunajaran: null } : previous))
+    clearErrors('id_tahunajaran')
+  }, [resource, account, values.id_tahunajaran, setValue, clearErrors])
 
   const cancel = () => {
     dispatch(actions.resetRedux())
@@ -217,7 +236,8 @@ export default function FinanceForm({ resource, actions }: Props) {
     if (readOnly || saving || loading || (error && id && !values[config.fields[0].key])) return
     setError('')
     clearErrors()
-    const { payload, errors: validationErrors } = buildFinancePayload(resource, config, values, account)
+    const submitValues = resource === 'keu-rekap-harian' ? { ...values, saldo_akhir: calculatedBalance } : values
+    const { payload, errors: validationErrors } = buildFinancePayload(resource, config, submitValues, account)
 
     if (Object.keys(validationErrors).length) {
       for (const [key, message] of Object.entries(validationErrors)) setFieldError(key, { type: 'validate', message })
@@ -245,6 +265,9 @@ export default function FinanceForm({ resource, actions }: Props) {
     const scope = scalarValue(values.cakupan_data)
     const aggregate = item.key === 'id_santri' && scope === 'Agregat'
 
+    const yearDisabled =
+      resource === 'keu-rekap-harian' && item.key === 'id_tahunajaran' && !account?.is_periodik_tahun_ajaran
+
     const required =
       item.required ||
       (item.key === 'id_santri' && scope === 'PerPenerima') ||
@@ -267,7 +290,13 @@ export default function FinanceForm({ resource, actions }: Props) {
       label: item.label,
       placeholder: `${item.dataType === 'reference' && item.codeKey ? 'Ketik Kode / Pilih' : item.dataType === 'select' ? 'Pilih' : 'Input'} ${item.label}`,
       required: Boolean(required) && !aggregate,
-      readOnly: readOnly || saving || aggregate || Boolean(id && config.master && item.key.startsWith('kode_')),
+      readOnly:
+        readOnly ||
+        saving ||
+        aggregate ||
+        yearDisabled ||
+        (resource === 'keu-rekap-harian' && item.key === 'saldo_akhir') ||
+        Boolean(id && config.master && item.key.startsWith('kode_')),
       tooltip:
         item.dataType === 'money'
           ? 'Nominal maksimal 16 digit bulat dan 2 desimal. Desimal menggunakan titik.'
@@ -321,11 +350,6 @@ export default function FinanceForm({ resource, actions }: Props) {
         {historical && (
           <Alert severity='info' sx={{ mb: 4 }}>
             Versi histori hanya dapat dilihat. Koreksi melalui versi aktif.
-          </Alert>
-        )}
-        {resource === 'keu-rekap-harian' && (
-          <Alert severity='info' sx={{ mb: 4 }}>
-            Koreksi membuat versi baru. Saldo sumber tetap disimpan; selisih perhitungan ditampilkan sebagai peringatan.
           </Alert>
         )}
         {resource === 'keu-rekap-harian' &&
