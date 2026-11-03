@@ -2,7 +2,7 @@
 
 import React, { forwardRef, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import {
   Card,
@@ -380,7 +380,13 @@ const KesehatanSantriList = () => {
   const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfMonth(new Date()))
   const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(endOfMonth(new Date()))
   const [kategoriSakit, setKategoriSakit] = useState('Semua')
-  const [progresStatus, setProgresStatus] = useState('Semua')
+  const searchParams = useSearchParams()
+  const initialProgress = searchParams.get('progres_status')
+
+  const [progresStatus, setProgresStatus] = useState(
+    initialProgress && ['Selesai', 'Dirawat', 'Dirujuk'].includes(initialProgress) ? initialProgress : 'Semua'
+  )
+
   const [searchQuery, setSearchQuery] = useState('')
 
   const [page, setPage] = useState(1)

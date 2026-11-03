@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 import Grid from '@mui/material/Grid2'
 import Box from '@mui/material/Box'
@@ -37,6 +38,10 @@ const formatNumber = (val: number | string | null | undefined): string => {
 export default function PesantrenDashboard() {
   const dispatch = useAppDispatch()
   const router = useRouter()
+  const today = format(new Date(), 'yyyy-MM-dd')
+
+  const attendanceHref = (status: string) =>
+    `/app/report/absen-harian-santri/list?${new URLSearchParams({ status, tanggal_mulai: today, tanggal_selesai: today })}`
 
   const [summaryData, setSummaryData] = useState<any>({})
   const [units, setUnits] = useState<any>([])
@@ -204,6 +209,7 @@ export default function PesantrenDashboard() {
                   {[
                     {
                       label: 'Kehadiran',
+                      href: attendanceHref('Semua'),
                       value: `${summaryData?.performa_kepesantrenan?.kehadiran || 0}%`,
                       weight: `${summaryData?.performa_kepesantrenan?.bobot_kehadiran * 100 || 0}%`,
                       progress: `${summaryData?.performa_kepesantrenan?.kehadiran || 0}`,
@@ -212,6 +218,7 @@ export default function PesantrenDashboard() {
                     },
                     {
                       label: 'Kebersihan',
+                      href: '/app/report/kebersihan-temuan/list',
                       value: `${summaryData?.performa_kepesantrenan?.kebersihan || 0}%`,
                       weight: `${summaryData?.performa_kepesantrenan?.bobot_kebersihan * 100 || 0}%`,
                       progress: `${summaryData?.performa_kepesantrenan?.kebersihan || 0}`,
@@ -220,6 +227,7 @@ export default function PesantrenDashboard() {
                     },
                     {
                       label: 'Kedisiplinan',
+                      href: '/app/pelanggaran-remisi-santri/list?status_progress=Proses',
                       value: `${summaryData?.performa_kepesantrenan?.kedisiplinan || 0}%`,
                       weight: `${summaryData?.performa_kepesantrenan?.bobot_kedisiplinan * 100 || 0}%`,
                       progress: `${summaryData?.performa_kepesantrenan?.kedisiplinan || 0}`,
@@ -229,7 +237,12 @@ export default function PesantrenDashboard() {
                   ].map(item => (
                     <Box
                       key={item.label}
+                      component={Link}
+                      href={item.href}
                       sx={{
+                        color: 'inherit',
+                        textDecoration: 'none',
+                        '&:hover': { bgcolor: '#f1f8f4' },
                         display: 'grid',
                         gridTemplateColumns: '32px minmax(0, 1fr)',
                         gap: 0.8,
@@ -428,6 +441,7 @@ export default function PesantrenDashboard() {
           <Grid size={{ xs: 6, sm: 6, md: 3, lg: 1.2 }}>
             <DashboardKpi
               title='Total Santri'
+              href='/app/santri/list?status=1'
               value={formatNumber(summaryData?.total_santri)}
               subtitle={`L ${formatNumber(summaryData?.jumlah_l)}   |   P ${formatNumber(summaryData?.jumlah_p)}`}
               icon='tabler-users'
@@ -437,6 +451,7 @@ export default function PesantrenDashboard() {
           <Grid size={{ xs: 6, sm: 6, md: 3, lg: 1.2 }}>
             <DashboardKpi
               title='Hadir Hari Ini'
+              href={attendanceHref('Hadir')}
               value={formatNumber(summaryData?.hadir)}
               subtitle={`${((summaryData?.hadir / summaryData?.total_santri) * 100).toFixed(1)}% dari total santri`}
               icon='tabler-circle-check'
@@ -447,6 +462,7 @@ export default function PesantrenDashboard() {
           <Grid size={{ xs: 6, sm: 6, md: 3, lg: 1.2 }}>
             <DashboardKpi
               title='Izin Aktif'
+              href={`/app/report/perizinan-santri/list?${new URLSearchParams({ status: 'Disetujui', jenis_izin: 'Izin', kondisi: 'Normal', tanggal_mulai: today, tanggal_selesai: today })}`}
               value={formatNumber(summaryData?.izin)}
               subtitle={`${summaryData?.persentase_izin}% dari total santri`}
               icon='tabler-file-description'
@@ -457,6 +473,7 @@ export default function PesantrenDashboard() {
           <Grid size={{ xs: 6, sm: 6, md: 3, lg: 1.2 }}>
             <DashboardKpi
               title='Sakit UKS'
+              href='/app/kesehatan-santri/list?progres_status=Dirawat'
               value={formatNumber(summaryData?.sakit_uks)}
               subtitle={`${summaryData?.persentase_sakit_uks}% dari total santri`}
               icon='tabler-heart-rate-monitor'
@@ -467,6 +484,7 @@ export default function PesantrenDashboard() {
           <Grid size={{ xs: 6, sm: 6, md: 3, lg: 1.4 }}>
             <DashboardKpi
               title='Sakit Rumah/Rujukan'
+              href='/app/kesehatan-santri/list?progres_status=Dirujuk'
               value={formatNumber(summaryData?.sakit_rumah_rujukan)}
               subtitle={`${summaryData?.persentase_sakit_rumah_rujukan}% dari total santri`}
               icon='tabler-home-heart'
@@ -477,6 +495,7 @@ export default function PesantrenDashboard() {
           <Grid size={{ xs: 6, sm: 6, md: 3, lg: 1.2 }}>
             <DashboardKpi
               title='Alpha'
+              href={attendanceHref('Alfa')}
               value={formatNumber(summaryData?.alfa)}
               subtitle={`${summaryData?.persentase_alfa}% dari total santri`}
               icon='tabler-user'
@@ -487,6 +506,7 @@ export default function PesantrenDashboard() {
           <Grid size={{ xs: 6, sm: 6, md: 3, lg: 1 }}>
             <DashboardKpi
               title='Kasus Aktif'
+              href='/app/pelanggaran-remisi-santri/list?status_progress=Proses'
               value={formatNumber(summaryData?.kasus_aktif)}
               subtitle={`${((summaryData?.kasus_aktif / summaryData?.total_santri) * 100).toFixed(1)}% dari total santri`}
               icon='tabler-alert-triangle'
@@ -621,16 +641,22 @@ export default function PesantrenDashboard() {
               <Typography sx={{ fontSize: 9.5, fontWeight: 800 }}>AKSI CEPAT</Typography>
               <Grid container spacing={0.7} sx={{ mt: 0.7 }}>
                 {[
-                  ['tabler-circle-check', 'Detail Kehadiran'],
-                  ['tabler-file', 'Perizinan Santri'],
-                  ['tabler-trash', 'Laporan Kebersihan'],
-                  ['tabler-alert-circle', 'Kasus Santri'],
-                  ['tabler-home', 'Monitoring Asrama'],
-                  ['tabler-file-export', 'Export Laporan']
+                  ['tabler-circle-check', 'Detail Kehadiran', attendanceHref('Semua')],
+                  ['tabler-file', 'Perizinan Santri', '/app/report/perizinan-santri/list'],
+                  ['tabler-trash', 'Laporan Kebersihan', '/app/report/kebersihan-temuan/list'],
+                  ['tabler-alert-circle', 'Kasus Santri', '/app/pelanggaran-remisi-santri/list?status_progress=Proses'],
+                  ['tabler-home', 'Monitoring Asrama', '/app/penempatan-kamar-santri/list'],
+                  ['tabler-file-export', 'Export Laporan', '/app/report/rekap-kehadiran-santri/list']
                 ].map(x => (
                   <Grid key={x[1]} size={4}>
                     <Box
+                      component={Link}
+                      href={x[2]}
                       sx={{
+                        color: 'inherit',
+                        textDecoration: 'none',
+                        '&:hover': { bgcolor: '#f1f8f4', borderColor: '#087443' },
+                        '&:focus-visible': { outline: '2px solid #087443' },
                         height: 72,
                         border: '1px solid #e5e7eb',
                         borderRadius: 1,

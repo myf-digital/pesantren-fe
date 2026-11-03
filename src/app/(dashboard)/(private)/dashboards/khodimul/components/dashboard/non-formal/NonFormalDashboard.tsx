@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 import Grid from '@mui/material/Grid2'
 import Box from '@mui/material/Box'
@@ -167,6 +168,10 @@ const formatNumber = (val: number | string | null | undefined): string => {
 export default function NonFormalDashboard() {
   const dispatch = useAppDispatch()
   const router = useRouter()
+  const today = format(new Date(), 'yyyy-MM-dd')
+
+  const attendanceHref = `/app/report/absen-kelas-santri/list?${new URLSearchParams({ tanggal_mulai: today, tanggal_selesai: today })}`
+  const journalHref = `/app/report/jurnal-kelas/list?${new URLSearchParams({ tanggal_mulai: today, tanggal_selesai: today })}`
   const [selected, setSelected] = useState<number>(0)
 
   const branchStats = [
@@ -313,6 +318,7 @@ export default function NonFormalDashboard() {
                   {[
                     {
                       label: 'Kehadiran Santri',
+                      href: attendanceHref,
                       value: `${summaryData?.performa_pendidikan_mda?.kehadiran_santri || 0}%`,
                       weight: `${summaryData?.performa_pendidikan_mda?.bobot_kehadiran_santri * 100 || 0}%`,
                       progress: `${summaryData?.performa_pendidikan_mda?.kehadiran_santri || 0}`,
@@ -321,6 +327,7 @@ export default function NonFormalDashboard() {
                     },
                     {
                       label: 'Kehadiran Guru',
+                      href: journalHref,
                       value: `${summaryData?.performa_pendidikan_mda?.kehadiran_guru || 0}%`,
                       weight: `${summaryData?.performa_pendidikan_mda?.bobot_kehadiran_guru * 100 || 0}%`,
                       progress: `${summaryData?.performa_pendidikan_mda?.kehadiran_guru || 0}`,
@@ -330,7 +337,12 @@ export default function NonFormalDashboard() {
                   ].map(item => (
                     <Box
                       key={item.label}
+                      component={Link}
+                      href={item.href}
                       sx={{
+                        color: 'inherit',
+                        textDecoration: 'none',
+                        '&:hover': { bgcolor: '#f1f8f4' },
                         display: 'grid',
                         gridTemplateColumns: '32px minmax(0, 1fr)',
                         gap: 0.8,
@@ -539,6 +551,7 @@ export default function NonFormalDashboard() {
           <Grid size={{ xs: 6, md: 1.4 }}>
             <DashboardKpi
               title='Total Santri Non Formal'
+              href='/app/penempatan-kelas-santri/list'
               value={formatNumber(summaryData?.kpi_utama?.total_santri)}
               subtitle={`L ${formatNumber(summaryData?.kpi_utama?.santri_l)} | P ${formatNumber(summaryData?.kpi_utama?.santri_p)}`}
               icon='tabler-users'
@@ -548,6 +561,7 @@ export default function NonFormalDashboard() {
           <Grid size={{ xs: 6, md: 1.4 }}>
             <DashboardKpi
               title='Total Kelas MDA'
+              href='/app/kelas-mda/list'
               value={formatNumber(summaryData?.kpi_utama?.total_kelas)}
               subtitle={summaryData?.kpi_utama?.distribusi_lembaga_mda
                 ?.map((x: any) => `${x.label_lembaga_mda} ${formatNumber(x.jumlah_kelas)}`)
@@ -559,6 +573,7 @@ export default function NonFormalDashboard() {
           <Grid size={{ xs: 6, md: 1.4 }}>
             <DashboardKpi
               title='Total Ustadz/Ustadzah'
+              href='/app/guru-mata-pelajaran/list'
               value={formatNumber(summaryData?.kpi_utama?.total_guru)}
               subtitle={`L ${formatNumber(summaryData?.kpi_utama?.guru_l)} | P ${formatNumber(summaryData?.kpi_utama?.guru_p)} `}
               icon='tabler-user-star'
@@ -568,6 +583,7 @@ export default function NonFormalDashboard() {
           <Grid size={{ xs: 6, md: 1.4 }}>
             <DashboardKpi
               title='Absensi Santri Hari Ini'
+              href={attendanceHref}
               value={`${Math.round((summaryData?.kpi_utama?.absensi_santri / summaryData?.kpi_utama?.total_santri) * 100)}%`}
               subtitle={`${formatNumber(summaryData?.kpi_utama?.absensi_santri)} dari ${formatNumber(summaryData?.kpi_utama?.total_santri)} hadir`}
               icon='tabler-circle-check'
@@ -578,6 +594,7 @@ export default function NonFormalDashboard() {
           <Grid size={{ xs: 6, md: 1.4 }}>
             <DashboardKpi
               title='Absensi Ustadz Hari Ini'
+              href={journalHref}
               value={`${Math.round((summaryData?.kpi_utama?.absensi_guru / summaryData?.kpi_utama?.total_guru) * 100)}%`}
               subtitle={`${formatNumber(summaryData?.kpi_utama?.absensi_guru)} dari ${formatNumber(summaryData?.kpi_utama?.total_guru)} hadir`}
               icon='tabler-user-check'
@@ -588,6 +605,7 @@ export default function NonFormalDashboard() {
           <Grid size={{ xs: 6, md: 1.4 }}>
             <DashboardKpi
               title='Jam Pelajaran Hari Ini'
+              href={journalHref}
               value={formatNumber(summaryData?.kpi_utama?.jp_terjadwal)}
               subtitle={`Terlaksana ${formatNumber(summaryData?.kpi_utama?.jp_terlaksana)} (${summaryData?.kpi_utama?.persentase_jp_terlaksana}%)`}
               icon='tabler-clock'
@@ -703,15 +721,21 @@ export default function NonFormalDashboard() {
               <Typography sx={{ fontSize: 9.5, fontWeight: 800 }}>AKSI CEPAT</Typography>
               <Grid container spacing={0.7} sx={{ mt: 1 }}>
                 {[
-                  ['tabler-users', 'Absensi Santri di Kelas'],
-                  ['tabler-user-check', 'Absensi Guru'],
-                  ['tabler-calendar', 'Jadwal Pelajaran'],
-                  ['tabler-file-report', 'Nilai Akademik'],
-                  ['tabler-file', 'Rapor Santri']
+                  ['tabler-users', 'Absensi Santri di Kelas', attendanceHref],
+                  ['tabler-user-check', 'Absensi Guru', journalHref],
+                  ['tabler-calendar', 'Jadwal Pelajaran', '/app/jadwal-pelajaran/list'],
+                  ['tabler-file-report', 'Nilai Akademik', '/app/rapot-santri/list'],
+                  ['tabler-file', 'Rapor Santri', '/app/rapot-santri/list']
                 ].map(x => (
                   <Grid key={x[1]} size={6}>
                     <Box
+                      component={Link}
+                      href={x[2]}
                       sx={{
+                        color: 'inherit',
+                        textDecoration: 'none',
+                        '&:hover': { bgcolor: '#f1f8f4', borderColor: '#087443' },
+                        '&:focus-visible': { outline: '2px solid #087443' },
                         height: 66,
                         border: '1px solid #e5e7eb',
                         borderRadius: 1,

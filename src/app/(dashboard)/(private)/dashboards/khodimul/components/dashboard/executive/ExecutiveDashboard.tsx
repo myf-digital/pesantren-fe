@@ -51,7 +51,7 @@ export default function ExecutiveDashboard() {
             icon = 'tabler-wallet'
           }
 
-          return [r.nama_pilar, r.score, icon, 'vw_executive_scorecard', r.kode_pilar]
+          return [r.nama_pilar, r.score, icon, r.kode_pilar]
         })
       )
     }
@@ -79,7 +79,7 @@ export default function ExecutiveDashboard() {
     <DashboardLayout>
       <DashboardSection title=''>
         <Grid container spacing={4} sx={{ p: 2 }}>
-          {summaryData.map(([name, score, icon, source, kode]: any) => (
+          {summaryData.map(([name, score, icon, kode]: any) => (
             <Grid
               key={String(name)}
               size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}
@@ -126,7 +126,7 @@ export default function ExecutiveDashboard() {
                     }}
                   />
                 </Box>
-                <Typography sx={{ fontSize: 10, mt: 1.1, color: '#344054' }}>Score DB: {source}</Typography>
+                <Typography sx={{ fontSize: 10, mt: 1.1, color: '#344054' }}>Score DB: {name}</Typography>
               </DashboardCard>
             </Grid>
           ))}

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { forwardRef, useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Card,
   CardHeader,
@@ -136,8 +137,14 @@ const JurnalKelasReportList = () => {
   const [loadingLokasi, setLoadingLokasi] = useState(false)
 
   // State Filter Utama UI
-  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(startOfWeek(new Date(), { weekStartsOn: 1 }))
-  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(new Date())
+  const searchParams = useSearchParams()
+  const initialStart = searchParams.get('tanggal_mulai')
+  const initialEnd = searchParams.get('tanggal_selesai')
+
+  const [tanggalAwal, setTanggalAwal] = useState<Date | null>(
+    initialStart ? new Date(initialStart) : startOfWeek(new Date(), { weekStartsOn: 1 })
+  )
+  const [tanggalAkhir, setTanggalAkhir] = useState<Date | null>(initialEnd ? new Date(initialEnd) : new Date())
   const [selectedLembaga, setSelectedLembaga] = useState<LembagaOption | null>({
     label: 'Semua',
     value: ''
