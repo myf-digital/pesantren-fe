@@ -1,12 +1,17 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Card, CardHeader, CardContent, Box, Typography, IconButton } from '@mui/material'
+
 import Link from 'next/link'
+
+import { Card, CardHeader, CardContent, Box, Typography, IconButton } from '@mui/material'
 import { useSession } from 'next-auth/react'
 import { toast } from 'react-toastify'
 import { useForm } from 'react-hook-form'
+
+import { format } from 'date-fns'
 
 import { useAppDispatch, useAppSelector } from '@/redux-store/hook'
 import { fetchKesehatanSantriById, postKesehatanSantri, putKesehatanSantriUpdate, resetRedux } from '../slice/index'
@@ -14,7 +19,7 @@ import { fetchSantriPage } from '../../santri/slice/index'
 import { fetchLocationPage } from '../../location/slice/index'
 
 import { field, fieldBuildSubmit, formColumn } from '@views/onevour/form/AppFormBuilder'
-import { format } from 'date-fns'
+import { useDebounce } from '@/@core/utils/globalHelpers'
 
 const KesehatanSantriForm = () => {
   const router = useRouter()
@@ -30,6 +35,9 @@ const KesehatanSantriForm = () => {
     santri: [] as any[],
     kamar: [] as any[]
   })
+
+  const [santriLoading, setSantriLoading] = useState(false)
+  const santriSearchRequestRef = useRef(0)
 
   const [state, setState] = useState<any>({
     id_santri: null,
@@ -69,8 +77,8 @@ const KesehatanSantriForm = () => {
   const initForm = useCallback(async () => {
     try {
       const [resSantri, resKamar] = await Promise.all([
-        dispatch(fetchSantriPage({ perPage: 1000 })).unwrap(),
-        dispatch(fetchLocationPage({ perPage: 1000, jenis_lokasi: 'Kamar' })).unwrap()
+        dispatch(fetchSantriPage({ perPage: 50 })).unwrap(),
+        dispatch(fetchLocationPage({ perPage: 50, jenis_lokasi: 'Kamar' })).unwrap()
       ])
 
       const santriOptions = (resSantri?.data?.values || []).map((item: any) => ({
@@ -244,6 +252,44 @@ const KesehatanSantriForm = () => {
     }
   }
 
+  const searchSantri = useCallback(async (keyword: string) => {
+    const requestId = ++santriSearchRequestRef.current
+
+    setSantriLoading(true)
+
+    try {
+      const res = await dispatch(fetchSantriPage({ perPage: 20, keyword })).unwrap()
+
+      if (requestId !== santriSearchRequestRef.current) return
+
+      const newOptions = (res?.data?.values || []).map((item: any) => ({
+        label: `${item.fullname} (${item.nis || '-'})`,
+        value: item.id_santri
+      }))
+
+      setOpt(prev => {
+        const selectedId = state.id_santri?.value || state.id_santri
+        const selected = prev.santri.find((item: any) => String(item.value) === String(selectedId))
+
+        if (selected && !newOptions.some((item: any) => String(item.value) === String(selected.value))) {
+          return { ...prev, santri: [selected, ...newOptions] }
+        }
+
+        return { ...prev, santri: newOptions }
+      })
+    } catch (err) {
+      if (requestId === santriSearchRequestRef.current) {
+        toast.error('Gagal mencari data santri')
+      }
+    } finally {
+      if (requestId === santriSearchRequestRef.current) {
+        setSantriLoading(false)
+      }
+    }
+  }, [dispatch, state.id_santri])
+
+  const debouncedSearchSantri = useDebounce(searchSantri, 500)
+
   const getIdentitasFields = () => {
     return [
       field({
@@ -254,8 +300,19 @@ const KesehatanSantriForm = () => {
         options: { values: opt.santri },
         required: true,
         readOnly: !!view || !!id,
+        loading: santriLoading,
+        onInputChange: (_event: any, value: string, reason: string) => {
+          if (reason === 'input') {
+            const keyword = value.trim()
+
+            if (keyword.length >= 2) {
+              debouncedSearchSantri(keyword)
+            }
+          }
+        },
         onChange: (val: any) => {
           const newState = { ...state, id_santri: val }
+
           setState(newState)
           reset(newState)
         }

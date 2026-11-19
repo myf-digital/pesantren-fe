@@ -96,7 +96,8 @@ export function field(props) {
     interval = 30,
     base64 = false,
     accept,
-    helperText
+    helperText,
+    loading = false
   } = props
 
   return {
@@ -128,7 +129,8 @@ export function field(props) {
     onInputChange,
     filterOptions,
     accept,
-    helperText
+    helperText,
+    loading
   }
 }
 
@@ -1397,6 +1399,7 @@ const selectField = form => {
             autoHighlight
             value={selectedOption || null}
             defaultValue={null}
+            loading={props.loading}
             filterOptions={props.filterOptions ? props.filterOptions : props.onInputChange ? x => x : undefined}
             getOptionLabel={option => {
               return option.label || ''
