@@ -141,7 +141,9 @@ export default function FinanceImport({ resource, actions }: Props) {
 
   const previewFields = config.fields.filter(
     field =>
-      !(config.batchType && field.key === 'id_batch') && preview?.data.some(row => row.payload[field.key] != null)
+      !(config.batchType && field.key === 'id_batch') &&
+      ((resource === 'keu-anggaran' && (field.key === 'status_sumber' || field.dataType === 'money')) ||
+        preview?.data.some(row => row.payload[field.key] != null))
   )
 
   return (
@@ -176,6 +178,13 @@ export default function FinanceImport({ resource, actions }: Props) {
                   </li>
                   <li>Publikasi berarti data valid tersedia untuk pelaporan, bukan persetujuan keuangan.</li>
                   <li>Nominal tanpa pemisah ribuan; gunakan titik untuk desimal.</li>
+                  {resource === 'keu-anggaran' && (
+                    <li>
+                      Isi Status Sumber dengan Diajukan, Disetujui, Realisasi, atau Ditolak dan selalu isi Nilai
+                      Diajukan positif. Isi Nilai Disetujui untuk Disetujui dan Realisasi. Isi Nilai Realisasi kumulatif
+                      untuk Realisasi. Nominal yang belum berlaku boleh kosong atau 0.
+                    </li>
+                  )}
                   {config.batchType && (
                     <li>
                       Pilih Koreksi untuk mengganti versi aktif berdasarkan identitas bisnis tanpa UUID. Koreksi

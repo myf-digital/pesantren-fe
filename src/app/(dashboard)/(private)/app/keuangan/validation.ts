@@ -63,6 +63,22 @@ export function dailyBalanceWarnings(values: Record<string, any>): string[] {
       ]
 }
 
+export function budgetRemaining(values: Record<string, any>): string | null {
+  const status = scalarValue(values.status_sumber)
+
+  if (status !== 'Disetujui' && status !== 'Realisasi') return null
+  const approved = String(scalarValue(values.nilai_disetujui) ?? '').trim()
+  const realized = String(scalarValue(values.nilai_realisasi) ?? '').trim() || '0'
+
+  if (!moneyPattern.test(approved) || !moneyPattern.test(realized)) return null
+  const approval = cents(approved)
+  const realization = cents(realized)
+
+  if (approval <= 0n || realization < 0n || realization > approval) return null
+
+  return formatAmount(approval - realization)
+}
+
 export function buildFinancePayload(
   resource: string,
   config: ModuleConfig,
@@ -142,8 +158,34 @@ export function buildFinancePayload(
     !payload.id_tahunajaran
   )
     errors.id_tahunajaran = 'Tahun ajaran wajib untuk akun periodik'
-  if (resource === 'keu-anggaran' && payload.per_akun && !payload.id_akun)
-    errors.id_akun = 'Akun wajib untuk anggaran per akun'
+  if (resource === 'keu-anggaran') {
+    if (payload.per_akun && !payload.id_akun) errors.id_akun = 'Akun wajib untuk anggaran per akun'
+
+    const proposed = errors.nilai_diajukan ? null : cents(payload.nilai_diajukan)
+    const approved = errors.nilai_disetujui ? null : cents(payload.nilai_disetujui ?? '0')
+    const realized = errors.nilai_realisasi ? null : cents(payload.nilai_realisasi ?? '0')
+
+    if (proposed === 0n) errors.nilai_diajukan = 'Nilai diajukan harus lebih besar dari 0'
+
+    if (!errors.status_sumber) {
+      const hasApproval = payload.status_sumber === 'Disetujui' || payload.status_sumber === 'Realisasi'
+      const hasRealization = payload.status_sumber === 'Realisasi'
+
+      if (approved !== null && approved > 0n !== hasApproval)
+        errors.nilai_disetujui = hasApproval
+          ? 'Nilai disetujui harus lebih besar dari 0'
+          : 'Nilai disetujui harus 0 atau kosong untuk status ini'
+      else if (approved !== null && proposed !== null && approved > proposed)
+        errors.nilai_disetujui = 'Nilai disetujui tidak boleh melebihi nilai diajukan'
+
+      if (realized !== null && realized > 0n !== hasRealization)
+        errors.nilai_realisasi = hasRealization
+          ? 'Nilai realisasi harus lebih besar dari 0'
+          : 'Nilai realisasi harus 0 atau kosong untuk status ini'
+      else if (realized !== null && approved !== null && realized > approved)
+        errors.nilai_realisasi = 'Nilai realisasi tidak boleh melebihi nilai disetujui'
+    }
+  }
 
   if (resource === 'keu-beasiswa') {
     if (payload.cakupan_data === 'PerPenerima' && !payload.id_santri)

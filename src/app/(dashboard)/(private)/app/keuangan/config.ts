@@ -225,7 +225,7 @@ export const modules: Record<string, ModuleConfig> = {
     ]
   },
   'keu-anggaran': {
-    title: 'Anggaran Final',
+    title: 'Anggaran',
     id: 'id_anggaran',
     batchType: 'Anggaran',
     fields: [
@@ -234,8 +234,12 @@ export const modules: Record<string, ModuleConfig> = {
       f('per_akun', 'Anggaran Per Akun', 'boolean', false, { defaultValue: false }),
       { ...akun, required: false },
       f('kode_referensi_sumber', 'Kode Referensi Sumber', 'text', false, { maxLength: 150 }),
-      f('status_sumber', 'Status Sumber', 'text', false, { maxLength: 100 }),
-      f('nilai_disetujui', 'Nilai Disetujui', 'money', true),
+      f('status_sumber', 'Status Sumber', 'select', true, {
+        options: ['Diajukan', 'Disetujui', 'Realisasi', 'Ditolak'],
+        defaultValue: 'Diajukan'
+      }),
+      f('nilai_diajukan', 'Nilai Diajukan', 'money', true),
+      f('nilai_disetujui', 'Nilai Disetujui', 'money'),
       f('nilai_realisasi', 'Nilai Realisasi', 'money'),
       current,
       ket
@@ -245,9 +249,11 @@ export const modules: Record<string, ModuleConfig> = {
       ['akun.nama_akun', 'Akun'],
       ['periode_mulai', 'Mulai'],
       ['periode_selesai', 'Selesai'],
+      ['status_sumber', 'Status Sumber'],
+      ['nilai_diajukan', 'Diajukan'],
       ['nilai_disetujui', 'Disetujui'],
       ['nilai_realisasi', 'Realisasi'],
-      ['status_sumber', 'Status Sumber'],
+      ['sisa_anggaran', 'Sisa Anggaran'],
       ['is_current', 'Aktif']
     ]
   },

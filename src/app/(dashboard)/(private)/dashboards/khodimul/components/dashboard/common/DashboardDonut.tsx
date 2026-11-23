@@ -19,12 +19,14 @@ export default function DashboardDonut({
   title,
   total,
   totalLabel,
-  items
+  items,
+  formatValue = (value: number) => value.toLocaleString('id-ID')
 }: {
   title: string
   total: string
   totalLabel?: string
   items: Item[]
+  formatValue?: (value: number) => string
 }) {
   const options: any = {
     chart: {
@@ -69,7 +71,7 @@ export default function DashboardDonut({
     },
     tooltip: {
       y: {
-        formatter: (v: number) => v.toLocaleString('id-ID')
+        formatter: formatValue
       }
     }
   }
@@ -88,7 +90,7 @@ export default function DashboardDonut({
             <Box key={item.label} sx={{ display: 'flex', gap: 0.65, alignItems: 'center', mb: 0.65 }}>
               <Box sx={{ width: 7, height: 7, minWidth: 7, borderRadius: '50%', bgcolor: item.color }} />
               <Typography sx={{ fontSize: 10, flex: 1, lineHeight: 1.25 }}>{item.label}</Typography>
-              <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{item.value.toLocaleString('id-ID')}</Typography>
+              <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{formatValue(item.value)}</Typography>
             </Box>
           ))}
         </Box>

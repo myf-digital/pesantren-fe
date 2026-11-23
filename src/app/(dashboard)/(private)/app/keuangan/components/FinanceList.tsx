@@ -30,6 +30,7 @@ import { tableColumn } from '@/views/onevour/table/TableViewBuilder'
 import { useAppDispatch } from '@/redux-store/hook'
 import { useCan } from '@/hooks/useCan'
 import { modules } from '../config'
+import { budgetRemaining } from '../validation'
 import { downloadFinanceFile, errorMessage } from '../api'
 import type { FinanceActions } from '../types'
 import DialogDelete from '@/views/onevour/components/dialog-delete'
@@ -288,6 +289,8 @@ export default function FinanceList({ resource, actions }: Props) {
                   tableColumn('AKSI', 'act-x', 'left', renderActions as any),
                   ...config.columns.map(([key, label]) =>
                     tableColumn(label.toUpperCase(), key, 'left', ((row: any) => {
+                      if (key === 'sisa_anggaran') return budgetRemaining(row) ?? '—'
+
                       const value = key.split('.').reduce((item, part) => item?.[part], row)
 
                       if (

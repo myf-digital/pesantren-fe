@@ -13,7 +13,13 @@ import { useAppDispatch } from '@/redux-store/hook'
 import { useCan } from '@/hooks/useCan'
 import { modules } from '../config'
 import { referenceOption } from '../references'
-import { buildFinancePayload, calculateDailyBalance, dailyBalanceWarnings, scalarValue } from '../validation'
+import {
+  budgetRemaining,
+  buildFinancePayload,
+  calculateDailyBalance,
+  dailyBalanceWarnings,
+  scalarValue
+} from '../validation'
 import { errorMessage } from '../api'
 import type { FinanceActions } from '../types'
 import api from '@/libs/axios'
@@ -68,6 +74,8 @@ export default function FinanceForm({ resource, actions }: Props) {
   const [error, setError] = useState('')
   const [historical, setHistorical] = useState(false)
   const readOnly = view || !canSave || historical
+  const budgetStatus = resource === 'keu-anggaran' ? scalarValue(values.status_sumber) : null
+  const remainingBudget = resource === 'keu-anggaran' ? budgetRemaining(values) : null
   const calculatedBalance = resource === 'keu-rekap-harian' ? calculateDailyBalance(values) : ''
 
   useEffect(() => {
@@ -272,7 +280,9 @@ export default function FinanceForm({ resource, actions }: Props) {
       item.required ||
       (item.key === 'id_santri' && scope === 'PerPenerima') ||
       (item.key === 'id_tahunajaran' && Boolean(account?.is_periodik_tahun_ajaran)) ||
-      (item.key === 'id_akun' && resource === 'keu-anggaran' && Boolean(values.per_akun))
+      (item.key === 'id_akun' && resource === 'keu-anggaran' && Boolean(values.per_akun)) ||
+      (item.key === 'nilai_disetujui' && (budgetStatus === 'Disetujui' || budgetStatus === 'Realisasi')) ||
+      (item.key === 'nilai_realisasi' && budgetStatus === 'Realisasi')
 
     const options =
       item.key === 'is_active'
@@ -306,6 +316,7 @@ export default function FinanceForm({ resource, actions }: Props) {
         onChange: (option: any) => {
           if (item.key === 'id_akun') setAccount(option)
           clearErrors(item.key)
+          if (item.key === 'status_sumber') clearErrors(['nilai_disetujui', 'nilai_realisasi'])
 
           if (item.key === 'cakupan_data' && option?.value === 'Agregat') {
             setValue('id_santri', null)
@@ -341,10 +352,15 @@ export default function FinanceForm({ resource, actions }: Props) {
             {referenceError}
           </Alert>
         )}
-        {resource === 'keu-anggaran' && (
+        {resource === 'keu-anggaran' && !readOnly && (
           <Alert severity='info' sx={{ mb: 4 }}>
-            Catat anggaran final yang telah disetujui di luar SADA. Tidak ada pengajuan, persetujuan, atau release di
-            sini.
+            Isi nilai diajukan untuk semua status. Pada Diajukan atau Ditolak, isi nilai disetujui dan realisasi dengan
+            0 atau kosongkan. Pada Disetujui, isi nilai disetujui. Pada Realisasi, isi juga nilai realisasi kumulatif.
+          </Alert>
+        )}
+        {!loading && remainingBudget !== null && (
+          <Alert severity='info' sx={{ mb: 4 }}>
+            Sisa anggaran Rp{remainingBudget}
           </Alert>
         )}
         {historical && (

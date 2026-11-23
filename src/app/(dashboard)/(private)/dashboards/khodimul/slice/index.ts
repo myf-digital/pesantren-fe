@@ -17,6 +17,7 @@ export interface InitialState {
   dataKepesantrenanLevelTwo: any
   dataFormalLevelTwo: any
   dataNonFormalLevelTwo: any
+  dataKeuanganLevelTwo: any
   loading: boolean
 }
 
@@ -33,6 +34,7 @@ const initialState: InitialState = {
   dataKepesantrenanLevelTwo: {},
   dataFormalLevelTwo: {},
   dataNonFormalLevelTwo: {},
+  dataKeuanganLevelTwo: {},
   loading: false
 }
 
@@ -154,6 +156,15 @@ export const fetchNonFormalLevelTwo = createAsyncThunk<any, any>(
   }
 )
 
+export const fetchKeuanganLevelTwo = createAsyncThunk(
+  'keuangan-level-two/fetchAll',
+  async (params: { tanggal?: string; tanggal_mulai?: string; tanggal_selesai?: string }, { signal }) => {
+    const response = await api.get('/keuangan-level-two', { params, signal })
+
+    return response.data
+  }
+)
+
 export const summaryKhodimulSlice = createSlice({
   name: 'khodimul',
   initialState,
@@ -195,6 +206,10 @@ export const summaryKhodimulSlice = createSlice({
 
     builder.addCase(fetchNonFormalLevelTwo.fulfilled, (state, action) => {
       state.dataNonFormalLevelTwo = action.payload.data
+    })
+
+    builder.addCase(fetchKeuanganLevelTwo.fulfilled, (state, action) => {
+      state.dataKeuanganLevelTwo = action.payload?.data ?? null
     })
 
     builder.addMatcher(

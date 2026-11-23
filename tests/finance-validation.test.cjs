@@ -25,7 +25,7 @@ function loadTypeScript(relativePath) {
 
 const base = 'src/app/(dashboard)/(private)/app/keuangan/'
 const { modules } = loadTypeScript(base + 'config.ts')
-const { buildFinancePayload, dailyBalanceWarnings } = loadTypeScript(base + 'validation.ts')
+const { budgetRemaining, buildFinancePayload, dailyBalanceWarnings } = loadTypeScript(base + 'validation.ts')
 
 function fixture(resource) {
   return Object.fromEntries(
@@ -38,7 +38,9 @@ function fixture(resource) {
             ? '1'
             : '0'
           : field.dataType === 'money'
-            ? '100.00'
+            ? resource === 'keu-anggaran' && ['nilai_disetujui', 'nilai_realisasi'].includes(field.key)
+              ? ''
+              : '100.00'
             : field.dataType === 'date'
               ? '2026-10-27'
               : field.dataType === 'select'
@@ -150,4 +152,35 @@ test('reference choices show business codes and names while payloads retain inte
   assert.equal(validate('keu-rekap-harian', { id_akun: option }).payload.id_akun, 'internal-id')
   assert.ok(validate('keu-rekap-harian', { id_akun: { ...option, is_active: false } }).errors.id_akun)
   assert.equal(referenceOption(accountField, { id_akun: 'hidden-uuid' }).label.includes('hidden-uuid'), false)
+})
+
+test('budget requires positive amounts according to source status and preserves decimal precision', () => {
+  const budget = (status, approved, realized, proposed = '5000000') =>
+    validate('keu-anggaran', {
+      status_sumber: { value: status },
+      nilai_diajukan: proposed,
+      nilai_disetujui: approved,
+      nilai_realisasi: realized
+    })
+
+  assert.deepEqual(budget('Diajukan', '', '0').errors, {})
+  assert.deepEqual(budget('Ditolak', null, null).errors, {})
+  assert.ok(budget('Diajukan', '1', '0').errors.nilai_disetujui)
+  assert.ok(budget('Ditolak', '0', '1').errors.nilai_realisasi)
+  assert.ok(budget('Diajukan', '', '', '0').errors.nilai_diajukan)
+  assert.ok(budget('Diajukan', '', '', 'invalid').errors.nilai_diajukan)
+  assert.ok(budget('Final', '', '').errors.status_sumber)
+  assert.ok(budget('Disetujui', '', '').errors.nilai_disetujui)
+  assert.ok(budget('Disetujui', '4150000', '1').errors.nilai_realisasi)
+  assert.ok(budget('Realisasi', '4150000', '').errors.nilai_realisasi)
+  assert.ok(budget('Realisasi', '4150000', '4150000.01').errors.nilai_realisasi)
+  assert.ok(budget('Disetujui', '9999999999999999.99', '', '9999999999999999.98').errors.nilai_disetujui)
+
+  const valid = budget('Realisasi', '4150000', '2000000')
+
+  assert.deepEqual(valid.errors, {})
+  assert.equal(valid.payload.nilai_diajukan, '5000000')
+  assert.equal(budgetRemaining(valid.payload), '2.150.000,00')
+  assert.equal(budgetRemaining(budget('Disetujui', '4150000', '').payload), '4.150.000,00')
+  assert.equal(budgetRemaining(budget('Diajukan', '', '').payload), null)
 })

@@ -11,18 +11,20 @@ const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
 type Series = {
   name: string
-  values: number[]
+  values: (number | null)[]
   color: string
 }
 
 export default function DashboardLineChart({
   title,
   series,
-  labels = []
+  labels = [],
+  formatValue
 }: {
   title: string
   series: Series[]
   labels?: string[]
+  formatValue?: (value: number) => string
 }) {
   const options: any = {
     chart: {
@@ -59,10 +61,10 @@ export default function DashboardLineChart({
     },
     yaxis: {
       min: 0,
-      max: 100,
+      max: formatValue ? undefined : 100,
       tickAmount: 4,
       labels: {
-        formatter: (v: number) => `${Math.round(v)}%`,
+        formatter: formatValue ?? ((v: number) => `${Math.round(v)}%`),
         style: { fontSize: '8px', colors: ['#667085'] }
       }
     },
@@ -78,7 +80,7 @@ export default function DashboardLineChart({
       shared: true,
       intersect: false,
       y: {
-        formatter: (v: number) => `${v}%`
+        formatter: formatValue ?? ((v: number) => `${v}%`)
       }
     }
   }
